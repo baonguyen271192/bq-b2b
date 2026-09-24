@@ -1,0 +1,166 @@
+@import "tailwindcss";
+
+:root {
+  /* Tokens lấy đúng từ Figma "BQ demo" */
+  --bq-orange: #e8541e;
+  --bq-orange-soft: #fff1eb;
+  --bq-ink: #1e293b;      /* slate-800 */
+  --bq-muted: #64748b;    /* slate-500 */
+  --bq-line: #e2e8f0;     /* slate-200 */
+  --bq-bg: #f8fafc;       /* slate-50 */
+  --bq-green: #10b981;
+  --bq-red: #ef4444;
+  --bq-amber: #f59e0b;
+  --bq-gold: #c9a24b;
+  --bq-green-soft: #d1fae5;
+  --bq-amber-soft: #fef3c7;
+}
+
+@theme inline {
+  --color-bq-orange: var(--bq-orange);
+  --color-bq-ink: var(--bq-ink);
+  --color-bq-muted: var(--bq-muted);
+  --font-sans: var(--font-geist), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* Heading dùng Outfit như Figma */
+h1, h2, h3, .font-head { font-family: var(--font-outfit), var(--font-geist), sans-serif; }
+
+* { box-sizing: border-box; }
+
+html {
+  /* Luôn chừa chỗ cho thanh cuộn -> không nhảy ngang khi đổi tab ngắn/dài */
+  scrollbar-gutter: stable;
+  overflow-y: scroll;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bq-bg);
+  color: var(--bq-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  /* Khung "điện thoại" cố định giữa màn hình, không có gì để cuộn ngang — chặn hẳn
+     overflow-x/overscroll ngang để trackpad (2 ngón lướt ngang trên Mac) không kéo
+     lệch cả trang, trông như layout bị vỡ/dồn qua 1 bên. */
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
+/* Khung điện thoại ở giữa màn hình (demo trên desktop) */
+.phone-frame {
+  max-width: 430px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--bq-bg);
+  position: relative;
+  overflow-x: hidden;
+  box-shadow: 0 0 40px rgba(0,0,0,.08);
+}
+
+.btn-primary {
+  background: var(--bq-orange);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 14px;
+  font-weight: 700;
+  font-size: 15px;
+  width: 100%;
+  cursor: pointer;
+}
+.btn-primary:active { opacity: .85; }
+.btn-primary:disabled { background: #d8dbe0; cursor: not-allowed; }
+
+.btn-outline {
+  background: #fff;
+  color: var(--bq-orange);
+  border: 1.5px solid var(--bq-orange);
+  border-radius: 12px;
+  padding: 13px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+}
+
+.tier-badge {
+  display: inline-block;
+  background: #fff6e6;
+  color: #b7791f;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.chip {
+  border: 1px solid var(--bq-line);
+  background: #fff;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: var(--bq-ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.chip-active { border-color: var(--bq-orange); color: var(--bq-orange); background: var(--bq-orange-soft); }
+
+/* ẩn scrollbar cho hàng cuộn ngang */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ---- Admin panel: hover / focus / transition (Soft UI Evolution) ---- */
+.admin-nav a { transition: background .18s ease, color .18s ease; }
+.admin-nav a:hover { background: var(--bq-orange-soft); color: var(--bq-orange); }
+.admin-nav a:focus-visible,
+.admin-search input:focus-visible {
+  outline: 2px solid var(--bq-orange);
+  outline-offset: 2px;
+}
+.admin-table tbody tr { transition: background .15s ease; }
+.admin-table tbody tr:hover { background: #f7f9fc; }
+.admin-search input { transition: border-color .15s ease, box-shadow .15s ease; }
+.admin-search input:focus { border-color: var(--bq-orange); }
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-nav a, .admin-table tbody tr, .admin-search input { transition: none; }
+}
+
+/* ---- Nút hành động trong bảng admin ---- */
+.admin-btn {
+  border: none; border-radius: 8px; padding: 6px 12px;
+  font-size: 12.5px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 5px;
+  transition: filter .15s ease, box-shadow .15s ease;
+}
+.admin-btn:hover { filter: brightness(1.06); box-shadow: 0 2px 8px rgba(232,84,30,.28); }
+.admin-btn:active { filter: brightness(.96); }
+.admin-btn:disabled { opacity: .55; cursor: default; filter: none; box-shadow: none; }
+
+/* Nút phụ dạng outline (Từ chối) */
+.admin-btn-outline {
+  background: #fff; border: 1px solid var(--bq-line); color: var(--bq-muted);
+  border-radius: 8px; padding: 6px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  white-space: nowrap; transition: all .15s ease;
+}
+.admin-btn-outline:hover { border-color: #f0c4c4; color: var(--bq-red); background: #fff5f5; }
+
+/* Nút icon huỷ (ghost) */
+.admin-icon-btn {
+  width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--bq-line);
+  background: #fff; color: var(--bq-muted); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; transition: all .15s ease;
+}
+.admin-icon-btn:hover { border-color: #f0c4c4; color: var(--bq-red); background: #fdeeee; }
+.admin-icon-btn:disabled { opacity: .5; cursor: default; }
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-btn, .admin-btn-outline, .admin-icon-btn { transition: none; }
+}
