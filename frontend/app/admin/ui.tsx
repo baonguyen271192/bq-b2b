@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { Search, Smartphone, Monitor, Bot, MessageCircle, LucideIcon } from "lucide-react";
+import { Search, Smartphone, Monitor, Bot, MessageCircle, MessageSquare, LucideIcon } from "lucide-react";
 
 // ---- Style tokens dùng chung cho admin (inline-style, đồng bộ với dashboard cũ) ----
 export const card: React.CSSProperties = {
@@ -125,10 +125,17 @@ export function SearchBox({ value, onChange, placeholder }: {
 
 // Nhãn kênh dạng chữ thuần (dùng cho biểu đồ / label chuỗi).
 export const channelLabel = (c: string) =>
-  c === "facebook" ? "Facebook" : c === "web" ? "Web" : c === "ai-chat" ? "AI Chat" : "App";
+  c === "facebook" ? "Facebook"
+  : c === "zalo_personal" ? "Zalo"
+  : c === "zalo_oa" ? "Zalo OA"
+  : c === "web" ? "Web"
+  : c === "ai-chat" ? "AI Chat"
+  : "App";
 
 const CHANNEL_META: Record<string, { Icon: LucideIcon; color: string }> = {
   facebook: { Icon: MessageCircle, color: "#2563eb" },
+  zalo_personal: { Icon: MessageSquare, color: "#0068ff" },
+  zalo_oa: { Icon: MessageSquare, color: "#0068ff" },
   web: { Icon: Monitor, color: "#0f766e" },
   "ai-chat": { Icon: Bot, color: "#7c3aed" },
   app: { Icon: Smartphone, color: "#64748b" },

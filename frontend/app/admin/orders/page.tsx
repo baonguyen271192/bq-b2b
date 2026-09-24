@@ -56,10 +56,10 @@ export default function OrdersPage() {
   return (
     <div>
       <PageHeader title="Đơn hàng"
-        subtitle="Đơn sỉ (đại lý) và đơn lẻ (khách qua bot Facebook) — cùng 1 nơi quản lý" />
+        subtitle="Đơn sỉ (đại lý) và đơn lẻ (khách qua bot Facebook/Zalo) — cùng 1 nơi quản lý" />
 
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-        {([["wholesale", "Đơn sỉ (đại lý)", Store], ["retail", "Đơn lẻ (Facebook)", MessageCircle]] as const).map(([k, label, Icon]) => (
+        {([["wholesale", "Đơn sỉ (đại lý)", Store], ["retail", "Đơn lẻ (Facebook/Zalo)", MessageCircle]] as const).map(([k, label, Icon]) => (
           <button key={k} onClick={() => setTab(k)} style={{
             display: "inline-flex", alignItems: "center", gap: 7,
             border: "1px solid var(--bq-line)", borderRadius: 20, padding: "8px 18px",
@@ -312,7 +312,7 @@ function RetailTab({ rows, q, setQ, busy, err, onAdvance, onCancel, onOpen }: {
       </div>
 
       <div style={{ marginTop: 14, fontSize: 12, color: "var(--bq-muted)" }}>
-        💡 Đơn khách lẻ đặt qua bot Facebook (service Commerce riêng) — COD, không công nợ.
+        💡 Đơn khách lẻ đặt qua bot Facebook/Zalo (service Commerce riêng) — COD, không công nợ.
         Bảng tự làm mới mỗi 3 giây.
       </div>
     </div>
