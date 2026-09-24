@@ -151,11 +151,15 @@ def _order_detail(o: dict) -> dict:
 # Bộ lọc trạng thái theo câu hỏi → (nhãn, các chuỗi con khớp status CÒN DẤU).
 # Dùng chuỗi có dấu để tránh nhầm khi bỏ dấu (vd 'chuyển'⊃'huy').
 def _status_filter(s: str):
-    if "dang giao" in s or "van chuyen" in s or "ship" in s:
+    # Từ khoá 1-âm-tiết phải so khớp theo TỪ nguyên (token), không phải substring —
+    # "huy" ⊂ "chuyện"/"khuyến"/"huyết" (bỏ dấu → "chuyen"/"khuyen"/"huyet") từng khiến
+    # câu hỏi bình thường như "quay lại chuyện làm ăn" bị hiểu nhầm thành hỏi đơn huỷ.
+    words = set(re.findall(r"[a-z]+", s))
+    if "dang giao" in s or "van chuyen" in s or "ship" in words:
         return ("đang giao", ["bàn giao"])
     if "dong goi" in s:
         return ("đang đóng gói", ["đóng gói"])
-    if "cho duyet" in s or "can duyet" in s or "duyet" in s:
+    if "cho duyet" in s or "can duyet" in s or "duyet" in words:
         return ("chờ duyệt", ["Chờ duyệt", "duyệt"])
     if "cho xac nhan" in s:
         return ("chờ xác nhận", ["Chờ xác nhận"])
@@ -163,7 +167,7 @@ def _status_filter(s: str):
         return ("đã xác nhận", ["Đã xác nhận"])
     if "da giao" in s or "da nhan" in s or "hoan thanh" in s or "giao xong" in s or "giao thanh cong" in s:
         return ("đã giao", ["đã nhận"])
-    if "huy" in s or "tu choi" in s:
+    if "huy" in words or "tu choi" in s:
         return ("đã huỷ / từ chối", ["huỷ", "từ chối"])
     return None
 
