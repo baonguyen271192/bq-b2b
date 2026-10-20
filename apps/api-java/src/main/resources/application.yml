@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: bq-api
+  jackson:
+    # Hợp đồng OpenAPI dùng snake_case (credit_limit, qty_total, over_limit...).
+    # Đặt ở đây một lần thay vì rắc @JsonProperty khắp domain.
+    property-naming-strategy: SNAKE_CASE
+    default-property-inclusion: non_null
+
+server:
+  port: ${PORT:8100}
+
+bq:
+  # demo  = dữ liệu mẫu đóng gói trong resources/demo + SQLite
+  # sapb1 = SAP Business One Service Layer
+  # Đổi giá trị này KHÔNG cần sửa controller, service, frontend hay mobile.
+  data-source: ${BQ_DATA_SOURCE:demo}
+
+  demo:
+    # Trỏ thẳng vào DB của bản demo Python để giữ nguyên lịch sử đơn.
+    orders-db: ${BQ_DEMO_ORDERS_DB:../api/app/orders.db}
+
+  sapb1:
+    base-url: ${SAPB1_BASE_URL:}
+    company-db: ${SAPB1_COMPANY_DB:}
+    username: ${SAPB1_USERNAME:}
+    password: ${SAPB1_PASSWORD:}
+    # Bản cài nội bộ thường dùng cert tự ký. Chỉ tắt trong LAN/VPN tin cậy.
+    verify-ssl: ${SAPB1_VERIFY_SSL:true}
+    warehouse: ${SAPB1_WAREHOUSE:}
+    page-size: 100
+
+  assistant:
+    # Trợ lý AI vẫn chạy ở service Python (apps/api). Java proxy sang.
+    # PHẢI khác cổng của chính Java (server.port) — trỏ trùng = proxy gọi lại chính
+    # mình, treo request. Mặc định: Java 8100, Python assistant 8101.
+    base-url: ${BQ_ASSISTANT_URL:http://localhost:8101}
+
+  cors:
+    # Demo mở rộng. TRƯỚC KHI lên thật với dữ liệu SAP B1: liệt kê domain cụ thể.
+    allowed-origins: ${BQ_CORS_ORIGINS:*}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

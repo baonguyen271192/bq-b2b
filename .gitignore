@@ -37,3 +37,7 @@ build/
 # Video demo (8MB nhị phân) — git không xoá được lịch sử file nhị phân, repo sẽ
 # phình vĩnh viễn. Cần version hoá thì dùng Git LFS: `git lfs track "*.mp4"`.
 docs/demo-videos/
+
+# Java / Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar

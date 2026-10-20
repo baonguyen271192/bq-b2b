@@ -1,0 +1,35 @@
+[
+  {
+    "code": "DL001",
+    "name": "Đại lý Minh Anh",
+    "tier": "Vàng",
+    "credit_limit": 50000000,
+    "credit_opening": 0,
+    "owner": "Nguyễn Văn Minh",
+    "phone": "0901 234 567",
+    "email": "minhanh@giaybq.vn",
+    "invoice_address": "456 Lê Lợi, Q.1, TP.HCM"
+  },
+  {
+    "code": "DL002",
+    "name": "Cửa hàng Hồng Phúc",
+    "tier": "Bạc",
+    "credit_limit": 20000000,
+    "credit_opening": 0,
+    "owner": "Trần Hồng Phúc",
+    "phone": "0912 888 456",
+    "email": "hongphuc@giaybq.vn",
+    "invoice_address": "12 Trần Hưng Đạo, Q.5, TP.HCM"
+  },
+  {
+    "code": "DL003",
+    "name": "NPP Thành Đạt",
+    "tier": "Kim Cương",
+    "credit_limit": 80000000,
+    "credit_opening": 0,
+    "owner": "Lê Thành Đạt",
+    "phone": "0938 555 123",
+    "email": "thanhdat@giaybq.vn",
+    "invoice_address": "88 Cách Mạng Tháng 8, Q.3, TP.HCM"
+  }
+]

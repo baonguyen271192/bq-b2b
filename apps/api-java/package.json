@@ -1,0 +1,13 @@
+{
+  "name": "@bq/api-java",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Backend Spring Boot (nguồn dữ liệu demo | SAP Business One). Không phải package Node — package.json chỉ để Turborepo điều phối lệnh.",
+  "scripts": {
+    "dev": "./mvnw spring-boot:run",
+    "build": "./mvnw -B package -DskipTests",
+    "test": "./mvnw -B test",
+    "start": "java -jar target/api-0.0.1-SNAPSHOT.jar",
+    "clean": "./mvnw -B clean && rm -rf .turbo"
+  }
+}

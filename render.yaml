@@ -3,11 +3,49 @@
 #
 # Lưu ý khi ĐÃ nối SAP B1: Service Layer thường nằm trong mạng nội bộ của BQ, không
 # mở ra Internet. Khi đó Render (cloud công cộng) sẽ KHÔNG gọi tới được — phải chọn
-# một trong: VPN/site-to-site, IP allowlist + TLS, hoặc self-host backend trong mạng
-# của BQ. Đây là quyết định HẠ TẦNG, cần chốt trước khi hứa ngày lên production.
+# một trong: VPN/site-to-site, mở Service Layer qua reverse proxy có TLS + IP
+# allowlist, hoặc tự host backend trong mạng BQ (có sẵn apps/api-java/Dockerfile).
+# Đây là quyết định HẠ TẦNG, cần chốt trước khi hứa ngày go-live.
 services:
+  # --- Backend chính (Java) -------------------------------------------------
   - type: web
     name: bq-api
+    runtime: docker
+    dockerfilePath: ./apps/api-java/Dockerfile
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: BQ_DATA_SOURCE
+        value: demo
+      - key: BQ_ASSISTANT_URL
+        fromService:
+          type: web
+          name: bq-assistant
+          property: hostport
+      # Bí mật đặt trong dashboard, KHÔNG để trong file này.
+      - key: BQ_CORS_ORIGINS
+        sync: false
+      - key: SAPB1_BASE_URL
+        sync: false
+      - key: SAPB1_COMPANY_DB
+        sync: false
+      - key: SAPB1_USERNAME
+        sync: false
+      - key: SAPB1_PASSWORD
+        sync: false
+      - key: SAPB1_WAREHOUSE
+        sync: false
+      - key: SAPB1_SKU_PATTERN
+        sync: false
+      - key: SAPB1_TIER_BY_PRICELIST
+        sync: false
+
+  # --- Trợ lý AI (Python) ---------------------------------------------------
+  # Giữ bằng Python có chủ ý: ~1.000 dòng xử lý tiếng Việt + 2 client LLM. Xem
+  # docs/architecture.md §8.
+  - type: web
+    name: bq-assistant
     runtime: python
     rootDir: apps/api
     plan: starter
@@ -19,14 +57,7 @@ services:
         value: "3.12"
       - key: BQ_DATA_SOURCE
         value: demo
-      # Bí mật đặt trong dashboard, KHÔNG để trong file này.
       - key: GROQ_API_KEY
         sync: false
-      - key: SAPB1_BASE_URL
-        sync: false
-      - key: SAPB1_COMPANY_DB
-        sync: false
-      - key: SAPB1_USERNAME
-        sync: false
-      - key: SAPB1_PASSWORD
+      - key: GEMINI_API_KEY
         sync: false
