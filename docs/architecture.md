@@ -127,8 +127,9 @@ dữ liệu sai vào ERP thật** — tệ hơn là lỗi lộ ra ngay.
 |---|---|---|
 | **Bảng size** | B1 không có size-matrix gốc. Mỗi size là một `ItemCode` riêng? Theo UDF? Add-on matrix? | `SapB1Mapping.parseItemCode` |
 | Giá sỉ theo bậc | `PriceLists` gán theo khách, hay `SpecialPrices`, hay UDF? | `SapB1Catalog.dealerPrice` |
-| Vòng đời đơn | B1 chỉ có Open/Closed; BQ có 5 bước. Lưu bằng UDF, chuỗi chứng từ, hay giữ ở DB BQ? | `SapB1Orders.setStatus` |
+| ~~Vòng đời đơn~~ | **BQ xác nhận B1 đã có đủ 5 trạng thái.** Code đã viết xong, đọc tên trường + bảng giá trị từ `SAPB1_ORDER_STATUS_FIELD` / `SAPB1_ORDER_STATUS_VALUES`. Chỉ còn chờ BQ cho biết tên trường. | `OrderStatusMapping` |
 | Thanh toán | `IncomingPayments` đối trừ theo Invoice hay theo Order? | `SapB1Orders.addPayment` |
+| Người duyệt đơn | SAP có lưu ai duyệt + ghi chú duyệt không, ở trường nào? | `SapB1Orders.setStatus` |
 | Công thức tồn khả dụng | `InStock - Committed`? Trừ cả `Ordered`? Theo kho nào? | `SapB1Mapping.inStock` |
 | Bậc ⇄ bảng giá | `SAPB1_TIER_BY_PRICELIST` map số nào sang bậc nào? | `SapB1Mapping.priceListToTier` |
 

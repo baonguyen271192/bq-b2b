@@ -30,7 +30,14 @@ public record BqProperties(
        * Hạn cache danh mục đọc từ B1 (ISO-8601: PT5M = 5 phút). 0 = tắt cache.
        * CHỈ áp dụng cho danh mục/nhóm hàng — công nợ và số dư luôn đọc tươi.
        */
-      java.time.Duration catalogCacheTtl
+      java.time.Duration catalogCacheTtl,
+      /**
+       * Tên trường UDF trên Orders chứa 5 trạng thái của BQ (vd {@code U_BQ_Status}).
+       * BQ xác nhận B1 của họ đã có đủ 5 trạng thái — chỉ còn thiếu tên trường.
+       */
+      String orderStatusField,
+      /** Bảng giá trị B1 -> nhãn BQ, vd {@code 1:Chờ xác nhận,2:Đã xác nhận,...} */
+      String orderStatusValues
   ) {
     /** Fail-fast lúc khởi động thay vì để lỗi 500 mơ hồ ở request đầu tiên. */
     public void validate() {

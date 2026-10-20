@@ -103,28 +103,42 @@ Xin **một** đại lý bất kỳ là đủ; che thông tin nhạy cảm cũng
 Ba câu dưới đây **không có trong dữ liệu** — chúng là chính sách của BQ, phải người
 làm nghiệp vụ quyết.
 
-### B1. Trạng thái đơn hàng
+### B1. Trạng thái đơn hàng — ✅ BQ đã xác nhận trong họp
 
-BQ theo dõi đơn qua 5 bước. Chúng tôi đề xuất map vào chứng từ sẵn có của SAP:
+BQ cho biết SAP B1 **đã có sẵn đúng 5 trạng thái** trùng với 5 bước của BQ. Rất tốt —
+phần code đã viết xong và **chờ đúng hai thông tin**:
 
-| Bước của BQ | Đề xuất lấy từ SAP | ✅/❌ |
-|---|---|---|
-| Chờ xác nhận | Đơn bán (Sales Order) vừa tạo | |
-| Đã xác nhận | Đơn bán đã duyệt | |
-| **Đang đóng gói** | **Phiếu soạn hàng (Pick List)** | |
-| Đang bàn giao vận chuyển | Phiếu giao hàng (Delivery) | |
-| Đại lý đã nhận | Phiếu giao hàng đã xác nhận / Hoá đơn bán | |
+| Cần biết | Điền vào |
+|---|---|
+| 5 trạng thái đó nằm ở **trường nào** trên đơn bán? | `_____________` (vd `U_BQ_Status`) |
+| Giá trị lưu trong trường đó là gì? | xem bảng dưới |
 
-**Câu cần trả lời:** *khi hàng đang được đóng gói trong kho — chưa xuất phiếu giao —
-hiện tại nhân viên kho ghi nhận ở đâu trong SAP?*
+| Bước của BQ | Giá trị trong SAP |
+|---|---|
+| Chờ xác nhận | `______` |
+| Đã xác nhận | `______` |
+| Đang đóng gói | `______` |
+| Đang bàn giao vận chuyển | `______` |
+| Đại lý đã nhận | `______` |
 
-- [ ] Có dùng **Pick and Pack / Phiếu soạn hàng** → bảng trên dùng được
-- [ ] Không dùng → cần thêm một trường tuỳ biến (UDF) trên đơn bán, **hoặc** chấp nhận
-      app BQ tự giữ 2 trạng thái kho này
-- [ ] Cách khác: ______________________
+*(Nếu SAP lưu thẳng chữ tiếng Việt như trên thì ghi "lưu nguyên chữ" là đủ.)*
 
-> Đây là điểm duy nhất mà câu "mọi thứ đều ở SAP" có thể không đúng tuyệt đối:
-> SAP chuẩn chỉ phân biệt đơn *đang mở* và *đã đóng*, không có 5 mức như BQ.
+**Cách trả lời nhanh nhất** — mở một đơn bán bất kỳ trong SAP, cho biết tên trường
+hiển thị trạng thái; hoặc gửi kết quả:
+
+```
+GET /b1s/v1/Orders(<DocEntry>)
+```
+rồi chỉ cho chúng tôi trường nào trong kết quả đó là trạng thái.
+
+> **Một điểm cần đối chiếu:** SAP B1 chuẩn trên đơn bán chỉ phân biệt *đang mở* /
+> *đã đóng*. 5 trạng thái của BQ vì vậy gần như chắc chắn nằm trong một **trường tuỳ
+> biến (UDF)** do BQ tự thêm. Nếu thực ra chúng là 5 **chứng từ** khác nhau (đơn bán →
+> phiếu soạn hàng → phiếu giao → hoá đơn) thì xin nói rõ — cách ánh xạ sẽ khác.
+
+**Còn một câu phụ:** khi sale duyệt đơn vượt hạn mức, SAP có lưu **ai duyệt** và **ghi
+chú duyệt** không? Nếu có thì ở trường nào? *(Hiện chúng tôi chưa ghi hai thông tin
+này sang SAP vì chưa biết chỗ.)*
 
 ---
 

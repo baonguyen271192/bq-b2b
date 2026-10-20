@@ -169,10 +169,89 @@ public final class SapB1Mapping {
         "DocumentLines", lines);
   }
 
-  /** Sales Order của B1 -> đơn BQ (gom DocumentLines ngược lại thành bảng size). */
-  public static Order b1OrderToOrder(JsonNode doc) {
-    throw new NeedsMappingException(
-        "Cần biết BQ lưu trạng thái đơn ở đâu trong B1 (DocStatus chuẩn, U_* UDF, hay "
-            + "bảng phụ) mới ánh xạ ngược được vòng đời 'Chờ xác nhận -> ... -> Đã nhận'.");
+  /**
+   * Sales Order của B1 -> đơn BQ: gom các DocumentLine ngược lại thành bảng size.
+   *
+   * <p>Nghịch đảo của {@link #orderToB1Payload}. Mỗi DocumentLine là một
+   * (ItemCode, Quantity); {@link #parseItemCode} tách ra mã gốc + size rồi gom lại.
+   * Dòng nào không khớp quy tắc mã (size = null) vẫn được giữ thành một mặt hàng
+   * không bảng size, thay vì bỏ im lặng — mất dòng trên đơn là mất tiền.
+   */
+  public static Order b1OrderToOrder(JsonNode doc, OrderStatusMapping statusMapping) {
+    var sizesByCode = new LinkedHashMap<String, Map<String, Integer>>();
+    var nameByCode = new LinkedHashMap<String, String>();
+    var unitPriceByCode = new LinkedHashMap<String, Long>();
+
+    for (var line : doc.path("DocumentLines")) {
+      var parsed = parseItemCode(line.path("ItemCode").asText(""));
+      String base = parsed[0];
+      String size = parsed[1];
+
+      nameByCode.putIfAbsent(base, line.path("ItemDescription").asText(base));
+      unitPriceByCode.putIfAbsent(base, Math.round(line.path("UnitPrice").asDouble(0)));
+      sizesByCode
+          .computeIfAbsent(base, k -> new LinkedHashMap<>())
+          // Cùng (mã, size) ở nhiều dòng thì CỘNG DỒN, không ghi đè.
+          .merge(size == null ? "-" : size,
+                 (int) Math.round(line.path("Quantity").asDouble(0)),
+                 Integer::sum);
+    }
+
+    var items = new ArrayList<OrderItem>(sizesByCode.size());
+    long computedSubtotal = 0;
+    for (var entry : sizesByCode.entrySet()) {
+      String code = entry.getKey();
+      var sizes = entry.getValue();
+      int qtyTotal = sizes.values().stream().mapToInt(Integer::intValue).sum();
+      long unitPrice = unitPriceByCode.getOrDefault(code, 0L);
+      long lineTotal = qtyTotal * unitPrice;
+      items.add(new OrderItem(code, nameByCode.get(code), sizes, unitPrice, qtyTotal, lineTotal));
+      computedSubtotal += lineTotal;
+    }
+
+    var comments = parseComments(doc.path("Comments").asText(""));
+    String bqStatus = statusMapping.toBqLabel(doc.path(statusMapping.field()).asText(""));
+
+    return new Order(
+        doc.path("DocEntry").asText(doc.path("DocNum").asText("")),
+        doc.path("CardCode").asText(""),
+        doc.path("CardName").asText(""),
+        items,
+        // DocTotal của B1 là số chuẩn (đã gồm thuế/chiết khấu chứng từ). Chỉ dùng
+        // tổng tự cộng khi B1 không trả DocTotal.
+        doc.has("DocTotal") ? Math.round(doc.path("DocTotal").asDouble(0)) : computedSubtotal,
+        comments[1],
+        comments[2],
+        bqStatus,
+        comments[0],
+        // "Vượt hạn mức" là trạng thái lúc TẠO đơn; B1 không lưu riêng nên suy từ trạng thái.
+        bqStatus.contains("vượt hạn mức"),
+        formatDocDate(doc.path("DocDate").asText("")),
+        null,
+        null,
+        null);
+  }
+
+  /** Comments do {@link #orderToB1Payload} ghi: "BQ {channel} · {delivery} · {payment}". */
+  private static String[] parseComments(String comments) {
+    var out = new String[] {"web", "", ""};   // channel, delivery, payment
+    if (comments == null || !comments.startsWith("BQ ")) {
+      return out;
+    }
+    var parts = comments.substring(3).split("·");
+    for (int i = 0; i < parts.length && i < 3; i++) {
+      out[i] = parts[i].trim();
+    }
+    return out;
+  }
+
+  /** DocDate của B1 là ISO (yyyy-MM-dd); BQ hiển thị dd/MM/yyyy HH:mm. */
+  private static String formatDocDate(String docDate) {
+    if (docDate == null || docDate.length() < 10) {
+      return "";
+    }
+    // B1 lưu ngày chứng từ, không có giờ -> dùng 00:00 thay vì bịa ra giờ.
+    return docDate.substring(8, 10) + "/" + docDate.substring(5, 7) + "/"
+        + docDate.substring(0, 4) + " 00:00";
   }
 }
