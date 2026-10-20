@@ -41,3 +41,6 @@ docs/demo-videos/
 # Java / Maven
 target/
 !.mvn/wrapper/maven-wrapper.jar
+
+# DB demo của backend Java (runtime artifact, sinh lại được)
+apps/api-java/data/*.db

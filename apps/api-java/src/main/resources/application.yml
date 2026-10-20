@@ -17,8 +17,9 @@ bq:
   data-source: ${BQ_DATA_SOURCE:demo}
 
   demo:
-    # Trỏ thẳng vào DB của bản demo Python để giữ nguyên lịch sử đơn.
-    orders-db: ${BQ_DEMO_ORDERS_DB:../api/app/orders.db}
+    # DB demo thuộc về chính service này. Trước đây trỏ sang thư mục Python, nhưng
+    # service Python đã thu lại chỉ còn trợ lý AI và không giữ dữ liệu nữa.
+    orders-db: ${BQ_DEMO_ORDERS_DB:data/orders.db}
 
   sapb1:
     base-url: ${SAPB1_BASE_URL:}

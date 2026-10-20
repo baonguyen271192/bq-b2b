@@ -15,13 +15,14 @@ import unicodedata
 from collections import Counter
 from datetime import datetime, timedelta
 
-from .adapters.registry import get_provider
+from . import bq_client as bq
 
-# Cùng ranh giới như api.py: trợ lý KHÔNG đọc thẳng data.py/store.py nữa.
-# Lưu ý hiệu năng: với nguồn ERP, mỗi `P.catalog.products()` là một lần gọi mạng —
-# các hàm dưới đây gọi nhiều lần nên hoisted ra biến cục bộ; nếu sau này đổi sang
-# SAP B1, thêm cache có TTL ở adapter chứ đừng sửa logic trợ lý.
-P = get_provider()
+# Service này KHÔNG còn tầng dữ liệu riêng. Mọi số liệu đọc từ backend Java qua
+# `bq_client`, nên khi nối SAP Business One chỉ Java phải cấu hình — không có lớp
+# ánh xạ thứ hai để lệch nhau. Xem docstring của bq_client.py.
+#
+# Hiệu năng: bq_client cache ngắn trong tiến trình; các hàm dưới vẫn hoist lời gọi
+# ra biến cục bộ khi dùng nhiều lần trong một câu trả lời.
 
 # --- Tài liệu chính sách (nguồn tri thức tĩnh cho RAG) ---
 POLICIES = {
@@ -56,24 +57,24 @@ def _strip(s: str) -> str:
 
 def build_context(dealer_code: str) -> dict:
     """Gom toàn bộ tri thức liên quan tới 1 đại lý — 'retrieval' cho RAG."""
-    d = P.dealers.get(dealer_code)
+    d = bq.dealer(dealer_code)
     if not d:
         return {}
-    orders = P.orders.list(dealer_code.upper())
-    invoices = P.orders.credit_orders(dealer_code.upper())
-    payments = P.orders.list_payments(dealer_code.upper())
-    used = P.dealers.credit_used(d)
+    orders = bq.orders(dealer_code)
+    invoices = bq.credit_orders(dealer_code)
+    payments = bq.payments(dealer_code)
+    used = d["credit_used"]   # Java đã tính sẵn
     return {
         "dealer": {
             "code": d["code"], "name": d["name"], "tier": d["tier"],
             "credit_limit": d["credit_limit"], "credit_used": used,
             "credit_available": d["credit_limit"] - used,
-            "discount_pct": int(P.dealers.tier_discount(d) * 100),
+            "discount_pct": bq.tier_discount_pct(dealer_code),
         },
         "orders": orders,
         "unpaid_invoices": [i for i in invoices if not i.get("paid")],
         "payments": payments,
-        "products": P.catalog.products(),
+        "products": bq.products(dealer_code),
         "policies": POLICIES,
     }
 
@@ -258,14 +259,14 @@ def _color_matches(product_colors: list, color_word: str) -> bool:
 def _product_card(p: dict, d: dict) -> dict:
     return {"code": p["code"], "name": p["name"], "image": p["image"],
             "images": p.get("images") or [p["image"]],   # cả gallery để xem ảnh chi tiết
-            "price": P.catalog.dealer_price(p, d), "sizes": p["sizes"]}
+            "price": p["price"], "sizes": p["sizes"]}
 
 
 def _product_cards_for(ctx: dict, q: str) -> list:
     """Thẻ sản phẩm (kèm ẢNH) để đính vào câu trả lời — kể cả khi dùng Gemini.
     Chỉ đính khi câu hỏi liên quan sản phẩm/tồn kho/giá/size."""
     s = _strip(q)
-    d = P.dealers.get(ctx["dealer"]["code"])
+    d = ctx["dealer"]
     valid = {p["code"]: p for p in ctx["products"]}
     # Chỉ đính thẻ khi có TÍN HIỆU SẢN PHẨM rõ ràng — KHÔNG dump toàn bộ cho câu mơ hồ
     # ('công nợ bao nhiêu' cũng chứa 'bao nhieu' nhưng KHÔNG phải hỏi sản phẩm).
@@ -275,7 +276,7 @@ def _product_cards_for(ctx: dict, q: str) -> list:
     code_hit = next((p for c, p in valid.items()
                      if any(ch.isdigit() for ch in c) and c.lower() in toks), None)
     cat = _match_category(s)
-    byname = _match_products_by_name(s, limit=1)
+    byname = _match_products_by_name(s, limit=1, products=ctx["products"])
     list_intent = any(k in s for k in (
         "san pham", "mau nao", "co gi", "danh sach", "con hang", "cac mau", "co nhung",
         "nhung mau", "hien co", "dang co", "list", "ban chay", "ton kho", "xem mau"))
@@ -299,7 +300,7 @@ def _product_cards_for(ctx: dict, q: str) -> list:
 
 def _answer_stock(ctx: dict, q: str) -> dict:
     s = _strip(q)
-    d = P.dealers.get(ctx["dealer"]["code"])
+    d = ctx["dealer"]
     prods = ctx["products"]
     valid = {p["code"]: p for p in prods}
     # Mã SKU (có số) → 1 mẫu.  DANH MỤC → cả nhóm (ưu tiên hơn đoán tên để câu duyệt
@@ -314,7 +315,7 @@ def _answer_stock(ctx: dict, q: str) -> dict:
     elif cat:
         targets, title = [p for p in prods if p["category"] == cat], f"Sản phẩm {cat} còn hàng ({{n}} mẫu):"
     else:
-        byname = _match_products_by_name(s, limit=1)
+        byname = _match_products_by_name(s, limit=1, products=ctx["products"])
         if byname and byname[0] in valid:
             targets, title = [valid[byname[0]]], f"Tồn kho {valid[byname[0]]['name']}:"
         else:
@@ -374,11 +375,12 @@ _NAME_STOP = {"giay", "dep", "sandal", "nu", "nam", "tre", "em", "be", "quai", "
 def _match_products_by_name(s: str, limit: int = 10, products=None) -> list:
     """Khớp sản phẩm theo TÊN thật (cho catalog lớn). Trả list mã, tốt nhất trước.
     Chỉ nhận token >=3 ký tự để chữ ngắn (bỏ dấu) không đụng độ tên mẫu.
-    `products` = pool sản phẩm để khớp (mặc định toàn bộ catalog)."""
+    `products` = pool sản phẩm để khớp. BẮT BUỘC truyền: service này không còn
+    catalog toàn cục, danh mục nằm trong `ctx["products"]` của từng lượt hỏi."""
     q = [t for t in re.split(r"\s+", s) if len(t) >= 3 and t not in _NAME_STOP]
     if not q:
         return []
-    pool = products if products is not None else P.catalog.products()
+    pool = products if products is not None else []
     scored = []
     for p in pool:
         toks = _strip(p["name"]).split()
@@ -442,7 +444,7 @@ def _parse_qty(s: str):
 
 def _parse_order(ctx: dict, q: str) -> dict:
     s = _strip(q)
-    d = P.dealers.get(ctx["dealer"]["code"])
+    d = ctx["dealer"]
     prod = _match_product(ctx, s)
     if not prod:
         names = ", ".join(p["name"] for p in ctx["products"][:5])
@@ -463,7 +465,7 @@ def _parse_order(ctx: dict, q: str) -> dict:
     used_default = _parse_qty(s) is None
 
     # Dựng dòng đơn, cap theo tồn kho. Tách rõ: 'không có size cho mẫu' vs 'hết hàng'.
-    price = P.catalog.dealer_price(prod, d)
+    price = prod["price"]
     picked, sold_out, not_avail = {}, [], []
     for sz in sizes:
         if sz not in prod["sizes"]:
@@ -581,14 +583,14 @@ def _finalize_action(ctx: dict, action: dict) -> dict | None:
     Ở đây ta VALIDATE mã hàng có thật, cap theo tồn, và bồi tên/ảnh/giá/tổng tiền."""
     if not action or action.get("type") != "create_order":
         return None
-    d = P.dealers.get(ctx["dealer"]["code"])
+    d = ctx["dealer"]
     by_code = {p["code"]: p for p in ctx["products"]}
     lines, subtotal, total_pairs = [], 0, 0
     for l in action.get("lines", []):
         p = by_code.get(str(l.get("code", "")).upper())
         if not p:
             continue
-        price = P.catalog.dealer_price(p, d)
+        price = p["price"]
         picked = {}
         for sz, q in (l.get("sizes") or {}).items():
             stock = p["sizes"].get(str(sz), 0)
@@ -636,7 +638,7 @@ def _llm_context(ctx: dict, question: str = "") -> dict:
             pool = narrowed
     products = [{"code": p["code"], "name": p["name"], "category": p["category"],
                 "colors": p.get("colors") or [],
-                "price": P.catalog.dealer_price(P.catalog.product(p["code"]), P.dealers.get(dl["code"])),
+                "price": p.get("price", 0),
                 "con_size": [s for s, n in p["sizes"].items() if n > 0]}
                 for p in pool[:45]]
     return {"dealer": dl, "orders": orders, "unpaid_invoices": invoices,
@@ -780,9 +782,9 @@ def _rag_answer(ctx: dict, q: str) -> dict | None:
 def build_sale_context() -> dict:
     """Gom tri thức toàn hệ thống cho nhân viên sale/quản lý."""
     dealers, all_orders = [], []
-    for d in P.dealers.all():
-        used = P.dealers.credit_used(d)
-        invs = [i for i in P.orders.credit_orders(d["code"]) if not i.get("paid")]
+    for d in bq.dealers():
+        used = d["credit_used"]   # Java đã tính sẵn
+        invs = [i for i in bq.credit_orders(d["code"]) if not i.get("paid")]
         nearest = None
         dues = [_due_date(i["created_at"]) for i in invs]
         dues = [x for x in dues if x]
@@ -795,7 +797,7 @@ def build_sale_context() -> dict:
             "unpaid_invoices": len(invs), "unpaid_total": sum(i["subtotal"] for i in invs),
             "nearest_due": nearest, "phone": d.get("phone"), "owner": d.get("owner"),
         })
-    orders = P.orders.list(None)
+    orders = bq.orders()
     for o in orders:
         pairs = sum(it.get("qty_total", 0) for it in o["items"])
         prod = (o["items"][0]["name"] + (f" +{len(o['items'])-1} mẫu" if len(o["items"]) > 1 else "")) \
@@ -817,7 +819,10 @@ def build_sale_context() -> dict:
     top_products = [{"name": n, "pairs": q} for n, q in prod_qty.most_common(8)]
     # Catalog TÓM TẮT (gọn để không vượt payload LLM) — đủ trả lời câu hỏi quanh sản phẩm.
     by_cat: dict = {}
-    all_products = P.catalog.products()
+    # Ngữ cảnh của sale là toàn hệ thống, không gắn với một đại lý. Lấy danh mục theo
+    # đại lý đầu tiên chỉ để endpoint trả về `price` hợp lệ; các số dùng ở đây là
+    # `retail` và tồn kho nên không phụ thuộc bậc giá.
+    all_products = bq.products(dealers[0]["code"]) if dealers else []
     for p in all_products:
         c = p["category"]
         e = by_cat.setdefault(c, {"so_mau": 0, "gia_le_tu": p["retail"], "gia_le_den": p["retail"],

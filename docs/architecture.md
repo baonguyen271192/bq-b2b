@@ -39,7 +39,8 @@ Hai ràng buộc chi phối mọi quyết định dưới đây:
                              └────► apps/api (Python/FastAPI)
                                     · /api/assistant       trợ lý đại lý
                                     · /api/assistant/sale  trợ lý sale
-                                    (Java proxy sang — xem §8)
+                                    KHÔNG có dữ liệu riêng — đọc ngược
+                                    từ Java qua bq_client (xem §8)
 
    packages/types      kiểu dữ liệu dùng chung web + mobile
    packages/core       logic thuần (format tiền, vòng đời đơn, công nợ)
@@ -67,6 +68,7 @@ BQ/
 │   │   ├── scripts/export-demo-data.py
 │   │   └── Dockerfile
 │   ├── api/                    Service trợ lý AI — Python/FastAPI (cổng 8101)
+│   │   └── app/{main,api,assistant,bq_client}.py   chỉ 4 file, không tầng dữ liệu
 │   ├── web/                    Next.js 16
 │   └── mobile/                 Expo SDK 58
 ├── packages/                   types · core · api-client · contracts · tsconfig
@@ -197,6 +199,19 @@ Phân tách hiện tại không phải thoả hiệp — nó là ranh giới đ�
 dịch và tính đúng tiền; Python ở nơi cần hệ sinh thái AI.** Hợp đồng API giữ nguyên:
 frontend và mobile vẫn gọi đúng `/api/assistant` và `/api/assistant/sale`, Java proxy
 sang.
+
+**Python KHÔNG có tầng dữ liệu riêng.** Trước đây nó có đủ bộ `ports/` + `adapters/`
+y hệt Java — nghĩa là nối SAP B1 phải cấu hình và bảo trì HAI lớp ánh xạ cho cùng một
+thứ, đúng cái mà tầng port sinh ra để tránh. Tệ hơn: hai service có thể trỏ vào hai
+nguồn khác nhau mà không ai phát hiện, vì cả hai đều trả lời bình thường.
+
+Giờ Java làm chủ toàn bộ đọc/ghi; Python đọc ngược qua `app/bq_client.py` (HTTP, có
+cache ngắn trong tiến trình). Service Python rút từ ~8.200 dòng xuống **4 file,
+1.260 dòng**, và chỉ phục vụ đúng 2 route — 19 route trùng đã gỡ, giờ trả 404.
+
+> Vì sao gỡ hẳn thay vì để đó cho an toàn: hai service cùng phục vụ một bề mặt API
+> là bẫy vận hành. Trỏ frontend nhầm cổng thì nó VẪN CHẠY, chỉ là chạy trên backend
+> khác với số liệu khác — không lỗi nào bật lên. Thà 404 còn hơn trả lời bằng dữ liệu sai.
 
 Đánh đổi phải nói rõ: **bàn giao cho team IT của BQ sẽ là hai stack chứ không phải
 một.** Nếu BQ yêu cầu một stack duy nhất, port `assistant.py` sang Java là việc riêng,

@@ -16,7 +16,7 @@ tra trạng thái. Kèm trợ lý AI cho cả đại lý và sale.
 
 ```
 apps/api-java  ★ Backend lõi — Java 21 + Spring Boot 4, ports + adapters (demo | SAP B1)
-apps/api         Service trợ lý AI — Python/FastAPI (xem docs/architecture.md §8)
+apps/api         Service trợ lý AI — Python/FastAPI, 4 file, không giữ dữ liệu riêng
 apps/web         Next.js 16 — dashboard sale (/admin) + app đại lý bản web (/(shop))
 apps/mobile      Expo SDK 58 — app native đại lý
 packages/*       types · core · api-client · contracts · tsconfig (dùng chung web+mobile)

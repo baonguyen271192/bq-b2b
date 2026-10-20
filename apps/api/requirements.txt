@@ -1,5 +1,3 @@
 fastapi>=0.110
 uvicorn[standard]>=0.29
 python-dotenv>=1.0
-# Client HTTP cho adapter SAP B1 Service Layer (chỉ dùng khi BQ_DATA_SOURCE=sapb1)
-httpx>=0.27
