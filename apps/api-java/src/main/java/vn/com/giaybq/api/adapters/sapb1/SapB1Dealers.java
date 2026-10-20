@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 import vn.com.giaybq.api.domain.Dealer;
 import vn.com.giaybq.api.ports.DealerPort;
 import vn.com.giaybq.api.ports.ErpOwnedException;
-import vn.com.giaybq.api.ports.NeedsMappingException;
 
 /** Đại lý từ SAP B1 (BusinessPartners, CardType cCustomer). */
 @Component
@@ -48,11 +47,29 @@ class SapB1Dealers implements DealerPort {
     return dealer.creditOpening();
   }
 
+  /**
+   * Phần trăm chiết khấu theo bậc, chỉ để HIỂN THỊ.
+   *
+   * <p>SAP B1 không có khái niệm này: chiết khấu đã nằm sẵn trong bảng giá, giá trả ra
+   * là giá cuối. Nên mặc định trả 0 — giao diện nên ẩn dòng "chiết khấu" khi bằng 0,
+   * thay vì hiện "0%" gây hiểu nhầm là đại lý không được ưu đãi.
+   *
+   * <p>Nếu BQ vẫn muốn hiện đúng con số như bản demo, khai báo:
+   * {@code SAPB1_TIER_DISCOUNTS=Đồng:0,Bạc:0.03,Vàng:0.05,Kim Cương:0.08}
+   */
   @Override
   public double tierDiscount(Dealer dealer) {
-    throw new NeedsMappingException(
-        "B1 không có 'chiết khấu theo bậc' như demo — giá đã nằm sẵn trong bảng giá/"
-            + "SpecialPrices. Cần chốt có hiển thị % chiết khấu cho đại lý hay không.");
+    String raw = System.getenv().getOrDefault("SAPB1_TIER_DISCOUNTS", "");
+    if (raw.isBlank()) {
+      return 0.0;
+    }
+    for (var pair : raw.split(",")) {
+      var kv = pair.split(":", 2);
+      if (kv.length == 2 && kv[0].trim().equals(dealer.tier())) {
+        return Double.parseDouble(kv[1].trim());
+      }
+    }
+    return 0.0;
   }
 
   @Override

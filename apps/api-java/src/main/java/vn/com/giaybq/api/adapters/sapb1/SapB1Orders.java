@@ -1,6 +1,8 @@
 package vn.com.giaybq.api.adapters.sapb1;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -27,6 +29,7 @@ class SapB1Orders implements OrderPort {
   private final ServiceLayerClient client;
   private final String warehouse;
   private final OrderStatusMapping status;
+  private final PaymentTarget paymentTarget;
 
   SapB1Orders(ServiceLayerClient client, BqProperties props) {
     this.client = client;
@@ -34,6 +37,7 @@ class SapB1Orders implements OrderPort {
     this.warehouse = configured == null || configured.isBlank() ? "01" : configured;
     this.status = OrderStatusMapping.fromConfig(
         props.sapb1().orderStatusField(), props.sapb1().orderStatusValues());
+    this.paymentTarget = PaymentTarget.from(props.sapb1().paymentTarget());
   }
 
   /** $select cho Orders: các trường chuẩn + UDF chứa trạng thái của BQ. */
@@ -72,9 +76,10 @@ class SapB1Orders implements OrderPort {
   /**
    * Ghi trạng thái mới vào UDF trên Sales Order.
    *
-   * <p>{@code approver}/{@code note} CHƯA được ghi sang B1 — cần BQ cho biết có trường
-   * tương ứng không. Bỏ qua im lặng thì hơn là nhét vào Comments và ghi đè mất thông
-   * tin kênh/giao hàng mà {@code orderToB1Payload} đã viết ở đó.
+   * <p>Người duyệt và ghi chú duyệt chỉ được ghi khi BQ khai báo trường tương ứng
+   * ({@code SAPB1_ORDER_APPROVER_FIELD}, {@code SAPB1_ORDER_APPROVE_NOTE_FIELD}).
+   * Cố ý KHÔNG nhét vào {@code Comments}: trường đó đang giữ kênh/giao hàng/thanh toán
+   * do {@code orderToB1Payload} ghi, đè lên là mất dữ liệu.
    */
   @Override
   public Optional<Order> setStatus(String id, String newStatus, String approver, String note) {
@@ -82,26 +87,78 @@ class SapB1Orders implements OrderPort {
         "Trạng thái '" + newStatus + "' không có trong SAPB1_ORDER_STATUS_VALUES. "
             + "Bổ sung ánh xạ cho trạng thái này."));
 
-    client.patch("/Orders(" + Integer.parseInt(id) + ")", Map.of(status.field(), b1Value));
+    var patch = new LinkedHashMap<String, Object>();
+    patch.put(status.field(), b1Value);
+    putIfFieldConfigured(patch, "SAPB1_ORDER_APPROVER_FIELD", approver);
+    putIfFieldConfigured(patch, "SAPB1_ORDER_APPROVE_NOTE_FIELD", note);
+
+    client.patch("/Orders(" + Integer.parseInt(id) + ")", patch);
     return get(id);
   }
 
+  private static void putIfFieldConfigured(Map<String, Object> patch, String envVar,
+                                           String value) {
+    String field = System.getenv().getOrDefault(envVar, "");
+    if (!field.isBlank() && value != null && !value.isBlank()) {
+      patch.put(field.trim(), value);
+    }
+  }
+
+  /**
+   * Ghi nhận thanh toán: tạo {@code IncomingPayments} và đối trừ vào chứng từ nguồn.
+   *
+   * <p>Đối trừ vào hoá đơn hay vào đơn là quy trình kế toán của BQ — chọn bằng
+   * {@code SAPB1_PAYMENT_TARGET}, cả hai đã hiện thực.
+   */
   @Override
   public void addPayment(String dealerCode, String orderId, long amount, String method,
                          String createdAt) {
-    throw new NeedsMappingException(
-        "Thanh toán phải tạo IncomingPayments và đối trừ đúng hoá đơn — cần biết BQ đối "
-            + "trừ theo hoá đơn (Invoice) hay theo đơn (Order).");
+    var payload = new LinkedHashMap<String, Object>();
+    payload.put("CardCode", dealerCode);
+    payload.put("DocDate", toIsoDate(createdAt));
+    // Số tiền đặt ở TransferSum (chuyển khoản) hay CashSum (tiền mặt) là khác nhau
+    // trong B1; đặt sai thì sổ quỹ lệch dù tổng công nợ vẫn đúng.
+    if (isCash(method)) {
+      payload.put("CashSum", amount);
+    } else {
+      payload.put("TransferSum", amount);
+    }
+    payload.put("Remarks", "BQ · " + method);
+    payload.put("PaymentInvoices",
+        List.of(paymentTarget.paymentLine(Integer.parseInt(orderId), amount)));
+
+    client.post("/IncomingPayments", payload);
   }
 
   @Override
   public List<Payment> listPayments(String dealerCode) {
-    throw new NeedsMappingException("Đọc IncomingPayments: cần chốt phạm vi ngày và cách lọc.");
+    var out = new ArrayList<Payment>();
+    for (var row : client.listAll(
+        "/IncomingPayments?$select=DocEntry,DocDate,CardCode,CashSum,TransferSum,Remarks,"
+            + "PaymentInvoices&$filter=CardCode eq '" + dealerCode + "'")) {
+      long amount = Math.round(row.path("CashSum").asDouble(0))
+          + Math.round(row.path("TransferSum").asDouble(0));
+      var applied = row.path("PaymentInvoices");
+      out.add(new Payment(
+          "TT-" + row.path("DocEntry").asText(""),
+          dealerCode,
+          applied.isEmpty() ? null : applied.get(0).path("DocEntry").asText(),
+          amount,
+          row.path("Remarks").asText(""),
+          SapB1Mapping.formatIsoDate(row.path("DocDate").asText(""))));
+    }
+    return out;
   }
 
   @Override
   public Set<String> paidOrderIds(String dealerCode) {
-    throw new NeedsMappingException("Phụ thuộc cách đối trừ ở addPayment.");
+    var out = new LinkedHashSet<String>();
+    for (var payment : listPayments(dealerCode)) {
+      if (payment.orderId() != null) {
+        out.add(payment.orderId());
+      }
+    }
+    return out;
   }
 
   @Override
@@ -112,8 +169,38 @@ class SapB1Orders implements OrderPort {
     return bp == null ? 0 : bp.path("CurrentAccountBalance").asLong(0);
   }
 
+  /**
+   * Hoá đơn công nợ của một đại lý, kèm cờ đã thanh toán.
+   *
+   * <p>Đọc từ chứng từ nguồn tương ứng với {@code SAPB1_PAYMENT_TARGET}. Cờ {@code paid}
+   * suy từ {@code DocumentStatus}: B1 tự đóng chứng từ khi đã thu đủ tiền.
+   */
   @Override
   public List<Order> creditOrders(String dealerCode) {
-    throw new NeedsMappingException("Hoá đơn công nợ: đọc từ Invoices, cần chốt điều kiện lọc.");
+    var paid = paidOrderIds(dealerCode);
+    var out = new ArrayList<Order>();
+    for (var doc : client.listAll(paymentTarget.sourceCollection()
+        + "?$select=" + orderSelect() + ",DocumentStatus"
+        + "&$filter=CardCode eq '" + dealerCode + "'&$orderby=DocEntry desc")) {
+      var order = SapB1Mapping.b1OrderToOrder(doc, status);
+      boolean settled = paid.contains(order.id())
+          || "bost_Close".equals(doc.path("DocumentStatus").asText(""));
+      out.add(order.withPaid(settled));
+    }
+    return out;
+  }
+
+  /** "dd/MM/yyyy HH:mm" (định dạng của BQ) -> "yyyy-MM-dd" (định dạng của B1). */
+  private static String toIsoDate(String bqTimestamp) {
+    if (bqTimestamp == null || bqTimestamp.length() < 10) {
+      return java.time.LocalDate.now().toString();
+    }
+    return bqTimestamp.substring(6, 10) + "-" + bqTimestamp.substring(3, 5) + "-"
+        + bqTimestamp.substring(0, 2);
+  }
+
+  private static boolean isCash(String method) {
+    String m = method == null ? "" : method.toLowerCase(java.util.Locale.ROOT);
+    return m.contains("tiền mặt") || m.contains("cash");
   }
 }

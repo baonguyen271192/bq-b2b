@@ -83,6 +83,10 @@ sử đơn không mất khi đổi backend.
 
 ## Còn thiếu
 
-- **Test**: 28 test (ánh xạ SAP B1, cache, hợp đồng OpenAPI). **Chưa có** cho
-  `OrderService` và các controller — mà đó mới là chỗ tính tiền.
+- **Test**: 43 test (ánh xạ SAP B1, công thức tồn, bảng giá, đối trừ thanh toán,
+  cache, hợp đồng OpenAPI). **Chưa có** cho `OrderService` và các controller — mà đó
+  mới là chỗ tính tiền.
+- **Chưa chạy thật với SAP B1 nào.** Toàn bộ adapter viết theo tài liệu Service Layer
+  và test bằng dữ liệu giả lập. Khi có môi trường test/UAT của BQ, việc đầu tiên nên
+  làm là chạy đối chiếu thật.
 - **Xác thực**: chưa có. Nên gắn với tài khoản B1 hoặc SSO của BQ.

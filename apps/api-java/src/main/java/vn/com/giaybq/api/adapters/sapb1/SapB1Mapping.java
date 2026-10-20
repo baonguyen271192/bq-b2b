@@ -51,7 +51,8 @@ public final class SapB1Mapping {
    * @param warehouseCode lọc tồn theo một kho; null = cộng mọi kho (ra số LỚN HƠN
    *                      lượng thực bán được).
    */
-  public static List<Product> groupItemsToProducts(List<JsonNode> rows, String warehouseCode) {
+  public static List<Product> groupItemsToProducts(
+      List<JsonNode> rows, String warehouseCode, StockFormula formula, PriceBook priceBook) {
     var grouped = new LinkedHashMap<String, Map<String, Integer>>();
     var names = new LinkedHashMap<String, String>();
     var groups = new LinkedHashMap<String, String>();
@@ -64,9 +65,13 @@ public final class SapB1Mapping {
 
       names.putIfAbsent(base, row.path("ItemName").asText(base));
       groups.putIfAbsent(base, row.path("ItemsGroupCode").asText(""));
+      if (priceBook != null) {
+        // Giá đi kèm trong cùng response /Items -> không tốn request nào thêm.
+        priceBook.addItemPrices(base, row);
+      }
       var sizes = grouped.computeIfAbsent(base, k -> new LinkedHashMap<>());
       if (size != null) {
-        sizes.put(size, inStock(row, warehouseCode));
+        sizes.put(size, availableStock(row, warehouseCode, formula));
       }
     }
 
@@ -79,20 +84,21 @@ public final class SapB1Mapping {
   }
 
   /**
-   * Tồn khả dụng từ ItemWarehouseInfoCollection.
+   * Tồn khả dụng từ ItemWarehouseInfoCollection, theo công thức đã cấu hình.
    *
-   * <p>[Unverified] "Đôi nào được coi là bán được" là quyết định NGHIỆP VỤ của BQ, không
-   * phải kỹ thuật — phải chốt trước khi tin công thức này. Hiện dùng InStock - Committed.
+   * @param warehouseCode lọc một kho; rỗng = cộng mọi kho (ra số LỚN HƠN lượng thực
+   *     bán được, vì gộp cả kho không dùng để bán sỉ).
    */
-  private static int inStock(JsonNode itemRow, String warehouseCode) {
+  static int availableStock(JsonNode itemRow, String warehouseCode, StockFormula formula) {
     int total = 0;
     for (var wh : itemRow.path("ItemWarehouseInfoCollection")) {
       if (warehouseCode != null && !warehouseCode.isBlank()
           && !warehouseCode.equals(wh.path("WarehouseCode").asText())) {
         continue;
       }
-      total += wh.path("InStock").asInt(0) - wh.path("Committed").asInt(0);
+      total += formula.compute(wh);
     }
+    // Tồn âm không có nghĩa với người đặt hàng; chặn ở 0.
     return Math.max(total, 0);
   }
 
@@ -136,6 +142,24 @@ public final class SapB1Mapping {
       }
     }
     return "Đồng";
+  }
+
+  /** Nghịch đảo của {@link #priceListToTier}: bậc đại lý -> số bảng giá trong B1. */
+  public static int tierToPriceList(String tier) {
+    String raw = System.getenv().getOrDefault("SAPB1_TIER_BY_PRICELIST", "");
+    if (raw.isBlank()) {
+      throw new NeedsMappingException(
+          "Chưa biết bậc đại lý ứng với bảng giá nào của B1. Đặt SAPB1_TIER_BY_PRICELIST, "
+              + "vd '1:Đồng,2:Bạc,3:Vàng,4:Kim Cương'.");
+    }
+    for (var pair : raw.split(",")) {
+      var kv = pair.split(":", 2);
+      if (kv.length == 2 && kv[1].trim().equals(tier)) {
+        return Integer.parseInt(kv[0].trim());
+      }
+    }
+    throw new NeedsMappingException(
+        "Bậc '" + tier + "' không có trong SAPB1_TIER_BY_PRICELIST.");
   }
 
   // --- Đơn hàng -------------------------------------------------------------------
@@ -246,6 +270,10 @@ public final class SapB1Mapping {
   }
 
   /** DocDate của B1 là ISO (yyyy-MM-dd); BQ hiển thị dd/MM/yyyy HH:mm. */
+  public static String formatIsoDate(String isoDate) {
+    return formatDocDate(isoDate);
+  }
+
   private static String formatDocDate(String docDate) {
     if (docDate == null || docDate.length() < 10) {
       return "";

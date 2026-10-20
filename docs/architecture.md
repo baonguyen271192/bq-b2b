@@ -118,20 +118,32 @@ SAPB1_PASSWORD=...
 - Tạo Sales Order: gom bảng size thành các `DocumentLines`.
 - Dịch lỗi sang HTTP rõ nghĩa: 409 (ERP làm chủ), 501 (chưa ánh xạ), 502 (B1 lỗi).
 
-### CHƯA xong — vì phụ thuộc bản cài thật của BQ
+### CHƯA xong — nhưng chỉ còn là ĐIỀN GIÁ TRỊ, không phải viết code
 
-Những chỗ này cố ý ném `NeedsMappingException` thay vì đoán, bởi ánh xạ sai sẽ **ghi
-dữ liệu sai vào ERP thật** — tệ hơn là lỗi lộ ra ngay.
+Mọi nhánh xử lý đều đã hiện thực và có test. Sau khi ký hợp đồng, phần việc còn lại
+là điền các biến dưới đây trong `apps/api-java/.env` — **không sửa một dòng code nào**.
 
-| Hạng mục | Cần biết gì | File |
+| Hạng mục | Biến cần điền | Đã hiện thực sẵn |
 |---|---|---|
-| **Bảng size** | B1 không có size-matrix gốc. Mỗi size là một `ItemCode` riêng? Theo UDF? Add-on matrix? | `SapB1Mapping.parseItemCode` |
-| Giá sỉ theo bậc | `PriceLists` gán theo khách, hay `SpecialPrices`, hay UDF? | `SapB1Catalog.dealerPrice` |
-| ~~Vòng đời đơn~~ | **BQ xác nhận B1 đã có đủ 5 trạng thái.** Code đã viết xong, đọc tên trường + bảng giá trị từ `SAPB1_ORDER_STATUS_FIELD` / `SAPB1_ORDER_STATUS_VALUES`. Chỉ còn chờ BQ cho biết tên trường. | `OrderStatusMapping` |
-| Thanh toán | `IncomingPayments` đối trừ theo Invoice hay theo Order? | `SapB1Orders.addPayment` |
-| Người duyệt đơn | SAP có lưu ai duyệt + ghi chú duyệt không, ở trường nào? | `SapB1Orders.setStatus` |
-| Công thức tồn khả dụng | `InStock - Committed`? Trừ cả `Ordered`? Theo kho nào? | `SapB1Mapping.inStock` |
-| Bậc ⇄ bảng giá | `SAPB1_TIER_BY_PRICELIST` map số nào sang bậc nào? | `SapB1Mapping.priceListToTier` |
+| **Mã hàng theo size** ⚠️ | `SAPB1_SKU_PATTERN` | regex cấu hình được; mã phẳng vẫn giữ lại, không bỏ im lặng |
+| Bậc đại lý ⇄ bảng giá | `SAPB1_TIER_BY_PRICELIST` | ánh xạ hai chiều |
+| Giá sỉ | `SAPB1_USE_SPECIAL_PRICES` | SpecialPrices ghi đè PriceLists, đúng thứ tự của B1; nạp cùng lúc với danh mục để tránh N+1 |
+| Vòng đời đơn | `SAPB1_ORDER_STATUS_FIELD` + `_VALUES` | đọc/ghi UDF, ánh xạ hai chiều |
+| Người duyệt | `SAPB1_ORDER_APPROVER_FIELD` + `_NOTE_FIELD` | ghi kèm khi PATCH trạng thái; bỏ qua nếu không khai |
+| Tồn bán được | `SAPB1_STOCK_FORMULA` | 3 công thức: `in_stock`, `available`, `available_with_incoming` |
+| Kho bán sỉ | `SAPB1_WAREHOUSE` | lọc theo kho hoặc cộng mọi kho |
+| Đối trừ thanh toán | `SAPB1_PAYMENT_TARGET` | `invoice` (chuẩn) và `order`, cả hai đã viết |
+| % chiết khấu hiển thị | `SAPB1_TIER_DISCOUNTS` | tuỳ chọn; B1 không có khái niệm này |
+
+Danh sách đầy đủ kèm chú thích: `apps/api-java/.env.example`.
+
+**Vẫn ném lỗi khi chưa cấu hình** — có chủ ý. Thiếu `SAPB1_TIER_BY_PRICELIST` thì
+`NeedsMappingException` → HTTP 501 kèm hướng dẫn, thay vì âm thầm chạy với giá sai.
+
+> **Điều KHÔNG cấu hình cứu được:** nếu B1 của BQ quản lý size bằng một mô hình hoàn
+> toàn khác (add-on matrix có bảng riêng, hoặc size không nằm trong `ItemCode` lẫn
+> UDF), thì phải viết lại `SapB1Mapping.parseItemCode` và hàm gom. Phạm vi ảnh hưởng
+> được khoanh trong **một file**, không lan ra controller, FE hay mobile.
 
 ### Rủi ro hạ tầng cần chốt sớm
 Service Layer của B1 thường nằm trong mạng nội bộ. Nếu backend deploy trên cloud công

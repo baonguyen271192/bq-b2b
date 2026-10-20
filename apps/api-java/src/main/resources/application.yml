@@ -40,6 +40,20 @@ bq:
     order-status-field: ${SAPB1_ORDER_STATUS_FIELD:}
     order-status-values: ${SAPB1_ORDER_STATUS_VALUES:}
 
+    # "Đôi nào được coi là bán được" — CHÍNH SÁCH BÁN HÀNG của BQ, không phải quyết
+    # định kỹ thuật. Cả ba cách đều đã hiện thực sẵn, chỉ chọn:
+    #   in_stock                 tồn thực tế (dễ bán vượt)
+    #   available                tồn trừ phần đã giữ cho đơn khác  (mặc định)
+    #   available_with_incoming  cộng thêm hàng đang về (bán trước)
+    stock-formula: ${SAPB1_STOCK_FORMULA:available}
+
+    # Tra SpecialPrices (giá riêng theo từng khách) ghi đè bảng giá. Tắt nếu BQ chỉ
+    # dùng bảng giá — đỡ một request cho mỗi đại lý.
+    use-special-prices: ${SAPB1_USE_SPECIAL_PRICES:true}
+
+    # Thanh toán đối trừ vào hoá đơn (quy trình chuẩn) hay thẳng vào đơn hàng.
+    payment-target: ${SAPB1_PAYMENT_TARGET:invoice}
+
   assistant:
     # Trợ lý AI vẫn chạy ở service Python (apps/api). Java proxy sang.
     # PHẢI khác cổng của chính Java (server.port) — trỏ trùng = proxy gọi lại chính

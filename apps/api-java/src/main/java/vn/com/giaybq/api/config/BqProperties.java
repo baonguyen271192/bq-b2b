@@ -37,7 +37,19 @@ public record BqProperties(
        */
       String orderStatusField,
       /** Bảng giá trị B1 -> nhãn BQ, vd {@code 1:Chờ xác nhận,2:Đã xác nhận,...} */
-      String orderStatusValues
+      String orderStatusValues,
+      /**
+       * Công thức tồn bán được: {@code in_stock} | {@code available} |
+       * {@code available_with_incoming}. Đây là chính sách bán hàng của BQ.
+       */
+      String stockFormula,
+      /**
+       * Có tra {@code SpecialPrices} (giá riêng theo khách) không. Tắt khi BQ chỉ dùng
+       * bảng giá — đỡ một request mỗi đại lý.
+       */
+      boolean useSpecialPrices,
+      /** Ghi nhận thanh toán đối trừ vào {@code invoice} hay {@code order}. */
+      String paymentTarget
   ) {
     /** Fail-fast lúc khởi động thay vì để lỗi 500 mơ hồ ở request đầu tiên. */
     public void validate() {
