@@ -1,0 +1,13 @@
+{
+  "name": "@bq/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Backend FastAPI (nguồn dữ liệu demo | SAP Business One). Không phải package Node — package.json chỉ để Turborepo điều phối lệnh.",
+  "scripts": {
+    "dev": "./.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8100 --reload",
+    "start": "./.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8100}",
+    "setup": "python3.12 -m venv .venv && ./.venv/bin/pip install -r requirements.txt",
+    "typecheck": "echo 'Backend là Python — dùng: ./.venv/bin/python -m compileall -q app'",
+    "clean": "rm -rf .venv __pycache__ .turbo"
+  }
+}

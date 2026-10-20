@@ -1,0 +1,32 @@
+# Blueprint Render cho backend BQ. Commit vào repo để môi trường tái lập được —
+# cấu hình chỉ nằm trong dashboard thì không ai dựng lại đúng được sau 6 tháng.
+#
+# Lưu ý khi ĐÃ nối SAP B1: Service Layer thường nằm trong mạng nội bộ của BQ, không
+# mở ra Internet. Khi đó Render (cloud công cộng) sẽ KHÔNG gọi tới được — phải chọn
+# một trong: VPN/site-to-site, IP allowlist + TLS, hoặc self-host backend trong mạng
+# của BQ. Đây là quyết định HẠ TẦNG, cần chốt trước khi hứa ngày lên production.
+services:
+  - type: web
+    name: bq-api
+    runtime: python
+    rootDir: apps/api
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12"
+      - key: BQ_DATA_SOURCE
+        value: demo
+      # Bí mật đặt trong dashboard, KHÔNG để trong file này.
+      - key: GROQ_API_KEY
+        sync: false
+      - key: SAPB1_BASE_URL
+        sync: false
+      - key: SAPB1_COMPANY_DB
+        sync: false
+      - key: SAPB1_USERNAME
+        sync: false
+      - key: SAPB1_PASSWORD
+        sync: false

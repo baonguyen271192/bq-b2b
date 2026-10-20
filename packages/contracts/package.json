@@ -1,0 +1,14 @@
+{
+  "name": "@bq/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Hợp đồng API (OpenAPI) — nguồn sự thật dùng chung giữa BE, FE và Mobile.",
+  "exports": {
+    "./openapi.json": "./openapi.json"
+  },
+  "scripts": {
+    "pull": "node scripts/pull-openapi.mjs",
+    "clean": "rm -rf .turbo node_modules"
+  }
+}

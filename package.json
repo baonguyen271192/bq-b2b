@@ -1,0 +1,24 @@
+{
+  "name": "bq-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:web": "turbo run dev --filter=@bq/web",
+    "dev:mobile": "turbo run dev --filter=@bq/mobile",
+    "dev:api": "pnpm --filter=@bq/api dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "contracts:pull": "pnpm --filter=@bq/contracts pull"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  }
+}

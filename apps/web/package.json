@@ -1,0 +1,32 @@
+{
+  "name": "@bq/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf .next .turbo node_modules"
+  },
+  "dependencies": {
+    "@bq/api-client": "workspace:*",
+    "@bq/core": "workspace:*",
+    "@bq/types": "workspace:*",
+    "lucide-react": "^1.46.0",
+    "next": "16.3.5",
+    "page-mascot": "^0.1.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@bq/tsconfig": "workspace:*",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tailwindcss": "^4",
+    "typescript": "^5.7.2"
+  }
+}

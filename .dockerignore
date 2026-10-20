@@ -1,0 +1,12 @@
+**/node_modules
+**/.next
+**/.venv
+**/.expo
+**/.turbo
+**/__pycache__
+**/*.db
+**/.env
+**/.env.*
+!**/.env.example
+.git
+docs/demo-videos

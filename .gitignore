@@ -1,6 +1,39 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.*
+
+# Python
 .venv/
 __pycache__/
 *.pyc
+
+# Build output
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+.turbo/
+.expo/
+
+# Env & secrets
 .env
-backend/app/orders.db.bak*
+.env.*
+!.env.example
+
+# Runtime artifacts (DB demo — KHÔNG commit)
+*.db
+*.db.bak*
+*.sqlite
+*.sqlite3
+
+# Deploy
+.vercel
+
+# OS
 .DS_Store
+
+# Video demo (8MB nhị phân) — git không xoá được lịch sử file nhị phân, repo sẽ
+# phình vĩnh viễn. Cần version hoá thì dùng Git LFS: `git lfs track "*.mp4"`.
+docs/demo-videos/

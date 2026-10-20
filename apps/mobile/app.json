@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "BQ Đại lý",
+    "slug": "bq-dealer",
+    "scheme": "bqdealer",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "vn.com.giaybq.dealer"
+    },
+    "android": {
+      "package": "vn.com.giaybq.dealer",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": ["expo-router"],
+    "extra": {
+      "comment": "API base đọc từ EXPO_PUBLIC_API_BASE (xem .env.example) — app native KHÔNG có lớp proxy như Next nên bắt buộc URL tuyệt đối."
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "@bq/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf .turbo node_modules"
+  },
+  "dependencies": {
+    "@bq/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@bq/tsconfig": "workspace:*",
+    "typescript": "^5.7.2"
+  }
+}
