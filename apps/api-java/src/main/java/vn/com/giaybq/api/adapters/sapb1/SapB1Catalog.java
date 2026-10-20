@@ -28,33 +28,49 @@ class SapB1Catalog implements CatalogPort {
 
   private final ServiceLayerClient client;
   private final String warehouse;
+  private final TtlCache cache;
 
   SapB1Catalog(ServiceLayerClient client, BqProperties props) {
     this.client = client;
     this.warehouse = props.sapb1().warehouse();
+    this.cache = new TtlCache(props.sapb1().catalogCacheTtl());
   }
 
   @Override
   public List<String> categories() {
-    var out = new ArrayList<String>();
-    for (var row : client.listAll("/ItemGroups?$select=Number,GroupName")) {
-      String name = row.path("GroupName").asText("");
-      if (!name.isBlank()) {
-        out.add(name);
+    return cache.get("categories", () -> {
+      var out = new ArrayList<String>();
+      for (var row : client.listAll("/ItemGroups?$select=Number,GroupName")) {
+        String name = row.path("GroupName").asText("");
+        if (!name.isBlank()) {
+          out.add(name);
+        }
       }
-    }
-    return out;
+      return out;
+    });
   }
 
   @Override
   public List<Product> products(String category) {
-    var path = new StringBuilder("/Items?$select=" + ITEM_SELECT + "&$filter=SalesItem eq 'tYES'");
-    if (category != null && !category.isBlank()) {
-      path.append(" and ItemsGroupCode eq ").append(Integer.parseInt(category));
-    }
-    return SapB1Mapping.groupItemsToProducts(client.listAll(path.toString()), warehouse);
+    // Khoá cache gồm cả nhóm hàng: lọc theo nhóm là truy vấn khác, kết quả khác.
+    String key = "products:" + (category == null || category.isBlank() ? "*" : category);
+    return cache.get(key, () -> {
+      var path =
+          new StringBuilder("/Items?$select=" + ITEM_SELECT + "&$filter=SalesItem eq 'tYES'");
+      if (category != null && !category.isBlank()) {
+        path.append(" and ItemsGroupCode eq ").append(Integer.parseInt(category));
+      }
+      return SapB1Mapping.groupItemsToProducts(client.listAll(path.toString()), warehouse);
+    });
   }
 
+  /**
+   * Một sản phẩm cụ thể.
+   *
+   * <p>KHÔNG cache: hàm này được gọi ngay trước khi chốt đơn để kiểm tồn theo size —
+   * đọc số tồn cũ ở đây nghĩa là bán vượt hàng. Chịu thêm một request sang ERP để
+   * đổi lấy số đúng.
+   */
   @Override
   public Optional<Product> product(String code) {
     // Một "sản phẩm BQ" = nhiều ItemCode (mỗi size một mã) → lọc theo tiền tố.

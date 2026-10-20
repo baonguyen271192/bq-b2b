@@ -29,6 +29,10 @@ bq:
     verify-ssl: ${SAPB1_VERIFY_SSL:true}
     warehouse: ${SAPB1_WAREHOUSE:}
     page-size: 100
+    # Mỗi lần đọc danh mục là một request sang ERP. Trang analytics và trợ lý AI đọc
+    # danh mục liên tục, nên không cache thì không dùng được.
+    # CHỈ cache danh mục — công nợ/số dư/tồn lúc chốt đơn luôn đọc tươi. 0 = tắt.
+    catalog-cache-ttl: ${SAPB1_CATALOG_CACHE_TTL:PT5M}
 
   assistant:
     # Trợ lý AI vẫn chạy ở service Python (apps/api). Java proxy sang.

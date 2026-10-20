@@ -25,7 +25,12 @@ public record BqProperties(
       String password,
       boolean verifySsl,
       String warehouse,
-      int pageSize
+      int pageSize,
+      /**
+       * Hạn cache danh mục đọc từ B1 (ISO-8601: PT5M = 5 phút). 0 = tắt cache.
+       * CHỈ áp dụng cho danh mục/nhóm hàng — công nợ và số dư luôn đọc tươi.
+       */
+      java.time.Duration catalogCacheTtl
   ) {
     /** Fail-fast lúc khởi động thay vì để lỗi 500 mơ hồ ở request đầu tiên. */
     public void validate() {

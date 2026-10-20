@@ -139,10 +139,17 @@ Layer qua reverse proxy có TLS + IP allowlist, hoặc tự host backend trong m
 có `apps/api-java/Dockerfile`). Đây là quyết định hạ tầng, không phải code — chốt
 trước khi hứa ngày go-live.
 
-### Hiệu năng
+### Hiệu năng — đã xử lý
 Adapter demo đọc bộ nhớ nên gọi bao nhiêu lần cũng rẻ. Adapter B1 thì mỗi lần là một
-request mạng. `/api/admin/analytics` và trợ lý AI gọi `products()` nhiều lần → **phải
-thêm cache có TTL trong adapter B1**, không sửa logic nghiệp vụ.
+request mạng, và BQ đã xác nhận **toàn bộ kế toán/kho/kinh doanh đều ở SAP** — nên
+không cache thì không dùng được.
+
+`TtlCache` (mặc định 5 phút, đổi bằng `SAPB1_CATALOG_CACHE_TTL`, đặt 0 để tắt) áp dụng
+cho **danh mục và nhóm hàng**. Có hai thứ **cố ý KHÔNG cache**:
+
+- `product(code)` — gọi ngay trước khi chốt đơn để kiểm tồn theo size. Số tồn cũ ở
+  đây nghĩa là **bán vượt hàng**.
+- Công nợ và số dư đại lý — đó là tiền, luôn đọc tươi từ ERP.
 
 ## 6. Parity giữa Java và Python
 
@@ -219,7 +226,9 @@ cd apps/api && ./.venv/bin/python ../api-java/scripts/export-demo-data.py
 
 ## 11. Việc còn lại
 
-1. **Trả lời 6 ẩn số SAP B1 ở §5** — tri thức này đáng giá hơn mọi dòng code tiếp theo.
+1. **Lấy xác nhận cho [`docs/sap-b1-mapping-proposal.md`](sap-b1-mapping-proposal.md)**
+   — bảng ánh xạ đề xuất, BQ chỉ cần đánh dấu đúng/sai. Tri thức này đáng giá hơn mọi
+   dòng code tiếp theo.
 2. **Test cho `SapB1Mapping`**, đặc biệt `parseItemCode`, khi đã biết quy tắc mã thật.
 3. **springdoc-openapi** để `openapi.json` sinh từ Java thay vì FastAPI.
 4. **Xác thực** — hiện chốt cứng `DL001`. Nên gắn tài khoản B1 hoặc SSO của BQ.
