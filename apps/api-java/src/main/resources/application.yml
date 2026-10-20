@@ -50,6 +50,16 @@ bq:
     # Demo mở rộng. TRƯỚC KHI lên thật với dữ liệu SAP B1: liệt kê domain cụ thể.
     allowed-origins: ${BQ_CORS_ORIGINS:*}
 
+springdoc:
+  api-docs:
+    path: /openapi.json          # trùng đường dẫn cũ của FastAPI, script pull không phải đổi
+  swagger-ui:
+    path: /docs
+    # Giao diện Swagger hữu ích khi bàn giao cho team IT của BQ. TẮT ở môi trường
+    # chạy thật với dữ liệu SAP B1: nó phơi bày toàn bộ bề mặt API ra ngoài.
+    enabled: ${SPRINGDOC_UI_ENABLED:true}
+  writer-with-order-by-keys: true   # khoá sắp xếp ổn định -> diff của openapi.json đọc được
+
 management:
   endpoints:
     web:

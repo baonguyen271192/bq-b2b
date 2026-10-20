@@ -2,12 +2,16 @@
 /**
  * Kéo đặc tả OpenAPI từ backend đang chạy về `openapi.json` (commit vào repo).
  *
- * Vì sao phải commit file này: nó là HỢP ĐỒNG giữa BE và FE/Mobile. Khi backend
- * đổi stack (FastAPI demo -> adapter SAP B1, hay thậm chí đổi hẳn ngôn ngữ), diff
- * của file này cho thấy NGAY hợp đồng có vỡ hay không — trong khi nếu chỉ sinh lúc
- * build thì không ai nhìn thấy sự thay đổi.
+ * Nguồn sinh là `apps/api-java` (springdoc). Trước đây là service FastAPI; khi
+ * Python thu lại chỉ còn làm trợ lý AI thì nguồn đó biến mất.
  *
- *   BQ_API_URL=http://localhost:8100 pnpm --filter=@bq/contracts pull
+ * Vì sao phải COMMIT file này thay vì sinh lúc build: nó là HỢP ĐỒNG giữa BE và
+ * FE/Mobile. Khi backend đổi (nối SAP B1, đổi adapter, đổi cả ngôn ngữ), diff của
+ * file này cho thấy NGAY hợp đồng có vỡ hay không. Sinh lúc build thì không ai
+ * nhìn thấy sự thay đổi cho tới khi giao diện hỏng.
+ *
+ *   # backend Java đang chạy ở 8100
+ *   pnpm --filter=@bq/contracts pull
  */
 import { writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -20,7 +24,9 @@ const res = await fetch(`${base}/openapi.json`);
 if (!res.ok) {
   console.error(
     `Không lấy được OpenAPI từ ${base} (HTTP ${res.status}).\n` +
-      `Khởi động backend trước: cd apps/api && ./.venv/bin/uvicorn app.main:app --port 8100`,
+      `Khởi động backend trước:\n` +
+      `  export JAVA_HOME=$(brew --prefix openjdk@21)/libexec/openjdk.jdk/Contents/Home\n` +
+      `  pnpm dev:api`,
   );
   process.exit(1);
 }

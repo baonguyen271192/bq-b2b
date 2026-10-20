@@ -45,6 +45,22 @@ cp .env.example .env                   # rồi nạp biến môi trường theo 
 Trợ lý AI vẫn chạy ở service Python (`apps/api`) — bật nó ở **cổng khác** (mặc định
 8101) rồi đặt `BQ_ASSISTANT_URL`. Java chặn ngay lúc khởi động nếu bạn trỏ trùng cổng.
 
+## Tài liệu API
+
+Sinh tự động từ chính code (springdoc):
+
+| Đường dẫn | Dùng để |
+|---|---|
+| `/openapi.json` | đặc tả OpenAPI — nguồn của `packages/contracts/openapi.json` |
+| `/docs` | giao diện Swagger để thử API bằng tay |
+
+```bash
+pnpm contracts:pull     # cập nhật packages/contracts/openapi.json (backend đang chạy)
+```
+
+> **Tắt Swagger UI ở môi trường chạy thật** với dữ liệu SAP B1: đặt
+> `SPRINGDOC_UI_ENABLED=false`. Nó phơi toàn bộ bề mặt API ra ngoài.
+
 ## Dữ liệu demo
 
 `src/main/resources/demo/*.json` sinh từ bản Python — **đừng sửa tay**:
@@ -63,11 +79,10 @@ sử đơn không mất khi đổi backend.
 | `package com.fasterxml.jackson.databind does not exist` | Boot 4 dùng **Jackson 3**: package đổi sang `tools.jackson.*`. Chỉ `jackson-annotations` giữ nguyên ở `com.fasterxml.jackson.annotation`. |
 | `No bean of type RestClient$Builder` | Boot 4 **không** auto-configure bean này. Xem `config/HttpClients`. |
 | Upstream báo *"field required / body missing"* dù body đúng | JDK HttpClient thử nâng cấp **HTTP/2 cleartext** (`Upgrade: h2c`) kèm `Transfer-Encoding: chunked`; server HTTP/1.1 (uvicorn, nhiều bản cài B1 Service Layer) **làm mất body**. Đã ép `HTTP_1_1` trong `config/HttpClients`. |
+| OpenAPI sinh ra ghi `dealerCode` trong khi API trả `dealer_code` | swagger-core chạy trên **Jackson 2** với ObjectMapper riêng, không thấy `spring.jackson.property-naming-strategy` của **Jackson 3**. Đã thêm bean `ModelResolver` trong `config/OpenApiConfig`; có test chặn hồi quy. |
 
 ## Còn thiếu
 
-- **Test**: chưa có. Nơi đáng viết test trước tiên là `adapters/sapb1/SapB1Mapping`
-  (nhất là `parseItemCode` / bảng size) khi đã biết quy tắc mã thật của BQ.
-- **Sinh OpenAPI**: `packages/contracts/openapi.json` hiện vẫn kéo từ FastAPI. Khi
-  Java thành backend duy nhất, cần thêm springdoc để sinh từ đây.
+- **Test**: 28 test (ánh xạ SAP B1, cache, hợp đồng OpenAPI). **Chưa có** cho
+  `OrderService` và các controller — mà đó mới là chỗ tính tiền.
 - **Xác thực**: chưa có. Nên gắn với tài khoản B1 hoặc SSO của BQ.

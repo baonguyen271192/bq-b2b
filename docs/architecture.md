@@ -199,6 +199,7 @@ Ghi lại vì cả ba đều biểu hiện ra ngoài khác hẳn nguyên nhân t
 | `package com.fasterxml.jackson.databind does not exist` | Boot 4 dùng **Jackson 3** — package đổi sang `tools.jackson.*`. Chỉ `jackson-annotations` giữ ở `com.fasterxml.jackson.annotation`. | toàn bộ import |
 | `No bean of type RestClient$Builder` | Boot 4 **không** auto-configure bean này. | `config/HttpClients` |
 | Upstream báo *"field required / body missing"* dù body dựng đúng | JDK HttpClient thử nâng cấp **HTTP/2 cleartext** (`Upgrade: h2c`) kèm `Transfer-Encoding: chunked`; server HTTP/1.1 (uvicorn, nhiều bản cài B1 Service Layer) **làm mất body**. | ép `HTTP_1_1` trong `config/HttpClients` |
+| OpenAPI sinh ra ghi `dealerCode` trong khi API trả `dealer_code` | swagger-core chạy trên **Jackson 2** với ObjectMapper riêng, không thấy cấu hình của **Jackson 3**. Hợp đồng sai nguy hiểm hơn không có hợp đồng. | bean `ModelResolver` trong `config/OpenApiConfig` + test chặn hồi quy |
 
 Cái thứ ba đáng chú ý nhất: nó sẽ xảy ra y hệt với SAP B1 Service Layer. Đã xử lý sẵn.
 
@@ -219,7 +220,8 @@ pnpm dev:mobile       # Expo
 # Kiểm tra
 pnpm typecheck
 cd apps/api-java && ./mvnw verify
-pnpm contracts:pull   # cập nhật openapi.json
+pnpm contracts:pull   # cập nhật openapi.json (sinh từ Java, backend phải đang chạy)
+# Swagger UI: http://localhost:8100/docs  (tắt ở production: SPRINGDOC_UI_ENABLED=false)
 
 # Sinh lại dữ liệu demo cho Java
 cd apps/api && ./.venv/bin/python ../api-java/scripts/export-demo-data.py
@@ -231,7 +233,6 @@ cd apps/api && ./.venv/bin/python ../api-java/scripts/export-demo-data.py
    — bảng ánh xạ đề xuất, BQ chỉ cần đánh dấu đúng/sai. Tri thức này đáng giá hơn mọi
    dòng code tiếp theo.
 2. **Test cho `SapB1Mapping`**, đặc biệt `parseItemCode`, khi đã biết quy tắc mã thật.
-3. **springdoc-openapi** để `openapi.json` sinh từ Java thay vì FastAPI.
 4. **Xác thực** — hiện chốt cứng `DL001`. Nên gắn tài khoản B1 hoặc SSO của BQ.
 5. **Siết CORS** trước khi chạy với dữ liệu ERP thật (`BQ_CORS_ORIGINS`).
 6. Quyết định có port `assistant.py` sang Java không (§8).

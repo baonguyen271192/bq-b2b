@@ -1,231 +1,240 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "BQ B2B — Web/App đại lý",
+    "contact": {
+      "name": "Giày BQ",
+      "url": "https://giaybq.com.vn"
+    },
+    "description": "Nghiệp vụ bán sỉ B2B của Giày BQ: danh mục theo bậc giá, đặt đơn theo bảng size, hạn mức công nợ, vòng đời đơn, và trợ lý AI cho đại lý lẫn sale.\n\n**Nguồn dữ liệu đang chạy: `demo`.** Đổi bằng biến môi trường `BQ_DATA_SOURCE` (`demo` hoặc `sapb1`) — hợp đồng API không đổi theo nguồn dữ liệu, đó là mục đích của tầng ports/adapters.\n\nHai đường dẫn `/api/assistant*` được chuyển tiếp sang service trợ lý (Python/FastAPI); xem `docs/architecture.md` §8.\n",
+    "license": {
+      "name": "Proprietary"
+    },
+    "title": "BQ B2B — API đặt đơn sỉ đại lý",
     "version": "0.1.0"
   },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8100",
+      "description": "Generated server url"
+    }
+  ],
   "paths": {
-    "/api/dealers": {
+    "/api/admin/analytics": {
       "get": {
-        "summary": "List Dealers",
-        "operationId": "list_dealers_api_dealers_get",
+        "operationId": "analytics",
         "responses": {
           "200": {
-            "description": "Successful Response",
             "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/dealers/{code}": {
-      "get": {
-        "summary": "Get Dealer",
-        "operationId": "get_dealer_api_dealers__code__get",
-        "parameters": [
-          {
-            "name": "code",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Code"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
+              "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/Analytics"
                 }
               }
-            }
+            },
+            "description": "OK"
           }
-        }
+        },
+        "tags": [
+          "admin-controller"
+        ]
       }
     },
-    "/api/dealers/{code}/credit": {
-      "get": {
-        "summary": "Dealer Credit",
-        "description": "Chi tiết công nợ: hạn mức + hoá đơn (từ đơn công nợ thật, không mock).",
-        "operationId": "dealer_credit_api_dealers__code__credit_get",
-        "parameters": [
-          {
-            "name": "code",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Code"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/orders/{oid}/pay": {
+    "/api/admin/dealers": {
       "post": {
-        "summary": "Pay Order",
-        "description": "Ghi nhận thanh toán cho 1 đơn công nợ (giao dịch thật, trừ vào công nợ).",
-        "operationId": "pay_order_api_orders__oid__pay_post",
+        "operationId": "createDealer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {}
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DealerView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "admin-controller"
+        ]
+      }
+    },
+    "/api/admin/dealers/{code}": {
+      "put": {
+        "operationId": "updateDealer",
         "parameters": [
           {
-            "name": "oid",
             "in": "path",
+            "name": "code",
             "required": true,
             "schema": {
-              "type": "string",
-              "title": "Oid"
+              "type": "string"
             }
           }
         ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PayBody"
+                "$ref": "#/components/schemas/DealerUpdateBody"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
             "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
+              "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/DealerView"
                 }
               }
-            }
+            },
+            "description": "OK"
           }
-        }
+        },
+        "tags": [
+          "admin-controller"
+        ]
       }
     },
-    "/api/products": {
+    "/api/admin/products": {
       "get": {
-        "summary": "List Products",
-        "description": "Trả sản phẩm kèm giá sỉ theo đại lý (nếu truyền ?dealer=DL001).",
-        "operationId": "list_products_api_products_get",
-        "parameters": [
-          {
-            "name": "dealer",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
+        "operationId": "products",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Product"
+                  }
                 }
-              ],
-              "title": "Dealer"
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "admin-controller"
+        ]
+      },
+      "post": {
+        "operationId": "createProduct",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductBody"
+              }
             }
           },
-          {
-            "name": "category",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
                 }
-              ],
-              "title": "Category"
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "admin-controller"
+        ]
+      }
+    },
+    "/api/admin/products/{code}": {
+      "delete": {
+        "operationId": "deleteProduct",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
             "content": {
-              "application/json": {
-                "schema": {}
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "admin-controller"
+        ]
+      },
+      "put": {
+        "operationId": "updateProduct",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductBody"
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/categories": {
-      "get": {
-        "summary": "List Categories",
-        "operationId": "list_categories_api_categories_get",
+          "required": true
+        },
         "responses": {
           "200": {
-            "description": "Successful Response",
             "content": {
-              "application/json": {
-                "schema": {}
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
               }
-            }
+            },
+            "description": "OK"
           }
-        }
+        },
+        "tags": [
+          "admin-controller"
+        ]
       }
     },
     "/api/assistant": {
       "post": {
-        "summary": "Ask Assistant",
-        "description": "Hỏi–đáp dựa trên dữ liệu thật của đại lý. Nối RAI qua env RAI_URL.",
-        "operationId": "ask_assistant_api_assistant_post",
+        "operationId": "dealerAssistant",
         "requestBody": {
           "content": {
             "application/json": {
@@ -238,31 +247,24 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
             "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
+              "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/JsonNode"
                 }
               }
-            }
+            },
+            "description": "OK"
           }
-        }
+        },
+        "tags": [
+          "assistant-controller"
+        ]
       }
     },
     "/api/assistant/sale": {
       "post": {
-        "summary": "Ask Sale Assistant",
-        "description": "Trợ lý cho sale/quản lý — dữ liệu toàn hệ thống (đại lý, công nợ, đơn).",
-        "operationId": "ask_sale_assistant_api_assistant_sale_post",
+        "operationId": "saleAssistant",
         "requestBody": {
           "content": {
             "application/json": {
@@ -275,323 +277,316 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
             "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
+              "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/JsonNode"
                 }
               }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "assistant-controller"
+        ]
+      }
+    },
+    "/api/categories": {
+      "get": {
+        "operationId": "categories",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "catalog-controller"
+        ]
+      }
+    },
+    "/api/dealers": {
+      "get": {
+        "operationId": "list_1",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DealerView"
+                  }
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "dealer-controller"
+        ]
+      }
+    },
+    "/api/dealers/{code}": {
+      "get": {
+        "operationId": "get_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "type": "string"
             }
           }
-        }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DealerView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "dealer-controller"
+        ]
+      }
+    },
+    "/api/dealers/{code}/credit": {
+      "get": {
+        "operationId": "credit",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditDetail"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "dealer-controller"
+        ]
       }
     },
     "/api/orders": {
+      "get": {
+        "operationId": "list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "dealer",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Order"
+                  }
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "order-controller"
+        ]
+      },
       "post": {
-        "summary": "Create Order",
-        "operationId": "create_order_api_orders_post",
+        "operationId": "create",
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateOrder"
+                "$ref": "#/components/schemas/CreateOrderRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
             "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
+              "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/Order"
                 }
               }
-            }
+            },
+            "description": "OK"
           }
-        }
-      },
-      "get": {
-        "summary": "List Orders",
-        "operationId": "list_orders_api_orders_get",
-        "parameters": [
-          {
-            "name": "dealer",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Dealer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
+        },
+        "tags": [
+          "order-controller"
+        ]
       }
     },
-    "/api/orders/{oid}": {
+    "/api/orders/{id}": {
       "get": {
-        "summary": "Get Order",
-        "operationId": "get_order_api_orders__oid__get",
+        "operationId": "get",
         "parameters": [
           {
-            "name": "oid",
             "in": "path",
+            "name": "id",
             "required": true,
             "schema": {
-              "type": "string",
-              "title": "Oid"
+              "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
             "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
+              "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/Order"
                 }
               }
-            }
+            },
+            "description": "OK"
           }
-        }
+        },
+        "tags": [
+          "order-controller"
+        ]
       }
     },
-    "/api/orders/{oid}/approve": {
+    "/api/orders/{id}/advance": {
       "post": {
-        "summary": "Approve Order",
-        "description": "Sale/quản lý duyệt hoặc từ chối đơn VƯỢT HẠN MỨC đang chờ duyệt.",
-        "operationId": "approve_order_api_orders__oid__approve_post",
+        "operationId": "advance",
         "parameters": [
           {
-            "name": "oid",
             "in": "path",
+            "name": "id",
             "required": true,
             "schema": {
-              "type": "string",
-              "title": "Oid"
+              "type": "string"
             }
           }
         ],
         "requestBody": {
-          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActorBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "order-controller"
+        ]
+      }
+    },
+    "/api/orders/{id}/approve": {
+      "post": {
+        "operationId": "approve",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ApproveBody"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
             "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
+              "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/Order"
                 }
               }
-            }
+            },
+            "description": "OK"
           }
-        }
+        },
+        "tags": [
+          "order-controller"
+        ]
       }
     },
-    "/api/orders/{oid}/advance": {
+    "/api/orders/{id}/cancel": {
       "post": {
-        "summary": "Advance Order",
-        "description": "Đẩy đơn sang trạng thái kế tiếp trong vòng đời.",
-        "operationId": "advance_order_api_orders__oid__advance_post",
+        "operationId": "cancel",
         "parameters": [
           {
-            "name": "oid",
             "in": "path",
+            "name": "id",
             "required": true,
             "schema": {
-              "type": "string",
-              "title": "Oid"
+              "type": "string"
             }
           }
         ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AdvanceBody"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/orders/{oid}/cancel": {
-      "post": {
-        "summary": "Cancel Order",
-        "operationId": "cancel_order_api_orders__oid__cancel_post",
-        "parameters": [
-          {
-            "name": "oid",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Oid"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AdvanceBody"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/admin/analytics": {
-      "get": {
-        "summary": "Admin Analytics",
-        "operationId": "admin_analytics_api_admin_analytics_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/admin/products": {
-      "get": {
-        "summary": "Admin Products",
-        "operationId": "admin_products_api_admin_products_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "summary": "Admin Create Product",
-        "operationId": "admin_create_product_api_admin_products_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProductBody"
+                "$ref": "#/components/schemas/ActorBody"
               }
             }
           },
@@ -599,166 +594,39 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
             "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
+              "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/Order"
                 }
               }
-            }
-          }
-        }
-      }
-    },
-    "/api/admin/products/{code}": {
-      "put": {
-        "summary": "Admin Update Product",
-        "operationId": "admin_update_product_api_admin_products__code__put",
-        "parameters": [
-          {
-            "name": "code",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Code"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProductBody"
-              }
-            }
+            },
+            "description": "OK"
           }
         },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "summary": "Admin Delete Product",
-        "operationId": "admin_delete_product_api_admin_products__code__delete",
-        "parameters": [
-          {
-            "name": "code",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Code"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
+        "tags": [
+          "order-controller"
+        ]
       }
     },
-    "/api/admin/dealers/{code}": {
-      "put": {
-        "summary": "Admin Update Dealer",
-        "operationId": "admin_update_dealer_api_admin_dealers__code__put",
-        "parameters": [
-          {
-            "name": "code",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Code"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DealerUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/admin/dealers": {
+    "/api/orders/{id}/pay": {
       "post": {
-        "summary": "Admin Create Dealer",
-        "operationId": "admin_create_dealer_api_admin_dealers_post",
+        "operationId": "pay",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": true,
-                "type": "object",
-                "title": "Body"
+                "$ref": "#/components/schemas/PayBody"
               }
             }
           },
@@ -766,357 +634,668 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
             "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
+              "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "type": "object",
+                  "additionalProperties": {}
                 }
               }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "order-controller"
+        ]
+      }
+    },
+    "/api/products": {
+      "get": {
+        "operationId": "products_1",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "dealer",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
-        }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Product"
+                  }
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "catalog-controller"
+        ]
       }
     },
     "/health": {
       "get": {
-        "summary": "Health",
-        "operationId": "health_health_get",
+        "operationId": "health",
         "responses": {
           "200": {
-            "description": "Successful Response",
             "content": {
-              "application/json": {
-                "schema": {}
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
               }
-            }
+            },
+            "description": "OK"
           }
-        }
+        },
+        "tags": [
+          "health-controller"
+        ]
       }
     }
   },
   "components": {
     "schemas": {
-      "AdvanceBody": {
+      "ActorBody": {
         "properties": {
           "actor": {
-            "type": "string",
-            "title": "Actor",
-            "default": "Quản lý bán hàng"
+            "type": "string"
           }
-        },
-        "type": "object",
-        "title": "AdvanceBody"
+        }
+      },
+      "Aging": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "outstanding": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "AgingBucket": {
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "Analytics": {
+        "properties": {
+          "aging": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Aging"
+            }
+          },
+          "aging_buckets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgingBucket"
+            }
+          },
+          "by_channel": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "by_status": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "gmv_total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "low_stock": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LowStock"
+            }
+          },
+          "orders_total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "top_products": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopProduct"
+            }
+          },
+          "total_outstanding": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
       },
       "ApproveBody": {
         "properties": {
           "approve": {
-            "type": "boolean",
-            "title": "Approve"
+            "type": "boolean"
           },
           "approver": {
-            "type": "string",
-            "title": "Approver",
-            "default": "Quản lý bán hàng"
+            "type": "string"
           },
           "note": {
-            "type": "string",
-            "title": "Note",
-            "default": ""
+            "type": "string"
           }
-        },
-        "type": "object",
-        "required": [
-          "approve"
-        ],
-        "title": "ApproveBody"
+        }
       },
       "AssistantBody": {
         "properties": {
           "dealer_code": {
             "type": "string",
-            "title": "Dealer Code"
+            "minLength": 1
           },
           "question": {
             "type": "string",
-            "title": "Question"
+            "minLength": 1
           }
         },
-        "type": "object",
         "required": [
           "dealer_code",
           "question"
-        ],
-        "title": "AssistantBody"
+        ]
       },
-      "CreateOrder": {
+      "CreateOrderRequest": {
         "properties": {
+          "channel": {
+            "type": "string"
+          },
           "dealer_code": {
             "type": "string",
-            "title": "Dealer Code"
-          },
-          "lines": {
-            "items": {
-              "$ref": "#/components/schemas/OrderLine"
-            },
-            "type": "array",
-            "title": "Lines"
+            "minLength": 1
           },
           "delivery": {
-            "type": "string",
-            "title": "Delivery",
-            "default": "Kho HCM"
+            "type": "string"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Line"
+            },
+            "minItems": 1
           },
           "payment": {
-            "type": "string",
-            "title": "Payment",
-            "default": "Công nợ"
-          },
-          "channel": {
-            "type": "string",
-            "title": "Channel",
-            "default": "app"
+            "type": "string"
           }
         },
-        "type": "object",
         "required": [
           "dealer_code",
           "lines"
-        ],
-        "title": "CreateOrder"
+        ]
       },
-      "DealerUpdate": {
+      "CreditDetail": {
         "properties": {
-          "tier": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Tier"
+          "credit_available": {
+            "type": "integer",
+            "format": "int64"
           },
           "credit_limit": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Credit Limit"
+            "type": "integer",
+            "format": "int64"
           },
-          "owner": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Owner"
+          "credit_used": {
+            "type": "integer",
+            "format": "int64"
           },
-          "phone": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Phone"
+          "invoices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Order"
+            }
+          },
+          "transactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Payment"
+            }
+          }
+        }
+      },
+      "DealerUpdateBody": {
+        "properties": {
+          "credit_limit": {
+            "type": "integer",
+            "format": "int64"
           },
           "email": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Email"
+            "type": "string"
           },
           "invoice_address": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Invoice Address"
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "tier": {
+            "type": "string"
           }
-        },
-        "type": "object",
-        "title": "DealerUpdate"
+        }
       },
-      "HTTPValidationError": {
+      "DealerView": {
         "properties": {
-          "detail": {
-            "items": {
-              "$ref": "#/components/schemas/ValidationError"
-            },
-            "type": "array",
-            "title": "Detail"
+          "code": {
+            "type": "string"
+          },
+          "credit_available": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "credit_limit": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "credit_opening": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "credit_used": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "email": {
+            "type": "string"
+          },
+          "invoice_address": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "tier": {
+            "type": "string"
           }
-        },
-        "type": "object",
-        "title": "HTTPValidationError"
+        }
       },
-      "OrderLine": {
+      "JsonNode": {
+        "properties": {
+          "array": {
+            "type": "boolean"
+          },
+          "big_decimal": {
+            "type": "boolean"
+          },
+          "big_integer": {
+            "type": "boolean"
+          },
+          "binary": {
+            "type": "boolean"
+          },
+          "boolean": {
+            "type": "boolean"
+          },
+          "container": {
+            "type": "boolean"
+          },
+          "double": {
+            "type": "boolean"
+          },
+          "embedded_value": {
+            "type": "boolean"
+          },
+          "empty": {
+            "type": "boolean"
+          },
+          "float": {
+            "type": "boolean"
+          },
+          "floating_point_number": {
+            "type": "boolean"
+          },
+          "int": {
+            "type": "boolean"
+          },
+          "integral_number": {
+            "type": "boolean"
+          },
+          "long": {
+            "type": "boolean"
+          },
+          "missing_node": {
+            "type": "boolean"
+          },
+          "node_type": {
+            "type": "string",
+            "enum": [
+              "ARRAY",
+              "BINARY",
+              "BOOLEAN",
+              "MISSING",
+              "NULL",
+              "NUMBER",
+              "OBJECT",
+              "POJO",
+              "STRING"
+            ]
+          },
+          "null": {
+            "type": "boolean"
+          },
+          "number": {
+            "type": "boolean"
+          },
+          "object": {
+            "type": "boolean"
+          },
+          "pojo": {
+            "type": "boolean"
+          },
+          "short": {
+            "type": "boolean"
+          },
+          "string": {
+            "type": "boolean"
+          },
+          "textual": {
+            "type": "boolean",
+            "deprecated": true
+          },
+          "value_node": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Line": {
         "properties": {
           "code": {
             "type": "string",
-            "title": "Code"
+            "minLength": 1
           },
           "sizes": {
-            "additionalProperties": {
-              "type": "integer"
-            },
             "type": "object",
-            "title": "Sizes"
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "minProperties": 1
           }
         },
-        "type": "object",
         "required": [
           "code",
           "sizes"
-        ],
-        "title": "OrderLine"
+        ]
+      },
+      "LowStock": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "size": {
+            "type": "string"
+          },
+          "stock": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "Order": {
+        "properties": {
+          "approve_note": {
+            "type": "string"
+          },
+          "approver": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "dealer_code": {
+            "type": "string"
+          },
+          "dealer_name": {
+            "type": "string"
+          },
+          "delivery": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItem"
+            }
+          },
+          "over_limit": {
+            "type": "boolean"
+          },
+          "paid": {
+            "type": "boolean"
+          },
+          "payment": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "subtotal": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "OrderItem": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "line_total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "qty_total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sizes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "unit_price": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
       },
       "PayBody": {
         "properties": {
           "method": {
-            "type": "string",
-            "title": "Method",
-            "default": "Chuyển khoản"
+            "type": "string"
           }
-        },
-        "type": "object",
-        "title": "PayBody"
+        }
       },
-      "ProductBody": {
+      "Payment": {
         "properties": {
+          "amount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "dealer_code": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "order_id": {
+            "type": "string"
+          }
+        }
+      },
+      "Product": {
+        "properties": {
+          "category": {
+            "type": "string"
+          },
           "code": {
-            "type": "string",
-            "title": "Code"
+            "type": "string"
+          },
+          "colors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "image": {
+            "type": "string"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "name": {
-            "type": "string",
-            "title": "Name"
+            "type": "string"
           },
-          "category": {
-            "type": "string",
-            "title": "Category"
+          "price": {
+            "type": "integer",
+            "format": "int64"
           },
           "retail": {
             "type": "integer",
-            "title": "Retail"
+            "format": "int64"
+          },
+          "sizes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
           },
           "wholesale": {
             "type": "integer",
-            "title": "Wholesale"
+            "format": "int64"
+          }
+        }
+      },
+      "ProductBody": {
+        "properties": {
+          "category": {
+            "type": "string"
           },
-          "sizes": {
-            "additionalProperties": {
-              "type": "integer"
-            },
-            "type": "object",
-            "title": "Sizes"
+          "code": {
+            "type": "string",
+            "minLength": 1
           },
           "images": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Images"
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "retail": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sizes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "wholesale": {
+            "type": "integer",
+            "format": "int64"
           }
         },
-        "type": "object",
         "required": [
-          "code",
-          "name",
-          "category",
-          "retail",
-          "wholesale",
-          "sizes"
-        ],
-        "title": "ProductBody"
+          "code"
+        ]
       },
       "SaleAssistantBody": {
         "properties": {
           "question": {
             "type": "string",
-            "title": "Question"
+            "minLength": 1
           }
         },
-        "type": "object",
         "required": [
           "question"
-        ],
-        "title": "SaleAssistantBody"
+        ]
       },
-      "ValidationError": {
+      "TopProduct": {
         "properties": {
-          "loc": {
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "type": "array",
-            "title": "Location"
+          "name": {
+            "type": "string"
           },
-          "msg": {
-            "type": "string",
-            "title": "Message"
-          },
-          "type": {
-            "type": "string",
-            "title": "Error Type"
-          },
-          "input": {
-            "title": "Input"
-          },
-          "ctx": {
-            "type": "object",
-            "title": "Context"
+          "pairs": {
+            "type": "integer",
+            "format": "int32"
           }
-        },
-        "type": "object",
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
-        "title": "ValidationError"
+        }
       }
     }
   }

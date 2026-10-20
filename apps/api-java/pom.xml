@@ -16,6 +16,7 @@
 	<properties>
 		<java.version>21</java.version>
 		<sqlite-jdbc.version>3.50.1.0</sqlite-jdbc.version>
+		<springdoc.version>3.1.1</springdoc.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -29,6 +30,15 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webmvc</artifactId>
+		</dependency>
+
+		<!-- Sinh OpenAPI từ chính code Java. Trước đây packages/contracts/openapi.json
+		     kéo từ service FastAPI; khi Python chỉ còn làm trợ lý AI thì nguồn sinh
+		     hợp đồng phải chuyển về đây. -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>${springdoc.version}</version>
 		</dependency>
 
 		<!-- Chỉ adapter 'demo' dùng: đọc đúng file orders.db của bản demo Python,
