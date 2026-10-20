@@ -20,8 +20,8 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, "node_modules"),
 ];
 
-// 3. Chỉ lấy package từ hai nơi trên, tránh Metro tự đi lên cây thư mục và nạp
-//    nhầm bản react/react-native khác version.
-config.resolver.disableHierarchicalLookup = true;
+// KHÔNG đặt resolver.disableHierarchicalLookup: expo-doctor cảnh báo rõ, và với
+// node-linker=hoisted trong .npmrc thì pnpm đã làm phẳng node_modules nên không có
+// nguy cơ nạp nhầm hai bản react.
 
 module.exports = config;

@@ -1,83 +1,113 @@
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { Link } from "expo-router";
-import { api, vnd, type Dealer } from "@/lib/api";
+import { useState } from "react";
+import { Redirect, useRouter } from "expo-router";
+import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Button } from "@/components/Button";
+import { useDemoSignIn, useSession } from "@/lib/session";
+import { Text, colors, radius, shadow, space } from "@/theme";
 
-/**
- * Màn hình chủ: hạn mức công nợ của đại lý.
- *
- * Mục đích của màn này trong repo là CHỨNG MINH đường dây dùng chung thật sự chạy:
- * cùng `api` client, cùng kiểu `Dealer`, cùng hàm `vnd()` với web — không nhân bản code.
- * Đăng nhập thật chưa có (demo chốt cứng DL001), sẽ thay khi backend có auth.
- */
-const DEMO_DEALER = "DL001";
+export default function LoginScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { dealer, loading, error } = useSession();
+  const demoSignIn = useDemoSignIn();
+  const [phone, setPhone] = useState("912 345 468");
 
-export default function HomeScreen() {
-  const [dealer, setDealer] = useState<Dealer | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    api.dealer(DEMO_DEALER).then(setDealer).catch((e: Error) => setError(e.message));
-  }, []);
-
-  if (error) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.errorTitle}>Không gọi được API</Text>
-        <Text style={styles.errorBody}>{error}</Text>
-        <Text style={styles.hint}>
-          Kiểm tra EXPO_PUBLIC_API_BASE trong .env — emulator Android dùng 10.0.2.2
-          thay cho localhost.
-        </Text>
-      </View>
-    );
+  if (dealer) {
+    return <Redirect href="/(tabs)" />;
   }
 
-  if (!dealer) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator />
-      </View>
-    );
-  }
+  const submit = async () => {
+    // Backend chưa có OTP (docs/architecture.md §11). Nút này đăng nhập bằng đại lý
+    // demo để luồng phía sau chạy thật — KHÔNG giả lập màn nhập mã rồi bỏ trống.
+    try {
+      await demoSignIn();
+      router.replace("/(tabs)");
+    } catch {
+      // Lỗi đã nằm trong session.error, hiện ngay dưới ô nhập.
+    }
+  };
 
   return (
-    <ScrollView contentContainerStyle={styles.page}>
-      <View style={styles.card}>
-        <Text style={styles.label}>Đại lý</Text>
-        <Text style={styles.name}>{dealer.name}</Text>
-        <Text style={styles.tier}>Bậc {dealer.tier}</Text>
+    <KeyboardAvoidingView
+      style={styles.root}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <View style={[styles.body, { paddingTop: insets.top + space["4xl"] }]}>
+        <View style={styles.logo}>
+          <Text variant="h2" color={colors.textOnBrand}>BQ</Text>
+        </View>
+
+        <View style={{ gap: space.sm }}>
+          <Text variant="h1">Đăng nhập đại lý</Text>
+          <Text variant="body" color={colors.textMuted}>
+            Nhập số điện thoại đã đăng ký với BQ để nhận mã OTP.
+          </Text>
+        </View>
+
+        <View style={{ gap: space.sm }}>
+          <Text variant="label" color={colors.textMuted}>Số điện thoại</Text>
+          <View style={styles.field}>
+            <Text variant="bodyLg" weight="700">+84</Text>
+            <View style={styles.divider} />
+            <TextInput
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+              style={styles.input}
+              placeholder="912 345 678"
+              placeholderTextColor={colors.textFaint}
+              accessibilityLabel="Số điện thoại"
+            />
+          </View>
+          {error ? (
+            <Text variant="caption" color={colors.danger.fg}>{error}</Text>
+          ) : null}
+        </View>
+
+        <Button label="Nhận mã OTP" onPress={submit} loading={loading} />
+
+        <View style={styles.orRow}>
+          <View style={styles.line} />
+          <Text variant="caption" color={colors.textFaint}>hoặc</Text>
+          <View style={styles.line} />
+        </View>
+
+        <Button label="Kích hoạt từ lời mời của Sale" variant="secondary" onPress={submit} />
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.label}>Hạn mức công nợ</Text>
-        <Text style={styles.amount}>{vnd(dealer.credit_available)}</Text>
-        <Text style={styles.sub}>
-          còn lại / {vnd(dealer.credit_limit)} — đã dùng {vnd(dealer.credit_used)}
+      <Pressable style={[styles.footer, { paddingBottom: insets.bottom + space.xl }]}>
+        <Text variant="bodySm" color={colors.textMuted}>
+          Chưa là đại lý BQ? <Text variant="bodySm" weight="700" color={colors.brand[500]}>Đăng ký ngay</Text>
         </Text>
-      </View>
-
-      <Link href="/orders" asChild>
-        <Pressable style={styles.button}>
-          <Text style={styles.buttonText}>Xem đơn sỉ của tôi</Text>
-        </Pressable>
-      </Link>
-    </ScrollView>
+      </Pressable>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  page: { padding: 16, gap: 12 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, gap: 8 },
-  card: { backgroundColor: "#fff", borderRadius: 16, padding: 16, gap: 4 },
-  label: { fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5 },
-  name: { fontSize: 20, fontWeight: "700", color: "#111827" },
-  tier: { fontSize: 14, color: "#6b7280" },
-  amount: { fontSize: 28, fontWeight: "800", color: "#047857" },
-  sub: { fontSize: 13, color: "#6b7280" },
-  button: { backgroundColor: "#111827", borderRadius: 14, padding: 16, alignItems: "center" },
-  buttonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
-  errorTitle: { fontSize: 16, fontWeight: "700", color: "#b91c1c" },
-  errorBody: { fontSize: 13, color: "#6b7280", textAlign: "center" },
-  hint: { fontSize: 12, color: "#9ca3af", textAlign: "center" },
+  root: { flex: 1, backgroundColor: colors.surface },
+  body: { flex: 1, paddingHorizontal: space.xl, gap: space.xl },
+  logo: {
+    width: 64, height: 64, borderRadius: radius.lg,
+    backgroundColor: colors.brand[500],
+    alignItems: "center", justifyContent: "center",
+    ...shadow.brand,
+  },
+  field: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.md,
+    height: 56,
+    paddingHorizontal: space.lg,
+    borderRadius: radius.lg,
+    borderWidth: 1.5,
+    borderColor: colors.brand[500],
+    backgroundColor: colors.surface,
+  },
+  divider: { width: 1, height: 24, backgroundColor: colors.border },
+  input: { flex: 1, fontFamily: "Inter_500Medium", fontSize: 16, color: colors.text },
+  orRow: { flexDirection: "row", alignItems: "center", gap: space.md, marginTop: "auto" },
+  line: { flex: 1, height: 1, backgroundColor: colors.border },
+  footer: { alignItems: "center", paddingTop: space.lg },
 });
