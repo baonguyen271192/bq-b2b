@@ -33,13 +33,6 @@ const SPLASH_TAGLINE = "Tự tin trên mọi hành trình";
 const SPLASH_DEBUG = __DEV__ || process.env.EXPO_PUBLIC_SPLASH_DEBUG === "1";
 
 /**
- * Ép luôn chạy bản đầy đủ. Không có cờ này thì chỉ lần mở ĐẦU TIÊN trong ngày
- * mới có vệt sáng và tagline — nghĩa là quay video lần thứ hai trở đi sẽ thấy
- * một splash khác hẳn, rất dễ tưởng hoạt cảnh hỏng.
- */
-const FORCE_FULL = process.env.EXPO_PUBLIC_SPLASH_FORCE === "full";
-
-/**
  * Dấu nhận diện bản build, hiện ngay trên màn khi bật SPLASH_DEBUG.
  *
  * KHÔNG viết tay hằng này: `scripts/run-ios.sh` tự đặt
@@ -120,23 +113,29 @@ const SHINE_W_RATIO = 0.45;
 // (sau onLayout -> hideAsync -> thêm một frame), KHÔNG phải lúc mount.
 // ---------------------------------------------------------------------------
 
-/** Bản ĐẦY ĐỦ (lần mở đầu trong ngày). Tagline xong ở 1200, giữ 600 rồi thoát. */
-const FULL = {
+/**
+ * Nhịp splash. MỘT bản duy nhất, chạy mọi lần mở.
+ *
+ * Trước đây có hai bản: ĐẦY ĐỦ cho lần mở đầu trong ngày, NGẮN cho các lần sau
+ * (bỏ vệt sáng và tagline). Đã BỎ. Lý do: splash CHỈ xuất hiện khi tiến trình
+ * khởi động mới — quay lại app từ nền thì component này không mount lại. Nên
+ * mỗi lần splash hiện ra đều là một lần khởi động nguội, và việc hôm nay đã mở
+ * app lần nào chưa KHÔNG nói gì về việc lần này người dùng phải chờ bao lâu.
+ * Gắn hoạt cảnh vào tờ lịch là một quy tắc vô hình với người dùng.
+ *
+ * Nó còn kéo theo ba hệ quả thực tế: hiệu ứng chỉ hiện một lần mỗi ngày nên
+ * gần như không ai thấy; dấu mốc ngày dùng `toISOString()` nên lật ngày theo
+ * UTC, ở Việt Nam thành 7 giờ sáng; và phải đọc/ghi file ngay lúc khởi động.
+ *
+ * Tagline xong ở 1200, giữ thêm 600 rồi thoát.
+ */
+const BEAT = {
   bg: { at: 0, dur: 500 },
   logo: { at: 0, dur: 500 },
   glow: { at: 0, dur: 900 },
   shine: { at: 500, dur: 600 },
   tagline: { at: 800, dur: 400 },
-  /** Giữ bấy nhiêu SAU KHI hoạt cảnh chạy xong — xem chú thích ở effect thoát. */
   holdAfter: 600,
-} as const;
-
-/** Bản NGẮN (các lần mở sau): bỏ vệt sáng và tagline. */
-const SHORT = {
-  bg: { at: 0, dur: 400 },
-  logo: { at: 0, dur: 500 },
-  glow: { at: 0, dur: 700 },
-  holdAfter: 400,
 } as const;
 
 /** Mờ vào khi bật Reduce Motion. */
@@ -198,40 +197,8 @@ function whenIdle(cb: () => void, timeout = 1200): void {
   else cb();
 }
 
-const STAMP_FILE = "bq-splash-last-open.txt";
 /** Nơi đổ nhật ký mốc thời gian khi bật SPLASH_DEBUG. */
 const DEBUG_LOG_FILE = "bq-splash-debug.log";
-
-interface Variant {
-  full: boolean;
-  /** Vì sao ra bản này — để log nói được LÝ DO, không chỉ kết quả. */
-  why: string;
-}
-
-/**
- * Hôm nay đã mở app lần nào chưa.
- *
- * `File.text()` của expo-file-system v58 là BẤT ĐỒNG BỘ nên không biết được
- * ngay lúc render đầu. Hoạt cảnh chỉ khởi động khi đã biết.
- *
- * Hỏng (web, quyền bị chặn) thì coi như lần đầu: thà xem hoạt cảnh đầy đủ còn
- * hơn vỡ splash.
- */
-async function readVariant(): Promise<Variant> {
-  if (FORCE_FULL) return { full: true, why: "ép bằng EXPO_PUBLIC_SPLASH_FORCE=full" };
-  try {
-    const f = new File(Paths.document, STAMP_FILE);
-    const today = new Date().toISOString().slice(0, 10);
-    const seen = f.exists ? (await f.text()).trim() : "";
-    if (seen !== today) {
-      await f.write(today);
-      return { full: true, why: `lần mở đầu trong ngày (dấu mốc cũ: ${seen || "chưa có"})` };
-    }
-    return { full: false, why: `hôm nay đã mở rồi (dấu mốc: ${seen})` };
-  } catch (e) {
-    return { full: true, why: `không đọc được dấu mốc (${String(e)}) — coi như lần đầu` };
-  }
-}
 
 export interface BrandSplashProps {
   /** Đã nạp xong mọi thứ cần thiết chưa. */
@@ -272,14 +239,12 @@ export function BrandSplash({
   const [onScreen, setOnScreen] = useState(false);
   /** Status bar đổi sang chữ tối khi splash bắt đầu rời vùng status bar. */
   const [statusDark, setStatusDark] = useState(false);
-  const [variant, setVariant] = useState<Variant | null>(null);
   /** Hoạt cảnh vào đã chạy hết chưa — mốc neo cho nhịp giữ. */
   const [timelineDone, setTimelineDone] = useState(false);
   /** Số ms kể từ lúc dòng thời gian khởi động — CHỈ dùng cho dòng gỡ rối. */
   const [elapsed, setElapsed] = useState<number | null>(null);
   const startedAt = useRef<number | null>(null);
 
-  const beat = variant?.full === false ? SHORT : FULL;
 
   // --- Nhật ký mốc thời gian ------------------------------------------------
   // Date.now() là lời gọi KHÔNG THUẦN nên không được chạy trong thân render
@@ -373,10 +338,6 @@ export function BrandSplash({
     AccessibilityInfo.isReduceMotionEnabled()
       .then((on) => { log("đọc xong Reduce Motion", on ? "BẬT" : "tắt"); setReduceMotion(on); })
       .catch(() => { log("đọc Reduce Motion hỏng", "coi như tắt"); setReduceMotion(false); });
-    void readVariant().then((r) => {
-      log("đọc xong dấu mốc ngày", `${r.full ? "ĐẦY ĐỦ" : "NGẮN"} — ${r.why}`);
-      setVariant(r);
-    });
   }, [log]);
 
   useEffect(() => {
@@ -390,8 +351,7 @@ export function BrandSplash({
   // ngay khi hai lời hứa trả về, trong lúc native splash còn che, nên người
   // dùng chỉ thấy phần đuôi — hoặc không thấy gì.
   useEffect(() => {
-    if (!onScreen || reduceMotion === null || variant === null) return;
-    const isFull = variant.full;
+    if (!onScreen || reduceMotion === null) return;
 
     if (reduceMotion) {
       // Reduce Motion: không phóng, không quét, không trượt — nhưng VẪN mờ dần.
@@ -421,20 +381,20 @@ export function BrandSplash({
           useNativeDriver: true,
         }),
         Animated.timing(v.taglineOpacity, {
-          toValue: isFull ? 1 : 0, duration: IN_REDUCED_MS,
+          toValue: 1, duration: IN_REDUCED_MS,
           easing: Easing.out(Easing.quad), useNativeDriver: true,
         }),
       ]).start(({ finished }) => { if (finished) setTimelineDone(true); });
       return;
     }
 
-    log("bắt đầu dòng thời gian", isFull ? "bản ĐẦY ĐỦ" : "bản NGẮN");
+    log("bắt đầu dòng thời gian");
     startedAt.current = Date.now();
     const seq: Animated.CompositeAnimation[] = [
       Animated.sequence([
-        Animated.delay(beat.bg.at),
+        Animated.delay(BEAT.bg.at),
         Animated.timing(v.bg, {
-          toValue: 1, duration: beat.bg.dur, easing: Easing.out(Easing.quad),
+          toValue: 1, duration: BEAT.bg.dur, easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
       ]),
@@ -442,65 +402,63 @@ export function BrandSplash({
       // mắt bắt được. Bản trước nở 1 -> 1.06 -> 1 và đo được +13% diện tích
       // pixel sáng — tồn tại, nhưng không ai nhìn thấy.
       Animated.sequence([
-        Animated.delay(beat.logo.at),
+        Animated.delay(BEAT.logo.at),
         Animated.timing(v.logoScale, {
-          toValue: 1, duration: beat.logo.dur, easing: Easing.out(Easing.back(1.4)),
+          toValue: 1, duration: BEAT.logo.dur, easing: Easing.out(Easing.back(1.4)),
           useNativeDriver: true,
         }),
       ]),
       // Quầng sáng nở 0.6 -> 1 trong khi độ đục đi 0 -> 0.2 -> 0.1. Alpha đỉnh
       // của glow.png là 255 nên các số này là nghĩa đen.
       Animated.sequence([
-        Animated.delay(beat.glow.at),
+        Animated.delay(BEAT.glow.at),
         Animated.timing(v.glowScale, {
-          toValue: 1, duration: beat.glow.dur, easing: Easing.out(Easing.cubic),
+          toValue: 1, duration: BEAT.glow.dur, easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
       ]),
       Animated.sequence([
-        Animated.delay(beat.glow.at),
+        Animated.delay(BEAT.glow.at),
         Animated.timing(v.glowOpacity, {
-          toValue: GLOW_PEAK, duration: beat.glow.dur * 0.45,
+          toValue: GLOW_PEAK, duration: BEAT.glow.dur * 0.45,
           easing: Easing.out(Easing.quad), useNativeDriver: true,
         }),
         Animated.timing(v.glowOpacity, {
-          toValue: GLOW_REST, duration: beat.glow.dur * 0.55,
+          toValue: GLOW_REST, duration: BEAT.glow.dur * 0.55,
           easing: Easing.inOut(Easing.quad), useNativeDriver: true,
         }),
       ]),
     ];
 
-    if (isFull) {
-      seq.push(
-        Animated.sequence([
-          Animated.delay(FULL.shine.at),
-          Animated.timing(v.shineX, {
-            toValue: 1, duration: FULL.shine.dur, easing: Easing.inOut(Easing.quad),
+    seq.push(
+      Animated.sequence([
+        Animated.delay(BEAT.shine.at),
+        Animated.timing(v.shineX, {
+          toValue: 1, duration: BEAT.shine.dur, easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.sequence([
+        Animated.delay(BEAT.tagline.at),
+        Animated.parallel([
+          Animated.timing(v.taglineOpacity, {
+            toValue: 1, duration: BEAT.tagline.dur, easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.timing(v.taglineY, {
+            toValue: 0, duration: BEAT.tagline.dur, easing: Easing.out(Easing.quad),
             useNativeDriver: true,
           }),
         ]),
-        Animated.sequence([
-          Animated.delay(FULL.tagline.at),
-          Animated.parallel([
-            Animated.timing(v.taglineOpacity, {
-              toValue: 1, duration: FULL.tagline.dur, easing: Easing.out(Easing.quad),
-              useNativeDriver: true,
-            }),
-            Animated.timing(v.taglineY, {
-              toValue: 0, duration: FULL.tagline.dur, easing: Easing.out(Easing.quad),
-              useNativeDriver: true,
-            }),
-          ]),
-        ]),
-      );
-    }
+      ]),
+    );
 
     Animated.parallel(seq).start(({ finished }) => {
       if (!finished) return;
       log("dòng thời gian chạy xong");
       setTimelineDone(true);
     });
-  }, [onScreen, reduceMotion, variant, beat, v, log]);
+  }, [onScreen, reduceMotion, v, log]);
 
   // --- Bộ đếm cho dòng gỡ rối ----------------------------------------------
   // CHỈ chạy khi SPLASH_DEBUG. Nó setState mỗi 50ms nên có làm render lại, mà
@@ -517,7 +475,7 @@ export function BrandSplash({
     return () => clearInterval(id);
   }, [onScreen]);
 
-  const debugMode = reduceMotion ? "reduce-motion" : (variant?.full === false ? "short" : "full");
+  const debugMode = reduceMotion ? "reduce-motion" : "full";
 
   // --- Thanh tiến độ bám tiến độ nạp THẬT -----------------------------------
   useEffect(() => {
@@ -550,7 +508,7 @@ export function BrandSplash({
   useEffect(() => {
     if (!timelineDone || !ready || error) return;
     const since = doneAt.current ?? Date.now();
-    const delay = Math.max(0, beat.holdAfter - (Date.now() - since));
+    const delay = Math.max(0, BEAT.holdAfter - (Date.now() - since));
     let statusTimer: ReturnType<typeof setTimeout> | null = null;
 
     const t = setTimeout(() => {
@@ -591,7 +549,7 @@ export function BrandSplash({
       clearTimeout(t);
       if (statusTimer) clearTimeout(statusTimer);
     };
-  }, [timelineDone, ready, error, reduceMotion, beat, height, v, onExitStart, onFinish, log, flushLog]);
+  }, [timelineDone, ready, error, reduceMotion, height, v, onExitStart, onFinish, log, flushLog]);
 
   // --- Hình học -------------------------------------------------------------
   const logoW = LOGO_REST_W;
@@ -720,19 +678,17 @@ export function BrandSplash({
         </MaskedView>
       </Animated.View>
 
-      {variant?.full ? (
-        <Animated.View
-          style={[styles.centerRow, {
-            top: taglineTop,
-            opacity: v.taglineOpacity,
-            transform: [{ translateY: v.taglineY }],
-          }]}
-        >
-          <T variant="bodyStrong" weight="medium" tone="white" style={styles.tagline}>
-            {SPLASH_TAGLINE}
-          </T>
-        </Animated.View>
-      ) : null}
+      <Animated.View
+        style={[styles.centerRow, {
+          top: taglineTop,
+          opacity: v.taglineOpacity,
+          transform: [{ translateY: v.taglineY }],
+        }]}
+      >
+        <T variant="bodyStrong" weight="medium" tone="white" style={styles.tagline}>
+          {SPLASH_TAGLINE}
+        </T>
+      </Animated.View>
 
       {SPLASH_DEBUG ? (
         <View style={[styles.debugWrap, { bottom: height * 0.04 }]}>
