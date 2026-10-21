@@ -109,7 +109,7 @@ class RetailController {
         .toList();
 
     return orders.create(items, computed, body.payment(), body.channel(), body.senderId(),
-        body.customerName(), body.customerPhone(), body.customerAddress(), body.flagged(),
+        body.customerName(), body.customerPhone(), body.customerAddress(), body.flaggedOrFalse(),
         body.flagNote(), LocalDateTime.now().format(TS));
   }
 

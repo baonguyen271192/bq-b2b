@@ -37,7 +37,15 @@ public record CreateRetailOrderRequest(
     String customerPhone,
 
     String customerAddress,
-    boolean flagged,
+
+    /**
+     * Bot đánh dấu đơn đáng ngờ. TUỲ CHỌN — kiểu {@code Boolean} chứ không phải
+     * {@code boolean}: với record, Jackson BẮT BUỘC phải có mặt kiểu nguyên thuỷ,
+     * nên khai primitive biến một cờ tuỳ chọn thành trường bắt buộc, và bên gọi
+     * nhận 400 mà không hiểu thiếu gì.
+     */
+    Boolean flagged,
+
     String flagNote,
 
     /**
@@ -60,6 +68,11 @@ public record CreateRetailOrderRequest(
     public long lineTotal() {
       return unitPrice * qtyTotal();
     }
+  }
+
+  /** {@code null} (không gửi) nghĩa là không đánh dấu. */
+  public boolean flaggedOrFalse() {
+    return Boolean.TRUE.equals(flagged);
   }
 
   /** Tổng tính lại từ dòng hàng — dùng để đối chiếu với {@code subtotal} bot gửi. */

@@ -42,6 +42,26 @@ Hai ràng buộc chi phối mọi quyết định dưới đây:
                                     KHÔNG có dữ liệu riêng — đọc ngược
                                     từ Java qua bq_client (xem §8)
 
+── Bán LẺ (khách vãng lai) ───────────────────────────────────────────────────
+
+Trang Facebook BQ             apps/api/app/bot/
+khách nhắn tin  ───webhook───►  · webhook.py  xác chữ ký X-Hub-Signature-256
+                ◄──Graph API    · engine.py   máy trạng thái chốt đơn
+                                · catalog.py  đọc danh mục TỪ Java
+                                       │
+                                       │ POST /api/retail/orders
+                                       ▼
+                                apps/api-java  RetailController
+                                       │
+                                ports/RetailOrderPort
+                                       │
+                                adapters/{demo,sapb1}
+                                       │
+                                       ▼
+                                apps/web /admin/orders  tab "Đơn lẻ"
+
+Đơn lẻ dùng CÙNG danh mục với đơn sỉ — một nguồn giá, một nguồn ảnh (xem §12).
+
    packages/types      kiểu dữ liệu dùng chung web + mobile
    packages/core       logic thuần (format tiền, vòng đời đơn, công nợ)
    packages/api-client một client, hai cấu hình (web: proxy, mobile: URL tuyệt đối)
@@ -58,17 +78,21 @@ BQ/
 │   │   │   ├── ApiApplication.java
 │   │   │   ├── config/         BqProperties, WebConfig (CORS), HttpClients
 │   │   │   ├── domain/         record: Dealer, Product, Order, Analytics...
-│   │   │   ├── ports/          HỢP ĐỒNG: CatalogPort, DealerPort, OrderPort
+│   │   │   ├── ports/          HỢP ĐỒNG: CatalogPort, DealerPort, OrderPort,
+│   │   │   │                            RetailOrderPort
 │   │   │   ├── adapters/
 │   │   │   │   ├── demo/       dữ liệu mẫu + SQLite
 │   │   │   │   └── sapb1/      ServiceLayerClient, SapB1Mapping, 3 adapter
 │   │   │   ├── service/        OrderService (tính tiền, kiểm hạn mức)
+│   │   │   │                  RetailLifecycle (vòng đời đơn lẻ)
 │   │   │   └── web/            Controller + ApiExceptionHandler
 │   │   ├── src/main/resources/demo/*.json   sinh từ bản Python
 │   │   ├── scripts/export-demo-data.py
 │   │   └── Dockerfile
-│   ├── api/                    Service trợ lý AI — Python/FastAPI (cổng 8101)
-│   │   └── app/{main,api,assistant,bq_client}.py   chỉ 4 file, không tầng dữ liệu
+│   ├── api/                    Trợ lý AI + bot bán lẻ — Python/FastAPI (cổng 8101)
+│   │   ├── app/{main,api,assistant,bq_client}.py   không tầng dữ liệu
+│   │   └── app/bot/            webhook · engine · catalog · session
+│   │                           messenger · policies         (xem §12)
 │   ├── web/                    Next.js 16
 │   └── mobile/                 Expo SDK 58
 ├── packages/                   types · core · api-client · contracts · tsconfig
@@ -263,3 +287,121 @@ cd apps/api && ./.venv/bin/python ../api-java/scripts/export-demo-data.py
 4. **Xác thực** — hiện chốt cứng `DL001`. Nên gắn tài khoản B1 hoặc SSO của BQ.
 5. **Siết CORS** trước khi chạy với dữ liệu ERP thật (`BQ_CORS_ORIGINS`).
 6. Quyết định có port `assistant.py` sang Java không (§8).
+7. **Trang Facebook + Meta app cho bot bán lẻ** — xem
+   [`facebook-messenger-setup.md`](facebook-messenger-setup.md). Code đã xong, còn
+   thiếu thứ chỉ BQ cấp được.
+8. **Chính sách bán lẻ** (phí ship, đổi trả, bảo hành) — bot đang thú nhận chưa biết
+   thay vì bịa. Điền vào file JSON, trỏ `BQ_RETAIL_POLICIES_FILE` (§12.5).
+9. **Ánh xạ đơn lẻ sang SAP B1** — khách vãng lai không có Business Partner. Quyết
+   định kế toán của BQ, chưa ai trả lời (§12.3).
+
+
+---
+
+## 12. Đơn lẻ và bot Facebook
+
+Hai kênh bán tồn tại song song trong cùng hệ thống:
+
+| | Đơn **sỉ** | Đơn **lẻ** |
+|---|---|---|
+| Khách | Đại lý có mã (`DL001`) | Khách vãng lai, chỉ có SĐT |
+| Vào bằng | App đại lý, web, trợ lý AI | Nhắn tin Trang Facebook |
+| Giá | `price` — đã áp bậc đại lý | `retail` — giá niêm yết |
+| Hạn mức công nợ | Có, vượt thì chờ duyệt | Không dính |
+| Mã đơn | `BQ1001`… | `BQL1001`… |
+| Vòng đời | 5 bước, có bước duyệt | 4 bước, không duyệt |
+
+### 12.1. Vì sao đơn lẻ nằm TRONG repo này
+
+Trước đây dữ liệu đơn lẻ ở một service Commerce **đa khách hàng** bên ngoài
+(`rag-bot-commerce`); admin BQ đọc qua proxy `/commerce-api`. Ba vấn đề thật, đều
+đã đo được trước khi gỡ:
+
+1. **Mặc định trỏ nhầm.** `COMMERCE_API_URL` mặc định `http://localhost:8200` và
+   không được khai ở `render.yaml`/`vercel.json`/`.env.example`. Bất kỳ thứ gì nghe
+   cổng 8200 cũng được admin hiển thị như đơn lẻ — `j<RetailOrder[]>` chỉ là ép kiểu
+   TypeScript, lúc chạy không kiểm gì. Đã tái hiện: đặt backend Java ở 8200 thì tab
+   "Đơn lẻ" hiện ra đơn sỉ.
+2. **`store_id` để trống** rơi về cửa hàng mặc định của service đó.
+3. **Phiên đăng nhập chỉ chạy ở máy lập trình viên.** Cookie `commerce_session` là
+   host-only; trình duyệt bỏ qua CỔNG khi so khớp host, nên đăng nhập ở
+   `localhost:8200` thì `localhost:3000` cũng gửi kèm cookie. Lên production hai
+   domain khác nhau — cookie không bao giờ được gửi.
+
+Thêm một lý do ngoài kỹ thuật: Commerce là nền tảng SaaS phục vụ **nhiều** cửa hàng
+(`/admin/stores`, `/admin/plans`, auth đa tenant). Bàn giao nó cho đội IT của BQ là
+bàn giao cả sản phẩm đang phục vụ khách khác, kèm bảng giá.
+
+### 12.2. Ranh giới mới
+
+Bot **của BQ** nằm ở `apps/api/app/bot/`, không giữ dữ liệu. Danh mục đọc từ
+`/api/admin/products` (đúng nguồn app đại lý đọc), đơn ghi bằng
+`POST /api/retail/orders`. `rag-bot-commerce` không còn liên quan.
+
+> **Ranh giới bất biến 4.4.** Bot KHÔNG tự tính tiền để tin. Nó tính tổng để *hiển
+> thị* cho khách; backend tính lại từ dòng hàng và từ chối (400) nếu lệch. Bot là
+> tiến trình khác, có thể do người khác bảo trì.
+
+### 12.3. Vòng đời đơn lẻ
+
+Nguồn sự thật DUY NHẤT: `service/RetailLifecycle.java`.
+
+```
+Chờ xác nhận → Đang đóng gói → Đang giao → Hoàn tất
+                     ↓ (bất kỳ lúc nào)
+                  Đã huỷ
+```
+
+Huỷ đơn **đã thu tiền** ghi thêm `payment_status = "cần hoàn tiền"`. Huỷ đơn chưa
+thu thì không — hai việc khác nghĩa về kế toán, gộp lại là mất dấu tiền khách.
+
+**Chưa ánh xạ sang SAP B1.** Đơn sỉ ánh xạ thẳng sang `Orders` với `CardCode` là đại
+lý; khách lẻ không có Business Partner. B1 có vài cách (một BP gộp "khách lẻ", BP cho
+từng khách, hoặc đường bán lẻ riêng) và chọn sai là hỏng sổ công nợ. `SapB1RetailOrders`
+ném `NeedsMappingException` → **HTTP 501 kèm câu hỏi**, thay vì đoán. `BQ_DATA_SOURCE=sapb1`
+vẫn khởi động bình thường, đơn sỉ không ảnh hưởng.
+
+### 12.4. Vì sao máy trạng thái chứ không giao hết cho LLM
+
+Chốt đơn là việc có tiền. LLM đoán sai size hay số lượng thì khách nhận nhầm hàng và
+BQ chịu phí trả lại. Mọi bước dẫn tới đơn đi qua luật tường minh; LLM **chỉ** dùng
+cho câu hỏi tự do ngoài luồng đặt hàng.
+
+### 12.5. Chính sách bán lẻ cố ý để trống
+
+`app/bot/policies.py` nạp từ file JSON ngoài (`BQ_RETAIL_POLICIES_FILE`). Để trống
+thì bot nói "em chưa có thông tin" và xin SĐT.
+
+**KHÔNG tái dùng `POLICIES` trong `assistant.py`** — bộ đó là chính sách bán **sỉ**
+(chiết khấu theo hạng đại lý, công nợ 30 ngày, giao tới kho chi nhánh). Đọc cho khách
+lẻ nghe là sai, và sai một cách rất thuyết phục.
+
+### 12.6. Bảo mật — đều fail closed
+
+| Cơ chế | Thiếu cấu hình thì |
+|---|---|
+| `POST /api/retail/orders` cần `X-BQ-Retail-Key` | 503, endpoint TẮT |
+| `POST /api/bot/webhook` cần `X-Hub-Signature-256` khớp `FB_APP_SECRET` | 503, webhook TẮT |
+| `POST /api/bot/simulate` (tạo đơn THẬT) | 403 trừ khi `BQ_BOT_SIMULATE=1` |
+
+`BQ_BOT_SIMULATE` **cố ý không khai trong `render.yaml`**: nó mở một đường tạo đơn
+thật không cần chữ ký Facebook.
+
+### 12.7. Giới hạn đã biết
+
+**Phiên hội thoại nằm trong bộ nhớ tiến trình** (`app/bot/session.py`, TTL 1 giờ).
+Hệ quả: khởi động lại là mất giỏ đang dở; chạy **nhiều instance** thì mỗi bản giữ một
+phiên riêng và khách bị trả lời như người lạ tuỳ request rơi vào đâu.
+
+→ **Giữ MỘT instance `bq-assistant`** cho tới khi chuyển phiên sang Redis. Đã ghi chú
+trong `render.yaml`.
+
+### 12.8. Chạy thử khi chưa có Trang Facebook
+
+```bash
+export BQ_BOT_SIMULATE=1 BQ_RETAIL_INGEST_KEY=dev-key
+curl -s localhost:8101/api/bot/simulate -H 'Content-Type: application/json' \
+  -d '{"sender_id":"test-1","text":"giày cao gót nữ"}' | jq .
+```
+
+Trả về đúng những tin bot sẽ gửi. Đơn chốt qua đường này là **đơn thật** trong DB.
