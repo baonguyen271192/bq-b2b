@@ -5,9 +5,11 @@
   "description": "Backend Spring Boot (nguồn dữ liệu demo | SAP Business One). Không phải package Node — package.json chỉ để Turborepo điều phối lệnh.",
   "scripts": {
     "dev": "./mvnw spring-boot:run",
+    "start": "java -jar target/api-0.0.1-SNAPSHOT.jar",
     "build": "./mvnw -B package -DskipTests",
     "test": "./mvnw -B test",
-    "start": "java -jar target/api-0.0.1-SNAPSHOT.jar",
+    "lint": "echo '[@bq/api-java] CHƯA cấu hình linter (checkstyle/spotless) — xem Phase 4'",
+    "typecheck": "./mvnw -B -q compile",
     "clean": "./mvnw -B clean && rm -rf .turbo"
   }
 }

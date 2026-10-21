@@ -1,0 +1,15 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "outputs": [
+        "target/*.jar",
+        "target/classes/**",
+        "!target/maven-status/**",
+        "!target/surefire-reports/**"
+      ]
+    },
+    "test": { "outputs": ["target/surefire-reports/**"] },
+    "typecheck": { "outputs": ["target/classes/**"] }
+  }
+}

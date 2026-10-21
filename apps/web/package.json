@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf .next .turbo node_modules"
+    "clean": "rm -rf .next .turbo node_modules",
+    "test": "echo '[@bq/web] CHƯA có test — xem Phase 4'"
   },
   "dependencies": {
     "@bq/api-client": "workspace:*",

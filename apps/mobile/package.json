@@ -8,8 +8,10 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "typecheck": "tsc --noEmit",
+    "build": "expo export --platform ios --output-dir dist/ios && expo export --platform android --output-dir dist/android",
+    "test": "echo '[@bq/mobile] CHƯA có test — xem Phase 4'",
     "lint": "expo lint",
+    "typecheck": "tsc --noEmit",
     "doctor": "expo-doctor",
     "clean": "rm -rf .expo .turbo node_modules"
   },
