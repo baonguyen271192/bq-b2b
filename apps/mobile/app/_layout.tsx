@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Animated, Easing } from "react-native";
 import { useFonts } from "expo-font";
 import {
   Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold,
@@ -118,7 +119,43 @@ export default function RootLayout() {
   const ready = fontsSettled && warmupDone;
 
   const [splashGone, setSplashGone] = useState(false);
-  const handleSplashFinish = useCallback(() => setSplashGone(true), []);
+
+  /**
+   * Màn đích tự hiện vào khi splash bắt đầu rời đi.
+   *
+   * Trước đây splash tan ra trong khi màn đăng nhập ĐỨNG YÊN — mắt không có gì
+   * để bám theo nên cú chuyển đọc thành một cái giật. Cho màn đích nhích từ
+   * 0.985 lên 1 và sáng dần từ 0.9: đủ để thành một chuyển động liên tục, chưa
+   * đủ để thành hiệu ứng tự nó gây chú ý.
+   *
+   * KHÔNG hạ opacity thấp hơn 0.9: splash phủ kín nên phần dưới nó không ai
+   * thấy, nhưng lúc splash mờ đi thì màn đích quá nhạt sẽ lộ ra nền trắng của
+   * root và trông bạc màu.
+   */
+  const enter = useMemo(() => ({
+    opacity: new Animated.Value(0.9),
+    scale: new Animated.Value(0.985),
+  }), []);
+
+  const handleSplashFinish = useCallback(() => {
+    // Lưới an toàn: nếu vì lý do nào đó `onExitStart` không chạy (splash bị gỡ
+    // bằng đường khác), ép giá trị về 1 — không thì app ở mãi opacity 0.9 và
+    // scale 0.985, mờ và nhỏ hơn đúng một chút, loại lỗi rất khó nhận ra.
+    enter.opacity.setValue(1);
+    enter.scale.setValue(1);
+    setSplashGone(true);
+  }, [enter]);
+
+  const handleSplashExitStart = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(enter.opacity, {
+        toValue: 1, duration: 420, easing: Easing.out(Easing.cubic), useNativeDriver: true,
+      }),
+      Animated.timing(enter.scale, {
+        toValue: 1, duration: 420, easing: Easing.out(Easing.cubic), useNativeDriver: true,
+      }),
+    ]).start();
+  }, [enter]);
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
   // Gỡ native splash ngay khi React đã có gì để vẽ — BrandSplash khớp khít cảnh
@@ -133,6 +170,13 @@ export default function RootLayout() {
             {/* StatusBar của màn đích; khi splash còn hiện, BrandSplash tự khai
                 đè thành chữ trắng. */}
             <StatusBar style="dark" />
+            <Animated.View
+              style={{
+                flex: 1,
+                opacity: enter.opacity,
+                transform: [{ scale: enter.scale }],
+              }}
+            >
             <Stack
               screenOptions={{
                 headerShadowVisible: false,
@@ -151,6 +195,7 @@ export default function RootLayout() {
               <Stack.Screen name="assistant" options={{ title: "Trợ lý BQ" }} />
               <Stack.Screen name="notifications" options={{ title: "Thông báo" }} />
             </Stack>
+            </Animated.View>
 
             {splashGone ? null : (
               <BrandSplash
@@ -158,6 +203,7 @@ export default function RootLayout() {
                 progress={progress}
                 error={loadError}
                 onRetry={retry}
+                onExitStart={handleSplashExitStart}
                 onFinish={handleSplashFinish}
               />
             )}

@@ -59,8 +59,26 @@ const BEAT = {
 
 /** Giữ splash tối thiểu bấy nhiêu, kể cả khi nạp xong sớm. */
 const MIN_MS = 1600;
-/** Thời lượng mờ dần khi đóng. */
-const OUT_MS = 250;
+/**
+ * Chuyển cảnh ra.
+ *
+ * Bản trước mờ dần 250ms đồng loạt cả nền lẫn nội dung — nền cam bão hoà phủ
+ * toàn màn đổi sang màn trắng là một bước nhảy độ sáng rất lớn, làm cú chuyển
+ * đọc thành một cái giật. Tách làm hai lớp: nội dung thương hiệu rời đi TRƯỚC
+ * (nhanh), rồi lớp màu mới nhấc lên (chậm hơn), và cả màn phóng nhẹ ra như đang
+ * lùi khỏi mắt người xem.
+ */
+const OUT = {
+  // Nội dung rời NHANH và đi XA: giày đen bán trong suốt trên nền cam ra màu nâu
+  // bẩn (đúng hiện tượng đã phải xử lý ở lượt vào). Fade càng lâu thì pha nâu
+  // càng kéo dài, nên rút ngắn và bù bằng quãng trượt lớn hơn — mắt đọc thành
+  // CHUYỂN ĐỘNG thay vì đọc thành đổi màu.
+  content: 150,
+  // Mảng màu bắt đầu nhấc KHI nội dung còn đang đi, không chờ đi xong: để trễ
+  // 110ms tạo ra một nhịp "cam trống trơn" đọc thành khoảng khựng.
+  screenDelay: 60,
+  screen: 400,
+} as const;
 
 /** RN 0.88 bỏ `StyleSheet.absoluteFillObject` khỏi kiểu; khai tường minh. */
 const ABSOLUTE_FILL = { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 } as const;
@@ -73,6 +91,13 @@ export interface BrandSplashProps {
   /** Nạp hỏng — splash nhường chỗ cho màn lỗi, KHÔNG treo ở vòng xoay. */
   error?: string | null;
   onRetry?: () => void;
+  /**
+   * Gọi ở THỜI ĐIỂM BẮT ĐẦU thoát, không phải lúc kết thúc.
+   *
+   * Màn đích dùng tín hiệu này để tự hiện vào cùng nhịp. Thiếu nó thì màn đích
+   * đứng yên trong khi splash tan ra — mắt không có gì để bám theo.
+   */
+  onExitStart?: () => void;
   /** Gọi khi splash đã mờ hẳn; nơi gọi gỡ component khỏi cây. */
   onFinish: () => void;
 }
@@ -88,7 +113,9 @@ export interface BrandSplashProps {
  * UI thread, cùng độ mượt — mà không phải dựa vào babel plugin của reanimated,
  * thứ chưa từng được dùng ở đâu trong repo này nên chưa ai xác minh.
  */
-export function BrandSplash({ ready, progress, error, onRetry, onFinish }: BrandSplashProps) {
+export function BrandSplash({
+  ready, progress, error, onRetry, onExitStart, onFinish,
+}: BrandSplashProps) {
   // useWindowDimensions thay cho Dimensions.get(): hàm kia không thuần nên gọi
   // trong render bị chặn, và nó cũng không cập nhật khi xoay máy.
   const { width, height } = useWindowDimensions();
@@ -105,6 +132,9 @@ export function BrandSplash({ ready, progress, error, onRetry, onFinish }: Brand
     shadowScale: new Animated.Value(0.6),
     taglineOpacity: new Animated.Value(0),
     screenOpacity: new Animated.Value(1),
+    screenScale: new Animated.Value(1),
+    contentOpacity: new Animated.Value(1),
+    contentY: new Animated.Value(0),
     bar: new Animated.Value(0),
   }), []);
 
@@ -183,20 +213,54 @@ export function BrandSplash({ ready, progress, error, onRetry, onFinish }: Brand
     const since = mountedAt.current ?? Date.now();
     const delay = Math.max(0, MIN_MS - (Date.now() - since));
     const t = setTimeout(() => {
-      const fade = Animated.timing(v.screenOpacity, {
-        toValue: 0, duration: OUT_MS, easing: Easing.in(Easing.quad), useNativeDriver: true,
-      });
+      onExitStart?.();
+
       if (reduceMotion) {
-        fade.start(() => onFinish());
+        Animated.timing(v.screenOpacity, {
+          toValue: 0, duration: OUT.screen, easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }).start(() => onFinish());
         return;
       }
+
       Animated.parallel([
-        Animated.timing(v.shoeX, { toValue: -40, duration: OUT_MS, useNativeDriver: true }),
-        fade,
-      ]).start(() => onFinish());
+        // Lớp 1: nội dung thương hiệu rời đi trước, hơi trôi lên.
+        Animated.timing(v.contentOpacity, {
+          toValue: 0, duration: OUT.content, easing: Easing.in(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(v.contentY, {
+          toValue: -26, duration: OUT.content, easing: Easing.in(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(v.shoeX, {
+          toValue: -64, duration: OUT.content, easing: Easing.in(Easing.quad),
+          useNativeDriver: true,
+        }),
+        // Lớp 2: mảng màu nhấc lên sau, chậm hơn, kèm phóng nhẹ để đọc thành
+        // "lùi ra xa" chứ không thành "biến mất".
+        Animated.sequence([
+          Animated.delay(OUT.screenDelay),
+          Animated.parallel([
+            Animated.timing(v.screenOpacity, {
+              toValue: 0, duration: OUT.screen, easing: Easing.inOut(Easing.cubic),
+              useNativeDriver: true,
+            }),
+            Animated.timing(v.screenScale, {
+              toValue: 1.06, duration: OUT.screen, easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            }),
+          ]),
+        ]),
+      ]).start(({ finished }) => {
+        if (!finished) return;
+        // Gỡ component ở FRAME SAU: unmount cả cây view (ba ảnh, một ảnh 140KB)
+        // ngay trong khung cuối của hoạt cảnh sẽ cướp frame đó.
+        requestAnimationFrame(() => onFinish());
+      });
     }, delay);
     return () => clearTimeout(t);
-  }, [ready, error, reduceMotion, v, onFinish]);
+  }, [ready, error, reduceMotion, v, onExitStart, onFinish]);
 
   // --- Nạp hỏng: hiện lối thoát thay vì treo ---
   if (error) {
@@ -244,7 +308,13 @@ export function BrandSplash({ ready, progress, error, onRetry, onFinish }: Brand
   const glowSize = width * 0.9;
 
   return (
-    <Animated.View style={[styles.fill, { opacity: v.screenOpacity }]} pointerEvents="none">
+    <Animated.View
+      style={[styles.fill, {
+        opacity: v.screenOpacity,
+        transform: [{ scale: v.screenScale }],
+      }]}
+      pointerEvents="none"
+    >
       <StatusBar style="light" />
 
       {/* Nền phẳng màu rìa gradient: lấp bốn góc mà ảnh radial không phủ tới. */}
@@ -276,6 +346,14 @@ export function BrandSplash({ ready, progress, error, onRetry, onFinish }: Brand
         accessibilityIgnoresInvertColors
       />
 
+      {/* Nội dung thương hiệu gom vào MỘT lớp để rời đi cùng nhau, tách khỏi
+          mảng màu nền phía sau. */}
+      <Animated.View
+        style={[styles.fill, {
+          opacity: v.contentOpacity,
+          transform: [{ translateY: v.contentY }],
+        }]}
+      >
       {/* Logo nằm trong một View căn giữa, KHÔNG gán left/right thẳng lên Image:
           chúng kéo ảnh rộng hết màn và đá nhau với width, còn alignItems thì
           không có tác dụng lên node lá — logo sẽ dính mép trái. */}
@@ -335,11 +413,12 @@ export function BrandSplash({ ready, progress, error, onRetry, onFinish }: Brand
         </T>
       </Animated.View>
 
-      <View style={[styles.barWrap, { bottom: barBottom }]}>
-        <View style={styles.barTrack}>
-          <Animated.View style={[styles.barFill, { transform: [{ scaleX: v.bar }] }]} />
+        <View style={[styles.barWrap, { bottom: barBottom }]}>
+          <View style={styles.barTrack}>
+            <Animated.View style={[styles.barFill, { transform: [{ scaleX: v.bar }] }]} />
+          </View>
         </View>
-      </View>
+      </Animated.View>
     </Animated.View>
   );
 }
