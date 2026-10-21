@@ -342,7 +342,16 @@ export function BrandSplash({
       // Mờ dần không phải chuyển động; đó chính là thứ Apple khuyến nghị dùng
       // thay cho chuyển động, và lối thoát của màn này vốn đã mờ dần.
       log("bắt đầu dòng thời gian", "Reduce Motion — chỉ mờ dần");
-      v.logoScale.setValue(1);
+      // Logo GIỮ NGUYÊN 0.92 — đúng cỡ native splash đặt nó.
+      //
+      // Bản trước gọi setValue(1) ở đây. Đo trên video bản Release: logo nhảy
+      // từ 122.7pt lên 134.0pt trong ĐÚNG MỘT KHUNG ở mốc 133ms — pop 9.2%,
+      // vì native splash vẽ logo ở 0.92 × cỡ nghỉ còn JS nhảy thẳng lên cỡ
+      // nghỉ. Nhánh không được có thay đổi đột ngột lại là nhánh duy nhất có
+      // cú nhảy cỡ. Để nguyên 0.92 thì khớp native tuyệt đối và không có
+      // chuyển động nào — đúng tinh thần Reduce Motion. Hệ quả: logo nhỏ hơn
+      // bản thường 8%, nhưng người bật Reduce Motion không bao giờ thấy bản
+      // kia để mà so.
       v.glowScale.setValue(1);
       v.taglineY.setValue(0);
       Animated.parallel([
