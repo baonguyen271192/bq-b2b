@@ -32,6 +32,22 @@ export function StatusTag({ label, kind = "neutral", style }: StatusTagProps) {
   );
 }
 
+/**
+ * Trạng thái đơn/hoá đơn (chuỗi tiếng Việt từ backend) -> màu.
+ *
+ * So khớp CÓ DẤU CÁCH quanh từ khoá ở những chỗ dễ trùng: "huỷ" là khúc đầu của
+ * "huỷ bỏ" nhưng cũng nằm trong "chờ huỷ" — mà hai cái đó khác nghĩa. Đã có lần
+ * lọt lỗi kiểu này nên giữ danh sách đầy đủ thay vì rút gọn bằng `includes`.
+ */
+export function statusKindFor(status: string): StatusKind {
+  const s = status.toLowerCase();
+  if (s.includes("huỷ") || s.includes("hủy") || s.includes("từ chối")) return "danger";
+  if (s.includes("vượt hạn mức") || s.includes("chờ duyệt")) return "warn";
+  if (s.includes("đã nhận") || s.includes("hoàn tất")) return "ok";
+  if (s.includes("giao") || s.includes("đóng gói")) return "info";
+  return "neutral";
+}
+
 const styles = StyleSheet.create({
   base: {
     flexDirection: "row", alignItems: "center", gap: space.x2,

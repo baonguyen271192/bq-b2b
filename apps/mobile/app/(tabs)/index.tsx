@@ -1,18 +1,28 @@
 import { useCallback, useState } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import type { Order } from "@bq/types";
-import { Badge } from "@/components/Badge";
-import { Button } from "@/components/Button";
-import { CreditMeter } from "@/components/CreditMeter";
-import { EmptyState } from "@/components/EmptyState";
-import { OrderRow } from "@/components/OrderRow";
 import { api } from "@/lib/api";
 import { useCart } from "@/lib/cart";
 import { useSession } from "@/lib/session";
-import { Text, colors, radius, space } from "@/legacy-theme";
+import { color, space } from "@/theme";
+import {
+  Chip, CreditCard, EmptyState, Fab, FAB_CLEARANCE, IconButton, OrderCard, Pill, ScreenHeader,
+  SectionHead,
+} from "@/components/ui";
+
+/**
+ * Chiều cao dải cam sau tiêu đề, CHƯA tính vùng an toàn.
+ *
+ * Đủ phủ hàng tiêu đề và hàng hạng đại lý, rồi kết thúc sau lưng thẻ hạn mức —
+ * nên mép dưới của dải không bao giờ lộ ra thành một đường ngang.
+ */
+const HERO_H = space.x12 * 3 + space.x6;
+
+/** Số đơn gần đây hiện trên trang chủ. Xem hết thì sang tab Đơn hàng. */
+const RECENT_LIMIT = 4;
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -43,143 +53,121 @@ export default function HomeScreen() {
   if (!dealer) return null;
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <View style={styles.screen}>
       {/* Dải cam là LỚP NỀN tuyệt đối, không phải một khối trong luồng.
-          Trước đây dùng lề âm để kéo thẻ đè lên dải cam, nhưng phần nhô lên bị chính
-          khung cuộn cắt mất. Tách nền ra thì không còn gì để cắt, và dải cam cuộn
-          theo nội dung nên màn hình dài ra cũng không bị hụt nền. */}
-      <View style={[styles.heroBg, { height: insets.top + 168 }]} pointerEvents="none" />
+          Trước đây dùng lề âm để kéo thẻ đè lên dải cam, nhưng phần nhô lên bị
+          chính khung cuộn cắt mất. Tách nền ra thì không còn gì để cắt.
+
+          Gradient dừng ở `bq` -> `bqDeep`, KHÔNG dùng `bqBright`: chữ trắng
+          trên `bqBright` chỉ đạt 2.61:1 — không hợp lệ kể cả với chữ lớn. */}
+      <LinearGradient
+        colors={[color.bq, color.bqDeep]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.hero, { height: insets.top + HERO_H }]}
+        pointerEvents="none"
+      />
 
       <ScrollView
-        contentContainerStyle={[styles.body, { paddingTop: insets.top + space.md }]}
+        contentContainerStyle={[styles.body, { paddingTop: insets.top + space.x4 }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.surface} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.white} />
         }
       >
-        <View style={styles.heroRow}>
-          <View style={{ flex: 1 }}>
-            <Text variant="bodySm" color="rgba(255,255,255,0.85)">Xin chào,</Text>
-            <Text variant="h2" color={colors.textOnBrand} numberOfLines={1}>
-              {dealer.name}
-            </Text>
-          </View>
-          <IconButton icon="notifications-outline" onPress={() => router.push("/notifications")} badge={2} />
-          <IconButton icon="cart-outline" onPress={() => router.push("/cart")} badge={lines.length} />
+        <ScreenHeader
+          tone="onBrand"
+          size="title"
+          eyebrow="Xin chào,"
+          title={dealer.name}
+          trailing={
+            <>
+              <IconButton
+                icon="notifications-outline"
+                tone="glass"
+                badge={2}
+                accessibilityLabel="Thông báo"
+                onPress={() => router.push("/notifications")}
+              />
+              <IconButton
+                icon="cart-outline"
+                tone="glass"
+                badge={lines.length}
+                accessibilityLabel="Giỏ hàng"
+                onPress={() => router.push("/cart")}
+              />
+            </>
+          }
+        />
+
+        <View style={styles.meta}>
+          <Chip label={dealer.code} tone="brand" />
+          <Chip label={`★ Hạng ${dealer.tier}`} tone="brand" />
         </View>
 
-        <View style={styles.heroMeta}>
-          <Text variant="caption" color="rgba(255,255,255,0.85)">{dealer.code}</Text>
-          <Badge label={`★ Hạng ${dealer.tier}`} tone="brand" />
-        </View>
-
-        <CreditMeter
+        <CreditCard
           limit={dealer.credit_limit}
           used={dealer.credit_used}
           pending={cartValue}
-          dueLabel={cartValue > 0 ? undefined : "Xem chi tiết công nợ"}
+          detailLabel={cartValue > 0 ? undefined : "Xem chi tiết công nợ"}
+          onPressDetail={() => router.push("/(tabs)/debt")}
         />
 
         <View style={styles.actions}>
-          <Button
+          <Pill
             label="Tạo đơn hàng mới"
-            icon="add"
+            tone="brand"
+            style={styles.grow}
             onPress={() => router.push("/(tabs)/products")}
-            style={{ flex: 1 }}
           />
-          <Pressable style={styles.draftBtn} onPress={() => router.push("/cart")}>
-            <Text variant="bodySm" weight="700">Giỏ hàng</Text>
-            <View style={styles.count}>
-              <Text variant="micro" color={colors.textOnBrand}>{lines.length}</Text>
+          <Pill
+            label="Giỏ hàng"
+            tone="paper"
+            onPress={() => router.push("/cart")}
+          />
+        </View>
+
+        <View>
+          <SectionHead
+            title="Đơn hàng gần đây"
+            actionLabel="Xem tất cả"
+            onActionPress={() => router.push("/(tabs)/orders")}
+          />
+          {orders && orders.length === 0 ? (
+            <EmptyState
+              icon="receipt-outline"
+              title="Chưa có đơn nào"
+              hint="Chọn mẫu ở tab Sản phẩm, nhập số lượng theo bảng size rồi gửi đơn."
+              actionLabel="Đặt đơn đầu tiên"
+              onActionPress={() => router.push("/(tabs)/products")}
+            />
+          ) : (
+            <View style={styles.list}>
+              {(orders ?? []).slice(0, RECENT_LIMIT).map((o) => (
+                <OrderCard key={o.id} order={o} onPress={() => router.push(`/order/${o.id}`)} />
+              ))}
             </View>
-          </Pressable>
+          )}
         </View>
-
-        <View style={styles.sectionHead}>
-          <Text variant="h3">Đơn hàng gần đây</Text>
-          <Pressable onPress={() => router.push("/(tabs)/orders")}>
-            <Text variant="label" color={colors.brand[500]}>Xem tất cả</Text>
-          </Pressable>
-        </View>
-
-        {orders && orders.length === 0 ? (
-          <EmptyState
-            icon="receipt-outline"
-            title="Chưa có đơn nào"
-            hint="Đơn bạn đặt sẽ hiện ở đây kèm trạng thái giao hàng."
-            action={{ label: "Đặt đơn đầu tiên", onPress: () => router.push("/(tabs)/products") }}
-          />
-        ) : (
-          <View style={{ gap: space.sm }}>
-            {(orders ?? []).slice(0, 4).map((o) => (
-              <OrderRow key={o.id} order={o} onPress={() => router.push(`/order/${o.id}`)} />
-            ))}
-          </View>
-        )}
       </ScrollView>
 
-      <Pressable style={styles.fab} onPress={() => router.push("/assistant")}>
-        <Ionicons name="sparkles" size={22} color={colors.textOnBrand} />
-      </Pressable>
+      <Fab
+        icon="sparkles"
+        accessibilityLabel="Trợ lý BQ"
+        style={styles.fab}
+        onPress={() => router.push("/assistant")}
+      />
     </View>
   );
 }
 
-function IconButton({
-  icon, onPress, badge,
-}: { icon: keyof typeof Ionicons.glyphMap; onPress: () => void; badge?: number }) {
-  return (
-    <Pressable onPress={onPress} style={styles.iconBtn} hitSlop={6}>
-      <Ionicons name={icon} size={21} color={colors.textOnBrand} />
-      {badge ? (
-        <View style={styles.dot}>
-          <Text variant="micro" color={colors.brand[500]}>{badge}</Text>
-        </View>
-      ) : null}
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
-  heroBg: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: colors.brand[500],
-  },
-  heroRow: { flexDirection: "row", alignItems: "center", gap: space.sm },
-  heroMeta: { flexDirection: "row", alignItems: "center", gap: space.md },
-  iconBtn: {
-    width: 40, height: 40, borderRadius: radius.pill,
-    backgroundColor: "rgba(255,255,255,0.18)",
-    alignItems: "center", justifyContent: "center",
-  },
-  dot: {
-    position: "absolute", top: -2, right: -2,
-    minWidth: 18, height: 18, paddingHorizontal: 4,
-    borderRadius: radius.pill, backgroundColor: colors.surface,
-    alignItems: "center", justifyContent: "center",
-  },
-  body: { padding: space.lg, gap: space.lg },
-  actions: { flexDirection: "row", gap: space.sm, alignItems: "center" },
-  draftBtn: {
-    flexDirection: "row", alignItems: "center", gap: space.sm,
-    height: 54, paddingHorizontal: space.lg,
-    borderRadius: radius.pill, backgroundColor: colors.surface,
-    borderWidth: 1, borderColor: colors.border,
-  },
-  count: {
-    minWidth: 20, height: 20, paddingHorizontal: 5, borderRadius: radius.pill,
-    backgroundColor: colors.brand[500], alignItems: "center", justifyContent: "center",
-  },
-  sectionHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  fab: {
-    position: "absolute", right: space.lg, bottom: space.lg,
-    width: 56, height: 56, borderRadius: radius.pill,
-    backgroundColor: colors.slate[900],
-    alignItems: "center", justifyContent: "center",
-    shadowColor: "#0F172A", shadowOpacity: 0.35, shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 }, elevation: 8,
-  },
+  screen: { flex: 1, backgroundColor: color.canvas },
+  hero: { position: "absolute", top: 0, left: 0, right: 0 },
+  body: { padding: space.screen, gap: space.x5, paddingBottom: FAB_CLEARANCE },
+  meta: { flexDirection: "row", alignItems: "center", gap: space.x2 },
+  actions: { flexDirection: "row", gap: space.x2, alignItems: "center" },
+  grow: { flex: 1 },
+  list: { gap: space.x3 },
+  fab: { position: "absolute", right: space.screen, bottom: space.x6 },
 });

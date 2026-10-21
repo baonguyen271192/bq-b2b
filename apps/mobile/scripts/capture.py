@@ -1,5 +1,9 @@
 """Chụp một route ở đúng khổ điện thoại, tại 3 vị trí cuộn.
 
+Tham số thứ 5 (tuỳ chọn): nhãn một nút cần BẤM trước khi chụp. Dùng để qua màn
+đăng nhập — phiên làm việc chỉ nằm trong bộ nhớ nên không seed sẵn được, mà
+`simctl` thì không chạm được nút nào.
+
 Nói chuyện với Chrome qua DevTools Protocol để: (1) ép đúng viewport —
 `--window-size` bị bỏ qua ở chế độ headless có debug port; (2) cuộn được
 ScrollView của React Native, vốn cuộn BÊN TRONG một div nên `document`
@@ -10,6 +14,7 @@ Gọi qua scripts/preview-web.sh, không chạy trực tiếp.
 import sys, json, socket, base64, struct, os, time, urllib.request
 TARGET, W, H = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
 OUTDIR = sys.argv[4]
+CLICK = sys.argv[5] if len(sys.argv) > 5 else None
 for _ in range(30):
     try:
         tabs = json.load(urllib.request.urlopen("http://127.0.0.1:9222/json"))
@@ -43,6 +48,28 @@ def wait(t):
 wait(send("Emulation.setDeviceMetricsOverride",
           {"width": W, "height": H, "deviceScaleFactor": 2, "mobile": True}))
 wait(send("Page.navigate", {"url": TARGET})); time.sleep(9)
+
+if CLICK:
+    # Bấm theo NHÃN CHỮ, không theo selector: react-native-web sinh class ngẫu
+    # nhiên nên selector vỡ ở mỗi lần build. Bắn `click` lên chính node chứa chữ
+    # rồi lên các node cha — RNW gắn handler ở lớp Pressable bọc ngoài.
+    JS = """(() => {
+      const want = %s;
+      const hit = [...document.querySelectorAll('div,span,a')]
+        .filter(e => (e.textContent || '').trim() === want)
+        .pop();
+      if (!hit) return 'không thấy nút: ' + want;
+      let n = hit;
+      for (let i = 0; i < 5 && n; i++) {
+        n.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
+        n = n.parentElement;
+      }
+      return 'đã bấm: ' + want;
+    })()""" % json.dumps(CLICK)
+    r = wait(send("Runtime.evaluate", {"expression": JS, "returnByValue": True}))
+    print("  ", r["result"]["result"]["value"])
+    time.sleep(6)
+
 SCROLLER = """(() => {
   const all = [...document.querySelectorAll('div')]
     .filter(e => e.scrollHeight > e.clientHeight + 50 && e.clientHeight > 300);

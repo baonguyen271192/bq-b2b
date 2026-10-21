@@ -12,19 +12,31 @@ export interface ScreenHeaderProps {
   trailing?: React.ReactNode;
   /** `display` cho tiêu đề trang chính, `title` cho trang phụ. */
   size?: "display" | "title";
+  /** `onBrand` khi tiêu đề nằm trên mảng cam — xem chú thích ở component. */
+  tone?: "ink" | "onBrand";
   style?: ViewStyle;
 }
 
-/** Tiêu đề đầu màn hình, trên nền canvas sáng (không phủ màu cả mảng). */
+/**
+ * Tiêu đề đầu màn hình.
+ *
+ * `tone="onBrand"` KHÔNG chỉ đổi màu chữ: dòng phụ phải lên `bodyStrong` thay
+ * vì `small`. Chữ trắng trên nền `bq` chỉ đạt 3.56:1, hợp lệ khi và chỉ khi cỡ
+ * ≥ 15px và weight ≥ 600 (xem `onBrandTextIsLegible` ở theme.ts). `small` là
+ * 13px/medium nên đặt lên nền cam là vi phạm tương phản.
+ */
 export function ScreenHeader({
-  title, eyebrow, caption, trailing, size = "display", style,
+  title, eyebrow, caption, trailing, size = "display", tone = "ink", style,
 }: ScreenHeaderProps) {
+  const onBrand = tone === "onBrand";
+  const subVariant = onBrand ? "bodyStrong" : "small";
+  const subTone = onBrand ? "white" : "muted";
   return (
     <View style={[styles.row, style]}>
       <View style={styles.text}>
-        {eyebrow ? <T variant="small" tone="muted">{eyebrow}</T> : null}
-        <T variant={size}>{title}</T>
-        {caption ? <T variant="small" tone="muted">{caption}</T> : null}
+        {eyebrow ? <T variant={subVariant} tone={subTone}>{eyebrow}</T> : null}
+        <T variant={size} tone={onBrand ? "white" : "ink"} numberOfLines={2}>{title}</T>
+        {caption ? <T variant={subVariant} tone={subTone}>{caption}</T> : null}
       </View>
       {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
     </View>
