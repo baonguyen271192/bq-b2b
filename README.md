@@ -8,77 +8,148 @@ tra trạng thái. Kèm trợ lý AI cho cả đại lý và sale.
 > ⚠️ **Đang chạy trên dữ liệu mẫu** (`BQ_DATA_SOURCE=demo`). Giá/tồn/công nợ là số
 > minh hoạ. Backend đã có sẵn adapter **SAP Business One** — xem
 > [`docs/architecture.md`](docs/architecture.md) để biết còn thiếu gì trước khi bật.
->
-> Bot bán lẻ Facebook đã tách thành service **Commerce** độc lập (`../zalo-rag-bot/commerce`).
-> Repo này chỉ còn nghiệp vụ B2B sỉ của BQ.
 
-## Cấu trúc
+---
+
+## Cây thư mục
 
 ```
-apps/api-java  ★ Backend lõi — Java 21 + Spring Boot 4, ports + adapters (demo | SAP B1)
-apps/api         Service trợ lý AI — Python/FastAPI, 4 file, không giữ dữ liệu riêng
-apps/web         Next.js 16 — dashboard sale (/admin) + app đại lý bản web (/(shop))
-apps/mobile      Expo SDK 58 — app native đại lý
-packages/*       types · core · api-client · contracts · tsconfig (dùng chung web+mobile)
+BQ/
+├── apps/
+│   ├── api-java/        ★ Backend lõi — Java 21 + Spring Boot 4
+│   │   ├── src/main/java/vn/com/giaybq/api/
+│   │   │   ├── ports/           hợp đồng: CatalogPort, DealerPort, OrderPort
+│   │   │   ├── adapters/demo/   dữ liệu mẫu + SQLite (tự mồi từ JSON)
+│   │   │   ├── adapters/sapb1/  SAP B1 Service Layer
+│   │   │   ├── service/         OrderService — tính tiền, kiểm hạn mức
+│   │   │   └── web/             REST controller + xử lý lỗi
+│   │   ├── src/main/resources/demo/   dữ liệu mẫu dạng JSON
+│   │   └── scripts/with-java.sh       dò đúng JDK 21
+│   ├── api/             Service trợ lý AI — Python/FastAPI, KHÔNG giữ dữ liệu riêng
+│   ├── web/             Next.js 16 — dashboard sale (/admin) + app đại lý (/(shop))
+│   └── mobile/          React Native + Expo 58 — app đại lý iOS & Android
+├── packages/
+│   ├── types/           kiểu dữ liệu dùng chung web + mobile
+│   ├── core/            logic thuần (format tiền, vòng đời đơn, công nợ)
+│   ├── api-client/      một client, hai cấu hình (web proxy / mobile URL tuyệt đối)
+│   ├── contracts/       openapi.json + script đối chiếu drift
+│   ├── config/          ESLint flat config dùng chung
+│   └── tsconfig/        cấu hình TypeScript dùng chung
+├── docs/                architecture.md · adr/ · sap-b1-mapping-proposal.md
+├── render.yaml          deploy 2 service backend
+├── vercel.json          deploy web
+└── turbo.json           pipeline
 ```
 
-Kiến trúc, ranh giới và kế hoạch nối SAP B1: **[`docs/architecture.md`](docs/architecture.md)**.
+---
 
-Quyết định kiến trúc (ADR):
-- [0001 — Cấu trúc monorepo](docs/adr/0001-monorepo-structure.md)
-- [0002 — Hai backend: Python và Java](docs/adr/0002-backend-api-vs-api-java.md) 🟡 *chờ quyết định*
+## Yêu cầu môi trường
 
-Tài liệu nhị phân (slide, video, bảng tính) **lưu ngoài repo** — xem
-[`docs/README.md`](docs/README.md).
+| Công cụ | Phiên bản | Khai ở đâu | Bắt buộc cho |
+|---|---|---|---|
+| **Node.js** | `>= 20` (dùng 24) | `.nvmrc`, `package.json#engines` | tất cả |
+| **pnpm** | `9.15.4` | `package.json#packageManager` | tất cả |
+| **JDK** | **21** (LTS) | `apps/api-java/pom.xml` | `apps/api-java` |
+| **Maven** | đi kèm `mvnw` | `.mvn/wrapper` | `apps/api-java` |
+| **Python** | **3.12** | `apps/api/.python-version` | `apps/api` |
 
-## Chạy thử
+> **Không cần đặt `JAVA_HOME` bằng tay.** `apps/api-java/scripts/with-java.sh` tự dò
+> JDK 21 (JAVA_HOME → `/usr/libexec/java_home` → đường dẫn Homebrew/Linux thường gặp)
+> và **kiểm lại phiên bản** ở mọi nhánh — vì `java_home -v 21` có thể trả về JDK cũ
+> hơn kèm mã thoát 0 khi không có bản 21 nào đăng ký với hệ thống.
+
+---
+
+## Cài đặt
 
 ```bash
-# 1. Dependencies JavaScript (pnpm workspace)
 corepack enable pnpm
 pnpm install
 
-# 2. Backend Java
-export JAVA_HOME=$(brew --prefix openjdk@21)/libexec/openjdk.jdk/Contents/Home
-cp apps/api-java/.env.example apps/api-java/.env
-
-# 3. Service trợ lý AI (Python)
+# Service trợ lý AI (Python)
 cd apps/api
 python3.12 -m venv .venv
 ./.venv/bin/pip install -r requirements.txt
-cp .env.example .env        # điền GROQ_API_KEY để bật trợ lý AI (không bắt buộc)
+cp .env.example .env            # điền GROQ_API_KEY nếu muốn bật LLM
 cd ../..
 
-# 4. Chạy
-pnpm dev:api                # Spring Boot  http://localhost:8100
-pnpm dev:assistant          # FastAPI      http://localhost:8101  (trợ lý AI)
-pnpm dev:web                # Next.js      http://localhost:3000
-pnpm dev:mobile             # Expo (cần .env với EXPO_PUBLIC_API_BASE)
+cp apps/api-java/.env.example apps/api-java/.env
+cp apps/web/.env.example       apps/web/.env.local
+cp apps/mobile/.env.example    apps/mobile/.env
 ```
 
-`apps/web` proxy `/api/*` sang backend qua `next.config.ts`, nên web chạy được cả
-localhost lẫn tunnel ngrok mà không phải sửa IP. App mobile **không** có lớp proxy
-đó — phải đặt `EXPO_PUBLIC_API_BASE` là URL tuyệt đối (emulator Android dùng
-`http://10.0.2.2:8100`).
+## Chạy
 
-Đại lý mẫu: `DL001` (Vàng, hạn mức lớn), `DL002` (Bạc, đang vượt hạn mức — dễ thấy
-luồng "vượt hạn mức → chờ duyệt"), `DL003` (Kim Cương).
+| Lệnh | App | Cổng |
+|---|---|---|
+| `pnpm dev:api` | Spring Boot | `8100` |
+| `pnpm dev:assistant` | FastAPI (trợ lý AI) | `8101` |
+| `pnpm dev:web` | Next.js | `3000` |
+| `pnpm dev:mobile` | Expo | — |
+| `pnpm dev` | **cả 4 cùng lúc** (Turborepo) | |
 
-## Nối SAP Business One
+`apps/web` proxy `/api/*` sang backend qua `next.config.ts`, nên chạy được cả
+localhost lẫn tunnel ngrok mà không sửa IP. App mobile **không** có lớp proxy đó —
+phải đặt `EXPO_PUBLIC_API_BASE` là URL tuyệt đối (emulator Android dùng
+`http://10.0.2.2:8100`, **không phải** localhost).
+
+Đại lý mẫu: `DL001` (Vàng, hạn mức lớn), `DL002` (Bạc, **đang vượt hạn mức** — dễ
+thấy luồng chờ duyệt), `DL003` (Kim Cương).
+
+## Kiểm tra
 
 ```bash
-# apps/api-java/.env
-BQ_DATA_SOURCE=sapb1
-SAPB1_BASE_URL=https://sap-server.bq.local:50000/b1s/v1
-SAPB1_COMPANY_DB=...
-SAPB1_USERNAME=...
-SAPB1_PASSWORD=...
+pnpm turbo run build       # 4 app
+pnpm turbo run test        # 5 package
+pnpm turbo run typecheck   # 7 package
+pnpm turbo run lint        # 7 package
+pnpm contracts:pull        # cập nhật openapi.json (backend Java phải đang chạy)
 ```
 
-Frontend và mobile **không cần sửa gì**. Phần còn phải viết nằm gọn trong
-`apps/api-java/src/main/java/vn/com/giaybq/api/adapters/sapb1/` — danh sách chính xác
-ở [`docs/architecture.md` §5](docs/architecture.md).
+| Đường dẫn | Dùng để |
+|---|---|
+| `http://localhost:8100/openapi.json` | hợp đồng API |
+| `http://localhost:8100/docs` | Swagger UI (**tắt ở production**) |
 
-> Backend Java đã đối chiếu với bản Python: **15/16 endpoint khớp byte-for-byte**,
-> 22/22 route trong hợp đồng OpenAPI đều phục vụ được. Case khác biệt duy nhất là sửa
-> có chủ ý, xem [§6](docs/architecture.md).
+---
+
+## Kiến trúc
+
+Chi tiết: **[`docs/architecture.md`](docs/architecture.md)**
+
+```
+apps/web ──┐
+           ├──► apps/api-java :8100 ──/api/assistant*──► apps/api :8101
+apps/mobile┘         │        ▲                              │
+                     │        └────────── bq_client ─────────┘
+                     ▼
+        ports/ ──┬── adapters/demo   (JSON + SQLite)
+                 └── adapters/sapb1  (SAP Business One Service Layer)
+```
+
+Đổi nguồn dữ liệu bằng **một biến môi trường** `BQ_DATA_SOURCE=demo|sapb1` —
+không sửa controller, frontend hay mobile.
+
+### Quyết định kiến trúc (ADR)
+
+- [0001 — Cấu trúc monorepo](docs/adr/0001-monorepo-structure.md)
+- [0002 — Hai backend: Python và Java](docs/adr/0002-backend-api-vs-api-java.md) 🟡 *chờ quyết định*
+
+### Tài liệu nhị phân
+
+Slide, video, bảng tính **lưu ngoài repo** — xem [`docs/README.md`](docs/README.md).
+
+---
+
+## Deploy
+
+| Nền tảng | Deploy gì | Lọc |
+|---|---|---|
+| **Vercel** | `@bq/web` | `ignoreCommand: npx turbo-ignore @bq/web` |
+| **Render** | `bq-api` (Docker, Java) | `buildFilter: apps/api-java/**` |
+| **Render** | `bq-assistant` (Python) | `buildFilter: apps/api/**` |
+
+> Khi đã nối SAP B1: Service Layer thường nằm trong mạng nội bộ của BQ. Cloud công
+> cộng sẽ **không gọi tới được** — cần VPN, reverse proxy có TLS + IP allowlist,
+> hoặc tự host (`apps/api-java/Dockerfile`). Đây là quyết định hạ tầng, chốt trước
+> khi hứa ngày go-live.
