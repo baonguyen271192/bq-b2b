@@ -8,9 +8,10 @@
     "start": "./.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8101}",
     "build": "./.venv/bin/python -m compileall -q app",
     "test": "./.venv/bin/python -m compileall -q app && ./.venv/bin/python -c 'import app.main'",
-    "lint": "echo '[@bq/api] CHƯA cấu hình linter (ruff/flake8) — xem Phase 4'",
-    "typecheck": "echo '[@bq/api] CHƯA cấu hình mypy — xem Phase 4'",
+    "lint": "./.venv/bin/ruff check app",
+    "typecheck": "echo '[@bq/api] CHƯA cấu hình mypy — quyết định riêng, xem báo cáo Phase 4'",
     "setup": "python3.12 -m venv .venv && ./.venv/bin/pip install -r requirements.txt",
-    "clean": "rm -rf .venv __pycache__ .turbo"
+    "clean": "rm -rf .venv __pycache__ .turbo",
+    "format": "./.venv/bin/ruff format app"
   }
 }

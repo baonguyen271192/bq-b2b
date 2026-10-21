@@ -1,0 +1,26 @@
+# Linter cho service trợ lý AI.
+# Chọn ruff thay vì flake8+isort+black vì nó thay được cả ba và chạy nhanh hơn
+# hẳn — quan trọng khi lint nằm trong pipeline turbo chạy mỗi lần commit.
+
+target-version = "py312"
+line-length = 100
+
+exclude = [".venv", "__pycache__", "app/catalog.py"]
+
+[lint]
+select = [
+    "E",    # pycodestyle — lỗi
+    "F",    # pyflakes — biến/import không dùng, tên không tồn tại
+    "I",    # isort — thứ tự import
+    "B",    # flake8-bugbear — bẫy logic phổ biến
+    "UP",   # pyupgrade — cú pháp cũ so với target-version
+    "SIM",  # flake8-simplify
+]
+ignore = [
+    # Dòng dài trong chuỗi prompt LLM và chú thích tiếng Việt là cố ý.
+    "E501",
+]
+
+[lint.per-file-ignores]
+# __init__.py tái xuất là mục đích của nó.
+"__init__.py" = ["F401"]

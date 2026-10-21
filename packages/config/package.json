@@ -1,0 +1,25 @@
+{
+  "name": "@bq/config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Cấu hình dùng chung: ESLint (flat config). Ghim ESLint 9.x vì eslint-plugin-react (do eslint-config-expo kéo về) khai peer tối đa ^9.7 và vỡ trên ESLint 10. TypeScript config nằm ở @bq/tsconfig.",
+  "exports": {
+    "./eslint/base": "./eslint/base.js",
+    "./eslint/library": "./eslint/library.js",
+    "./eslint/next": "./eslint/next.js",
+    "./eslint/expo": "./eslint/expo.js"
+  },
+  "scripts": {
+    "clean": "rm -rf .turbo node_modules"
+  },
+  "dependencies": {
+    "@eslint/js": "^9.39.5",
+    "typescript-eslint": "^8.72.0",
+    "eslint-config-next": "^16.4.2",
+    "eslint-config-expo": "^58.0.4"
+  },
+  "peerDependencies": {
+    "eslint": "^9.39.5"
+  }
+}

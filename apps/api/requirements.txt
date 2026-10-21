@@ -1,3 +1,7 @@
 fastapi>=0.110
 uvicorn[standard]>=0.29
 python-dotenv>=1.0
+
+# Linter + formatter. Tách khỏi runtime bằng requirements-dev.txt nếu sau này
+# muốn ảnh image production nhỏ hơn.
+ruff>=0.9

@@ -10,7 +10,7 @@
     "web": "expo start --web",
     "build": "expo export --platform ios --output-dir dist/ios && expo export --platform android --output-dir dist/android",
     "test": "echo '[@bq/mobile] CHƯA có test — xem Phase 4'",
-    "lint": "expo lint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "doctor": "expo-doctor",
     "clean": "rm -rf .expo .turbo node_modules"
@@ -39,7 +39,9 @@
     "react-native-web": "^0.21.4"
   },
   "devDependencies": {
+    "@bq/config": "workspace:*",
     "@types/react": "~19.3.0",
+    "eslint": "^9.39.5",
     "typescript": "~6.0.3"
   }
 }
