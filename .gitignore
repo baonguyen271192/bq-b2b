@@ -18,8 +18,8 @@ build/
 .expo/
 
 # Env & secrets
-.env
-.env.*
+# .env* (không phải .env.*) để bắt cả .envrc, .env-local, .env.production.local...
+.env*
 !.env.example
 
 # Runtime artifacts (DB demo — KHÔNG commit)
@@ -30,6 +30,9 @@ build/
 
 # Deploy
 .vercel
+
+# Log
+*.log
 
 # OS
 .DS_Store
