@@ -58,20 +58,24 @@ const SPLASH_VERSION = process.env.EXPO_PUBLIC_SPLASH_VERSION ?? "không-rõ";
 // ---------------------------------------------------------------------------
 
 /**
- * Bề rộng logo lúc NGHỈ, theo tỉ lệ bề rộng màn.
+ * Bề rộng logo lúc NGHỈ, tính bằng pt — CỐ ĐỊNH, không theo tỉ lệ bề rộng màn.
  *
- * LƯU Ý KHỚP VỚI NATIVE SPLASH: `imageWidth` của expo-splash-screen trong
- * app.json là một số pt CỐ ĐỊNH, không nhận phần trăm. Nên hai yêu cầu "logo
- * 34% bề rộng màn" và "native splash khớp đúng cỡ đó" chỉ đồng thời đúng trên
- * MỘT bề rộng màn. Đã chốt theo iPhone 17 Pro (402pt):
- *   0.92 × 0.34 × 402 = 125.7  ->  imageWidth = 126
- * Trên máy khác, khung JS đầu tiên lệch so với native splash:
- *   iPhone SE (375pt)         JS 117.3pt vs native 126pt  =>  +8.7pt
- *   iPhone 17 Pro Max (440pt) JS 137.6pt vs native 126pt  => -11.6pt
- * Muốn khớp tuyệt đối trên mọi máy thì đổi dòng dưới thành hằng số pt (137)
- * thay vì tỉ lệ — đánh đổi: logo không còn co theo bề rộng màn.
+ * Trước đây là `width * 0.34`. Bỏ vì `imageWidth` của expo-splash-screen trong
+ * app.json là một số pt CỐ ĐỊNH, không nhận phần trăm, nên "logo 34% bề rộng
+ * màn" và "native splash khớp đúng cỡ đó" chỉ đồng thời đúng trên MỘT bề rộng.
+ * Hậu quả đo được trên video quay từ iPhone 17 Pro Max (440pt):
+ *   native vẽ logo 126pt, khung JS đầu vào ở 0.92 × 0.34 × 440 = 137.6pt
+ *   -> bbox nhảy 122.0pt -> 135.6pt trong ĐÚNG MỘT KHUNG, nở bung 6.8pt mỗi bên
+ * Cùng loại lỗi với cú pop 9.2% đã sửa ở nhánh Reduce Motion — không thể một
+ * chỗ gọi là lỗi, chỗ kia gọi là thiết kế.
+ *
+ * Chốt 137pt thì 0.92 × 137 = 126.04 ≈ imageWidth, khớp trên MỌI máy. Đánh đổi:
+ * logo không co theo màn, nên tỉ lệ so với bề rộng thay đổi theo máy —
+ *   iPhone SE 375pt -> 36.5%   ·   17 Pro 402pt -> 34.1%   ·   Pro Max 440pt -> 31.1%
+ * Mắt đọc là "khoảng một phần ba" ở cả ba, còn biên độ nở thì bằng nhau tuyệt
+ * đối (11.0pt), nên độ nhìn thấy của hoạt cảnh không đổi giữa các máy.
  */
-const LOGO_WIDTH_RATIO = 0.34;
+const LOGO_REST_W = 137;
 /** Bề rộng logo trong native splash, pt. PHẢI bằng `imageWidth` ở app.json. */
 const NATIVE_LOGO_W = 126;
 /** Tỉ lệ cao/rộng của logo-mark-white.png. */
@@ -590,7 +594,7 @@ export function BrandSplash({
   }, [timelineDone, ready, error, reduceMotion, beat, height, v, onExitStart, onFinish, log, flushLog]);
 
   // --- Hình học -------------------------------------------------------------
-  const logoW = width * LOGO_WIDTH_RATIO;
+  const logoW = LOGO_REST_W;
   const logoH = logoW * LOGO_RATIO;
   const glowD = logoW * GLOW_RATIO;
   const logoTop = height / 2 - logoH / 2;
