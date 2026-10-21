@@ -61,6 +61,19 @@ fi
 name=$(xcrun simctl list devices | grep -F "$udid" | sed 's/^ *//;s/ (.*//' || true)
 log "máy ảo: $name ($udid)"
 
+# Script chỉ cài lên MỘT máy. Nếu đang bật nhiều máy thì DeviceHub liệt kê hết,
+# rất dễ mở nhầm máy còn bản cũ rồi tưởng sửa chưa ăn. Đã mất một vòng vì đúng
+# chuyện này: bản cũ trên iPhone 17 Pro Max còn ảnh giày sau khi đã gỡ.
+booted=$(xcrun simctl list devices booted | grep -cE '^ +[A-Za-z]' || true)
+if [ "${booted:-0}" -gt 1 ]; then
+  log ""
+  log "LƯU Ý: đang bật $booted máy ảo, script chỉ cài lên \"$name\"."
+  log "DeviceHub liệt kê cả $booted máy — các máy kia có thể còn BẢN CŨ."
+  log "Cài bản này lên máy khác:"
+  log "  xcrun simctl install <UDID> \"\$PWD/ios/build/Build/Products/$config-iphonesimulator/<scheme>.app\""
+  log ""
+fi
+
 # --- 2. Sinh project native nếu chưa có -------------------------------------
 # ios/ là sản phẩm phụ (Continuous Native Generation), bị gitignore — sinh lại
 # được bất cứ lúc nào từ app.json.
