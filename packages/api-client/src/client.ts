@@ -40,8 +40,7 @@ export interface BqApiClient {
   createDealer(body: Record<string, unknown>): Promise<Dealer>;
   updateDealer(code: string, body: DealerPatch): Promise<Dealer>;
   // --- Đơn lẻ (service Commerce) ---
-  retailOrders(storeId?: string): Promise<RetailOrder[]>;
-  retailProductImages(storeId?: string): Promise<Record<string, string>>;
+  retailOrders(): Promise<RetailOrder[]>;
   retailAdvance(id: string): Promise<RetailOrder>;
   retailCancel(id: string): Promise<RetailOrder>;
   /** Thoát hiểm: gọi endpoint chưa được bọc trong client. */
@@ -93,12 +92,9 @@ export function createApiClient(config: HttpConfig): BqApiClient {
     updateDealer: (code, body) =>
       j<Dealer>(`/api/admin/dealers/${code}`, { method: "PUT", body: JSON.stringify(body) }),
 
-    retailOrders: (storeId = "default") =>
-      j<RetailOrder[]>(`/commerce-api/orders?store_id=${storeId}`),
-    retailProductImages: (storeId = "default") =>
-      j<Record<string, string>>(`/commerce-api/product-images?store_id=${storeId}`),
-    retailAdvance: (id) => j<RetailOrder>(`/commerce-api/orders/${id}/advance`, post({})),
-    retailCancel: (id) => j<RetailOrder>(`/commerce-api/orders/${id}/cancel`, post({})),
+    retailOrders: () => j<RetailOrder[]>("/api/retail/orders"),
+    retailAdvance: (id) => j<RetailOrder>(`/api/retail/orders/${id}/advance`, post({})),
+    retailCancel: (id) => j<RetailOrder>(`/api/retail/orders/${id}/cancel`, post({})),
 
     raw: j,
   };

@@ -17,8 +17,9 @@ export default function OrdersPage() {
     { kind: "wholesale"; o: Order } | { kind: "retail"; o: RetailOrder } | null
   >(null);
   // Ảnh sản phẩm cho modal chi tiết — đơn không mang sẵn ảnh, tra theo mã từ danh mục.
-  const [wholesaleImg, setWholesaleImg] = useState<Record<string, string>>({});
-  const [retailImg, setRetailImg] = useState<Record<string, string>>({});
+  // MỘT danh mục cho cả đơn sỉ lẫn đơn lẻ: trước đây ảnh đơn lẻ lấy từ service
+  // Commerce bên ngoài, nên hai bên có thể lệch ảnh cho cùng một mã hàng.
+  const [productImg, setProductImg] = useState<Record<string, string>>({});
 
   const load = useCallback(() => {
     api.orders().then(setOrders).catch(() => {});
@@ -33,9 +34,8 @@ export default function OrdersPage() {
 
   useEffect(() => {
     api.adminProducts().then((ps) => {
-      setWholesaleImg(Object.fromEntries(ps.map((p) => [p.code, p.image])));
+      setProductImg(Object.fromEntries(ps.map((p) => [p.code, p.image])));
     }).catch(() => {});
-    api.retailProductImages().then(setRetailImg).catch(() => {});
   }, []);
 
   const act = async (fn: () => Promise<unknown>, id: string) => {
@@ -82,10 +82,10 @@ export default function OrdersPage() {
             onOpen={(o) => setDetail({ kind: "retail", o })} />}
 
       {detail?.kind === "wholesale" && (
-        <WholesaleDetailModal o={detail.o} images={wholesaleImg} onClose={() => setDetail(null)} />
+        <WholesaleDetailModal o={detail.o} images={productImg} onClose={() => setDetail(null)} />
       )}
       {detail?.kind === "retail" && (
-        <RetailDetailModal o={detail.o} images={retailImg} onClose={() => setDetail(null)} />
+        <RetailDetailModal o={detail.o} images={productImg} onClose={() => setDetail(null)} />
       )}
     </div>
   );
