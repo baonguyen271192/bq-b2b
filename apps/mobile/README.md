@@ -23,6 +23,25 @@ pnpm dev:mobile               # Expo
 App native **không có lớp proxy** như `apps/web`, nên URL phải tuyệt đối. App chặn
 ngay lúc khởi động nếu thiếu biến này.
 
+### Chạy trên máy ảo iOS
+
+```bash
+pnpm dev:mobile          # Metro, ở terminal khác
+pnpm --filter=@bq/mobile ios
+```
+
+Lệnh `ios` gọi `scripts/run-ios.sh`, **không** gọi `expo run:ios`. Lý do: Xcode 27
+(06/2026) đã bỏ `Simulator.app` và thay bằng `DeviceHub.app`; Expo CLI vẫn dò
+đường dẫn cũ nên build xong thì dừng ở bước mở máy ảo
+([expo/expo#46671](https://github.com/expo/expo/issues/46671)). Script đi thẳng
+`xcodebuild` + `simctl` nên chạy được cả Xcode 27 lẫn bản cũ hơn.
+
+Chỉ định máy ảo: `pnpm --filter=@bq/mobile ios "iPhone 17 Pro Max"`.
+
+> Trên Xcode 27, cửa sổ xem máy ảo là **Device Hub**
+> (`Xcode.app/Contents/Applications/DeviceHub.app`), không phải Simulator nữa.
+> Đừng mất công đi tìm `Simulator.app` — nó không còn tồn tại.
+
 ### Xem nhanh trên trình duyệt
 
 ```bash
