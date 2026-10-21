@@ -18,6 +18,7 @@ import { CartProvider } from "@/lib/cart";
 import { SessionProvider } from "@/lib/session";
 import { BrandSplash } from "@/components/brand/BrandSplash";
 import { colors } from "@/legacy-theme";
+import { color } from "@/theme";
 
 // Giữ native splash cho tới khi BrandSplash đã vẽ xong khung đầu tiên. Thiếu dòng
 // này thì giữa native splash và JS có một nháy trắng.
@@ -32,6 +33,12 @@ void SplashScreen.preventAutoHideAsync();
  * Chữ nhảy font một nhịp vẫn hơn một app không bao giờ mở.
  */
 const FONT_TIMEOUT_MS = 2500;
+
+/**
+ * Màu nền dùng chung cho native splash, root view và Stack khi splash còn hiện.
+ * PHẢI trùng `backgroundColor` trong app.json — lệch một chút là thấy ranh giới.
+ */
+const SPLASH_BG = color.bq;
 
 /**
  * Thời gian tối đa chờ backend trả lời lúc khởi động.
@@ -158,12 +165,22 @@ export default function RootLayout() {
   }, [enter]);
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
-  // Gỡ native splash ngay khi React đã có gì để vẽ — BrandSplash khớp khít cảnh
-  // của nó nên người dùng không thấy chuyển giao.
-  useEffect(() => { void SplashScreen.hideAsync(); }, []);
+  /**
+   * Gỡ native splash CHỈ KHI BrandSplash đã vẽ xong khung đầu và ảnh giày đã
+   * giải mã.
+   *
+   * Trước đây gọi trong một useEffect lúc mount: native splash biến mất ngay khi
+   * React commit lần đầu, trong khi BrandSplash còn chưa có ảnh — vài khung đó
+   * lộ nền của root view, và đó chính là cú chớp trắng thấy trong video.
+   */
+  const revealApp = useCallback(() => { void SplashScreen.hideAsync(); }, []);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    // Nền root CÙNG MÀU splash khi splash còn hiện: mọi khung mà RN chưa kịp vẽ
+    // nội dung đều rơi vào màu này thay vì màu trắng mặc định.
+    <GestureHandlerRootView
+      style={{ flex: 1, backgroundColor: splashGone ? colors.bg : SPLASH_BG }}
+    >
       <SafeAreaProvider>
         <SessionProvider>
           <CartProvider>
@@ -183,7 +200,9 @@ export default function RootLayout() {
                 headerStyle: { backgroundColor: colors.surface },
                 headerTitleStyle: { fontFamily: "Inter_700Bold", fontSize: 17, color: colors.text },
                 headerTintColor: colors.brand[500],
-                contentStyle: { backgroundColor: colors.bg },
+                // Cùng lý do: trong lúc splash còn phủ, nền của Stack phải là màu
+                // splash — không thì lúc splash mờ đi sẽ thấy một lớp sáng lọt qua.
+                contentStyle: { backgroundColor: splashGone ? colors.bg : SPLASH_BG },
               }}
             >
               <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -203,6 +222,7 @@ export default function RootLayout() {
                 progress={progress}
                 error={loadError}
                 onRetry={retry}
+                onReadyToReveal={revealApp}
                 onExitStart={handleSplashExitStart}
                 onFinish={handleSplashFinish}
               />

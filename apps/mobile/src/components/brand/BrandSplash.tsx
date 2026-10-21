@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AccessibilityInfo, Animated, Easing, Image, StyleSheet, useWindowDimensions, View,
 } from "react-native";
@@ -57,8 +57,19 @@ const BEAT = {
   taglineDelay: 700, tagline: 300,
 } as const;
 
-/** Giữ splash tối thiểu bấy nhiêu, kể cả khi nạp xong sớm. */
-const MIN_MS = 1600;
+/**
+ * Thời điểm thoát = muộn hơn trong hai mốc: mount + 1200ms, và nạp-xong + 300ms.
+ *
+ * Nạp nhanh thì sàn 1,2s giữ cho splash không nháy qua; nạp chậm thì trần
+ * "load + 300ms" không bắt người dùng ngồi nhìn thêm.
+ */
+const MIN_HOLD_MS = 1200;
+
+/** Hiệu ứng "sống động" bắt đầu, tính từ lúc mount. */
+const LIFE_DELAY = 700;
+/** Nửa chu kỳ lơ lửng / nhịp sáng. */
+const LIFE_HALF = 450;
+const AFTER_READY_MS = 300;
 /**
  * Chuyển cảnh ra.
  *
@@ -98,6 +109,14 @@ export interface BrandSplashProps {
    * đứng yên trong khi splash tan ra — mắt không có gì để bám theo.
    */
   onExitStart?: () => void;
+  /**
+   * Gọi khi splash đã vẽ xong khung đầu VÀ ảnh giày đã giải mã.
+   *
+   * Nơi gọi dùng tín hiệu này để gỡ native splash. Gỡ sớm hơn — ví dụ trong một
+   * useEffect lúc mount — sẽ lộ nền của root view trong vài khung trước khi
+   * BrandSplash kịp vẽ: đó chính là cú chớp trắng.
+   */
+  onReadyToReveal?: () => void;
   /** Gọi khi splash đã mờ hẳn; nơi gọi gỡ component khỏi cây. */
   onFinish: () => void;
 }
@@ -114,13 +133,23 @@ export interface BrandSplashProps {
  * thứ chưa từng được dùng ở đâu trong repo này nên chưa ai xác minh.
  */
 export function BrandSplash({
-  ready, progress, error, onRetry, onExitStart, onFinish,
+  ready, progress, error, onRetry, onExitStart, onReadyToReveal, onFinish,
 }: BrandSplashProps) {
   // useWindowDimensions thay cho Dimensions.get(): hàm kia không thuần nên gọi
   // trong render bị chặn, và nó cũng không cập nhật khi xoay máy.
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [reduceMotion, setReduceMotion] = useState<boolean | null>(null);
+  // Gỡ native splash chỉ khi CẢ HAI điều kiện đạt: đã có layout, và ảnh giày đã
+  // giải mã xong. Thiếu một trong hai là hở ra một khung chưa vẽ gì.
+  const laidOut = useRef(false);
+  const shoeLoaded = useRef(false);
+  const revealed = useRef(false);
+  const maybeReveal = useCallback(() => {
+    if (revealed.current || !laidOut.current || !shoeLoaded.current) return;
+    revealed.current = true;
+    onReadyToReveal?.();
+  }, [onReadyToReveal]);
   // Mốc thời gian ghi trong effect, KHÔNG trong render: Date.now() không thuần.
   const mountedAt = useRef<number | null>(null);
 
@@ -136,6 +165,8 @@ export function BrandSplash({
     contentOpacity: new Animated.Value(1),
     contentY: new Animated.Value(0),
     bar: new Animated.Value(0),
+    float: new Animated.Value(0),     // giày lơ lửng 0 -> -6 -> 0
+    pulse: new Animated.Value(0),     // nhịp sáng của vùng glow
   }), []);
 
   useEffect(() => {
@@ -151,8 +182,9 @@ export function BrandSplash({
 
     if (reduceMotion) {
       // Tôn trọng Reduce Motion: hiện thẳng ở trạng thái cuối, không trượt.
-      v.logoY.setValue(1); v.glow.setValue(1); v.shoeX.setValue(0);
+      v.logoY.setValue(1); v.shoeX.setValue(0);
       v.shoeOpacity.setValue(1); v.shadowScale.setValue(1); v.taglineOpacity.setValue(1);
+      v.glow.setValue(0.625);
       return;
     }
 
@@ -164,7 +196,10 @@ export function BrandSplash({
       Animated.sequence([
         Animated.delay(BEAT.glowDelay),
         Animated.timing(v.glow, {
-          toValue: 1, duration: BEAT.glow, easing: Easing.out(Easing.quad), useNativeDriver: true,
+          // 0.625 = 0.10/0.16: PNG nướng sẵn đỉnh 0.16 để nhịp sáng ở mục 3 có
+          // chỗ chạy lên — opacity của View không vượt được 1.
+          toValue: 0.625, duration: BEAT.glow, easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
         }),
       ]),
       Animated.sequence([
@@ -194,6 +229,54 @@ export function BrandSplash({
     ]).start();
   }, [reduceMotion, v]);
 
+  /**
+   * Hai hiệu ứng "sống động" sau khi giày đã vào (~900ms).
+   *
+   * Chọn LƠ LỬNG + NHỊP SÁNG, bỏ vệt sáng quét qua mặt da: hiệu ứng đó cần
+   * `@react-native-masked-view/masked-view` để giới hạn trong hình giày, mà gói
+   * này mới chỉ là phụ thuộc BẮC CẦU trong repo — chưa khai trực tiếp thì không
+   * dùng (spec cho phép bỏ).
+   *
+   * Cả hai KHÔNG kéo dài splash: chúng chạy song song với thời gian chờ, và
+   * `exiting` cắt chúng ngang khi tới lúc thoát.
+   */
+  const [exiting, setExiting] = useState(false);
+  useEffect(() => {
+    if (reduceMotion || reduceMotion === null || exiting) return;
+    // Khởi động ở 700ms chứ không 900ms, và chu kỳ 900ms chứ không 1200ms.
+    // SỐ HỌC: splash giữ tối thiểu 1200ms, giày vào xong ở 900ms -> chỉ còn
+    // 300ms, đo trên video ra đúng một cú trôi 2-4px chứ không ra nhịp lơ lửng.
+    // Vào sớm hơn 200ms (đúng lúc giày đang tắt dần đà trượt) và rút chu kỳ cho
+    // kịp thấy một nhịp nhấc; phần chưa xong thì bước thoát cắt mượt.
+    const start = setTimeout(() => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(v.float, {
+            toValue: 1, duration: LIFE_HALF, easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(v.float, {
+            toValue: 0, duration: LIFE_HALF, easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+      ).start();
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(v.pulse, {
+            toValue: 1, duration: LIFE_HALF, easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(v.pulse, {
+            toValue: 0, duration: LIFE_HALF, easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+      ).start();
+    }, LIFE_DELAY);
+    return () => clearTimeout(start);
+  }, [reduceMotion, exiting, v]);
+
   // --- Thanh tiến độ bám tiến độ nạp THẬT ---
   useEffect(() => {
     Animated.timing(v.bar, {
@@ -211,9 +294,14 @@ export function BrandSplash({
   useEffect(() => {
     if (!ready || error) return;
     const since = mountedAt.current ?? Date.now();
-    const delay = Math.max(0, MIN_MS - (Date.now() - since));
+    const delay = Math.max(MIN_HOLD_MS - (Date.now() - since), AFTER_READY_MS);
     const t = setTimeout(() => {
       onExitStart?.();
+      // Dừng vòng lặp lơ lửng/nhịp sáng rồi đưa về 0 trong cùng nhịp thoát —
+      // cắt phựt sẽ thấy giày khựng một cái trước khi rời đi.
+      setExiting(true);
+      v.float.stopAnimation();
+      v.pulse.stopAnimation();
 
       if (reduceMotion) {
         Animated.timing(v.screenOpacity, {
@@ -235,6 +323,10 @@ export function BrandSplash({
         }),
         Animated.timing(v.shoeX, {
           toValue: -64, duration: OUT.content, easing: Easing.in(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(v.float, {
+          toValue: 0, duration: OUT.content, easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
         // Lớp 2: mảng màu nhấc lên sau, chậm hơn, kèm phóng nhẹ để đọc thành
@@ -314,6 +406,7 @@ export function BrandSplash({
         transform: [{ scale: v.screenScale }],
       }]}
       pointerEvents="none"
+      onLayout={() => { laidOut.current = true; maybeReveal(); }}
     >
       <StatusBar style="light" />
 
@@ -340,7 +433,11 @@ export function BrandSplash({
           width: glowSize, height: glowSize,
           left: width / 2 - glowSize / 2,
           top: shoeTop + shoeH / 2 - glowSize / 2,
-          opacity: v.glow,
+          // Nhịp sáng: 0.625 (=0.10) <-> 1 (=0.16) của đỉnh alpha nướng trong PNG.
+          opacity: Animated.add(
+            v.glow,
+            v.pulse.interpolate({ inputRange: [0, 1], outputRange: [0, 0.375] }),
+          ),
         }]}
         resizeMode="stretch"
         accessibilityIgnoresInvertColors
@@ -385,7 +482,14 @@ export function BrandSplash({
           left: width / 2 - shadowW / 2,
           top: shadowTop,
           opacity: v.shoeOpacity,
-          transform: [{ scale: v.shadowScale }],
+          // Giày nhấc lên thì bóng co lại: 1 -> 0.92. Bóng đứng yên trong khi
+          // giày bay là thứ mắt bắt lỗi ngay.
+          transform: [{
+            scale: Animated.multiply(
+              v.shadowScale,
+              v.float.interpolate({ inputRange: [0, 1], outputRange: [1, 0.92] }),
+            ),
+          }],
         }]}
         resizeMode="stretch"
         accessibilityIgnoresInvertColors
@@ -398,11 +502,21 @@ export function BrandSplash({
             { width: shoeW, height: shoeH },
             {
               opacity: v.shoeOpacity,
-              transform: [{ translateX: v.shoeX }, { rotate: "-6deg" }],
+              transform: [
+                { translateX: v.shoeX },
+                // Lơ lửng: nhấc tối đa 6px.
+                { translateY: v.float.interpolate({ inputRange: [0, 1], outputRange: [0, -6] }) },
+                // ĐO ĐƯỢC: ảnh nguồn đã nghiêng sẵn +11.21° (mũi chúc xuống),
+                // nên áp đúng "-6deg" chỉ ra +5.2° — vẫn chúc xuống, ngược hẳn ý
+                // đồ. Xoay -17.2° để KẾT QUẢ là -6° (mũi chếch lên) như spec mô
+                // tả. Đừng "sửa" về -6: con số đó đúng khi ảnh nằm ngang.
+                { rotate: "-17.2deg" },
+              ],
             },
           ]}
           resizeMode="contain"
           accessibilityIgnoresInvertColors
+          onLoad={() => { shoeLoaded.current = true; maybeReveal(); }}
         />
       </Animated.View>
 
