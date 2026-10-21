@@ -4,7 +4,6 @@ import type { NextConfig } from "next";
 // Đọc từ .env — đổi môi trường (dev/staging/production) chỉ cần đổi 2 biến này,
 // KHÔNG cần sửa code/build lại. Mặc định về localhost cho chạy local như cũ.
 const BQ_API_URL = process.env.BQ_API_URL || "http://localhost:8100";
-const COMMERCE_API_URL = process.env.COMMERCE_API_URL || "http://localhost:8200";
 
 const nextConfig: NextConfig = {
   // Các package nội bộ xuất thẳng TypeScript nguồn (just-in-time packages) —
@@ -20,14 +19,14 @@ const nextConfig: NextConfig = {
 
   // Proxy API sang backend BQ → chỉ cần 1 tunnel/domain cho web, backend KHÔNG cần
   // expose ra ngoài (Next server tự gọi nội bộ).
-  // /commerce-api/* → service Commerce (đơn khách lẻ qua bot Facebook).
+  // Đơn lẻ (bot Facebook/Zalo) cũng đi qua đây: /api/retail/* thuộc backend BQ,
+  // không còn proxy sang service ngoài nào.
   //
-  // Lên production: đặt BQ_API_URL / COMMERCE_API_URL trong .env của môi trường đó
+  // Lên production: đặt BQ_API_URL trong .env của môi trường đó
   // trỏ tới đúng địa chỉ server thật, KHÔNG sửa file này.
   async rewrites() {
     return [
       { source: "/api/:path*", destination: `${BQ_API_URL}/api/:path*` },
-      { source: "/commerce-api/:path*", destination: `${COMMERCE_API_URL}/api/:path*` },
     ];
   },
 };

@@ -14,7 +14,7 @@
   },
   "servers": [
     {
-      "url": "http://127.0.0.1:8100",
+      "url": "http://localhost:8100",
       "description": "Generated server url"
     }
   ],
@@ -317,7 +317,7 @@
     },
     "/api/dealers": {
       "get": {
-        "operationId": "list_1",
+        "operationId": "list_2",
         "responses": {
           "200": {
             "content": {
@@ -340,7 +340,7 @@
     },
     "/api/dealers/{code}": {
       "get": {
-        "operationId": "get_1",
+        "operationId": "get_2",
         "parameters": [
           {
             "in": "path",
@@ -400,7 +400,7 @@
     },
     "/api/orders": {
       "get": {
-        "operationId": "list",
+        "operationId": "list_1",
         "parameters": [
           {
             "in": "query",
@@ -461,7 +461,7 @@
     },
     "/api/orders/{id}": {
       "get": {
-        "operationId": "get",
+        "operationId": "get_1",
         "parameters": [
           {
             "in": "path",
@@ -491,7 +491,7 @@
     },
     "/api/orders/{id}/advance": {
       "post": {
-        "operationId": "advance",
+        "operationId": "advance_1",
         "parameters": [
           {
             "in": "path",
@@ -571,7 +571,7 @@
     },
     "/api/orders/{id}/cancel": {
       "post": {
-        "operationId": "cancel",
+        "operationId": "cancel_1",
         "parameters": [
           {
             "in": "path",
@@ -688,6 +688,157 @@
         },
         "tags": [
           "catalog-controller"
+        ]
+      }
+    },
+    "/api/retail/orders": {
+      "get": {
+        "operationId": "list",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RetailOrder"
+                  }
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "retail-controller"
+        ]
+      },
+      "post": {
+        "operationId": "ingest",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-BQ-Retail-Key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRetailOrderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetailOrder"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "retail-controller"
+        ]
+      }
+    },
+    "/api/retail/orders/{id}": {
+      "get": {
+        "operationId": "get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetailOrder"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "retail-controller"
+        ]
+      }
+    },
+    "/api/retail/orders/{id}/advance": {
+      "post": {
+        "operationId": "advance",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetailOrder"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "retail-controller"
+        ]
+      }
+    },
+    "/api/retail/orders/{id}/cancel": {
+      "post": {
+        "operationId": "cancel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetailOrder"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "retail-controller"
         ]
       }
     },
@@ -864,6 +1015,58 @@
           "lines"
         ]
       },
+      "CreateRetailOrderRequest": {
+        "properties": {
+          "channel": {
+            "type": "string",
+            "minLength": 1
+          },
+          "customer_address": {
+            "type": "string"
+          },
+          "customer_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "customer_phone": {
+            "type": "string",
+            "minLength": 1
+          },
+          "flag_note": {
+            "type": "string"
+          },
+          "flagged": {
+            "type": "boolean"
+          },
+          "idempotency_key": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Item"
+            },
+            "minItems": 1
+          },
+          "payment": {
+            "type": "string"
+          },
+          "sender_id": {
+            "type": "string"
+          },
+          "subtotal": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "channel",
+          "customer_name",
+          "customer_phone",
+          "items"
+        ]
+      },
       "CreditDetail": {
         "properties": {
           "credit_available": {
@@ -955,6 +1158,36 @@
             "type": "string"
           }
         }
+      },
+      "Item": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sizes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "minProperties": 1
+          },
+          "unit_price": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "sizes"
+        ]
       },
       "JsonNode": {
         "properties": {
@@ -1274,6 +1507,85 @@
         "required": [
           "code"
         ]
+      },
+      "RetailOrder": {
+        "properties": {
+          "channel": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "customer_address": {
+            "type": "string"
+          },
+          "customer_name": {
+            "type": "string"
+          },
+          "customer_phone": {
+            "type": "string"
+          },
+          "flag_note": {
+            "type": "string"
+          },
+          "flagged": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RetailOrderItem"
+            }
+          },
+          "payment": {
+            "type": "string"
+          },
+          "payment_status": {
+            "type": "string"
+          },
+          "sender_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "subtotal": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "RetailOrderItem": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "line_total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "qty_total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sizes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "unit_price": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
       },
       "SaleAssistantBody": {
         "properties": {

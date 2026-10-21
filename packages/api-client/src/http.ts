@@ -6,11 +6,6 @@ export interface HttpConfig {
    * - Mobile: BẮT BUỘC đặt URL tuyệt đối — app native không có lớp proxy nào.
    */
   baseUrl: string;
-  /**
-   * Gốc cho `/commerce-api/*` (đơn LẺ từ service Commerce).
-   * Mặc định dùng chung `baseUrl` — đúng cho web vì Next proxy cả hai đường dẫn.
-   */
-  commerceBaseUrl?: string;
   /** Header bổ sung gắn vào mọi request (vd token xác thực sau này). */
   headers?: Record<string, string>;
   /** Tiêm fetch riêng cho test hoặc runtime không có global fetch. */
@@ -38,11 +33,7 @@ export function createRequester(config: HttpConfig): Requester {
   }
 
   return async function request<T>(path: string, init?: RequestInit): Promise<T> {
-    const root = path.startsWith("/commerce-api")
-      ? (config.commerceBaseUrl ?? config.baseUrl)
-      : config.baseUrl;
-
-    const res = await doFetch(`${root}${path}`, {
+    const res = await doFetch(`${config.baseUrl}${path}`, {
       ...init,
       headers: {
         "Content-Type": "application/json",

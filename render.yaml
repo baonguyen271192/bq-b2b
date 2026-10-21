@@ -85,6 +85,12 @@ services:
       - key: SAPB1_CATALOG_CACHE_TTL
         sync: false
 
+      # Khoá bot dùng để bắn đơn lẻ vào đây (header X-BQ-Retail-Key). PHẢI trùng
+      # với biến cùng tên ở bq-assistant. Để trống = endpoint nhận đơn TẮT, bot
+      # chốt đơn với khách xong sẽ không ghi được — đặt trước khi mở bot.
+      - key: BQ_RETAIL_INGEST_KEY
+        sync: false
+
   # --- Trợ lý AI (Python) ---------------------------------------------------
   # Giữ bằng Python có chủ ý: ~1.000 dòng xử lý tiếng Việt + 2 client LLM. Xem
   # docs/architecture.md §8.
@@ -131,3 +137,24 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+
+      # --- Bot bán lẻ (Facebook Messenger) ---
+      # Phiên hội thoại nằm trong BỘ NHỚ tiến trình (app/bot/session.py). Chạy
+      # nhiều instance thì mỗi bản giữ một phiên riêng và khách bị trả lời như
+      # người lạ. GIỮ MỘT INSTANCE cho tới khi chuyển phiên sang Redis.
+      - key: FB_VERIFY_TOKEN
+        sync: false
+      # Thiếu biến này thì webhook trả 503 (fail closed), KHÔNG chạy không xác thực.
+      - key: FB_APP_SECRET
+        sync: false
+      - key: FB_PAGE_ACCESS_TOKEN
+        sync: false
+      # PHẢI trùng BQ_RETAIL_INGEST_KEY của bq-api.
+      - key: BQ_RETAIL_INGEST_KEY
+        sync: false
+      # File JSON chính sách bán lẻ. Để trống thì bot thú nhận chưa biết thay vì bịa.
+      - key: BQ_RETAIL_POLICIES_FILE
+        sync: false
+
+      # BQ_BOT_SIMULATE cố ý KHÔNG khai ở đây: nó mở một endpoint tạo đơn THẬT mà
+      # không cần chữ ký Facebook. Chỉ bật tay lúc chạy thử, không để trong blueprint.

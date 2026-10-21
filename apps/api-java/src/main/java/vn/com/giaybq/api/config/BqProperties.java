@@ -13,10 +13,19 @@ public record BqProperties(
     Demo demo,
     SapB1 sapb1,
     Assistant assistant,
-    Cors cors
+    Cors cors,
+    Retail retail
 ) {
 
   public record Demo(String ordersDb) {}
+
+  /**
+   * Đơn lẻ từ bot chat.
+   *
+   * @param ingestKey khoá dùng chung bot phải gửi ở header {@code X-BQ-Retail-Key}.
+   *                  Để trống = TẮT endpoint nhận đơn (fail closed), không phải mở.
+   */
+  public record Retail(String ingestKey) {}
 
   public record SapB1(
       String baseUrl,
