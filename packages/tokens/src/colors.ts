@@ -17,6 +17,11 @@ export const color = {
   bqBright: "#FF7A1A",
   /** Nền chip/badge cam. Chữ ink trên nền này đạt 15.10:1. */
   bqTint: "#FDEBDD",
+  /** Dải sáng lướt qua logo trắng ở splash. KHÔNG dùng làm nền hay màu chữ: đây
+   *  là màu PHỦ LÊN mặt trắng để tạo vệt ấm nên nó cố tình gần trắng (chữ trắng
+   *  trên nó chỉ đạt 1.07:1). Trắng tinh không dùng được: phủ trắng lên trắng thì
+   *  không thấy gì — đo trên video bản Release, biên độ chỉ 0.6/255. */
+  bqShine: "#FFE7C2",
 
   // --- Nền và chữ ----------------------------------------------------------
   /** Chữ chính, và nền của những khối cố ý tối (tab bar). */

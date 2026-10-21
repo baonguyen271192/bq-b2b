@@ -16,8 +16,11 @@
 #   ./scripts/run-ios.sh                        # máy ảo đang bật, hoặc iPhone mới nhất
 #   ./scripts/run-ios.sh "iPhone 17 Pro Max"    # chỉ định theo tên
 #   ./scripts/run-ios.sh <UDID>
+#   ./scripts/run-ios.sh --release            # bản Release, JS nhúng sẵn
 #
-# Cần Metro chạy sẵn (`pnpm dev:mobile`) vì đây là bản Debug — JS nạp từ Metro.
+# Bản Debug cần Metro chạy sẵn (`pnpm dev:mobile`) vì JS nạp qua mạng. Bản Release
+# nhúng sẵn bundle JS nên chạy độc lập — dùng nó khi cần đo hiệu năng hoặc quay
+# video, vì Debug có thêm bridge dev, chậm hơn và nhịp animation không đại diện.
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -27,10 +30,22 @@ log() { printf '[run-ios] %s\n' "$*"; }
 
 command -v xcrun >/dev/null 2>&1 || die "Không có xcrun — cần cài Xcode."
 
+# --- 0. Cờ dòng lệnh --------------------------------------------------------
+config=Debug
+args=()
+for a in "$@"; do
+  case "$a" in
+    --release) config=Release ;;
+    --debug)   config=Debug ;;
+    *)         args+=("$a") ;;
+  esac
+done
+log "cấu hình: $config"
+
 # --- 1. Chọn máy ảo ---------------------------------------------------------
 udid_of() { sed -n 's/.*(\([0-9A-F][0-9A-F-]\{35\}\)).*/\1/p' | head -1; }
 
-want="${1:-${BQ_IOS_DEVICE:-}}"
+want="${args[0]:-${BQ_IOS_DEVICE:-}}"
 if [ -n "$want" ]; then
   # Khớp ĐÚNG tên trước: "iPhone 17 Pro" mà khớp một phần sẽ dính "iPhone 17 Pro
   # Max" — chạy nhầm máy mà không biết. Dòng của simctl có dạng "<tên> (<UDID>)",
@@ -78,11 +93,11 @@ log "scheme: $scheme"
 # --- 3. Build ---------------------------------------------------------------
 # CODE_SIGNING_ALLOWED=NO: build cho máy ảo không cần ký, bật lên chỉ tổ hỏi
 # chứng chỉ mà máy nào cũng khác nhau.
-log "build (lần đầu ~4 phút)"
+log "build (lần đầu ~4 phút; Release lâu hơn vì phải đóng gói JS)"
 xcodebuild \
   -workspace "$workspace" \
   -scheme "$scheme" \
-  -configuration Debug \
+  -configuration "$config" \
   -sdk iphonesimulator \
   -destination "id=$udid" \
   -derivedDataPath ios/build \
@@ -91,7 +106,7 @@ xcodebuild \
   || die "Build hỏng. Log đầy đủ: /tmp/bq-xcodebuild.log — 20 dòng cuối:
 $(tail -20 /tmp/bq-xcodebuild.log)"
 
-app="ios/build/Build/Products/Debug-iphonesimulator/$scheme.app"
+app="ios/build/Build/Products/$config-iphonesimulator/$scheme.app"
 [ -d "$app" ] || die "Build xong nhưng không thấy $app"
 
 # Đọc bundle id từ chính bản vừa build, KHÔNG đoán từ app.json: app.json có thể
@@ -126,8 +141,9 @@ else
 fi
 
 # --- 6. Nhắc Metro ----------------------------------------------------------
-# Bản Debug nạp JS từ Metro. Thiếu Metro thì app mở ra màn đỏ báo lỗi kết nối.
-if ! curl -sS --max-time 3 http://localhost:8081/status >/dev/null 2>&1; then
+# Chỉ bản Debug mới nạp JS từ Metro. Thiếu Metro thì app mở ra màn đỏ báo lỗi kết
+# nối. Bản Release đã nhúng bundle nên không cần.
+if [ "$config" = Debug ] && ! curl -sS --max-time 3 http://localhost:8081/status >/dev/null 2>&1; then
   log ""
   log "CẢNH BÁO: không thấy Metro ở :8081. Mở terminal khác và chạy:"
   log "  pnpm dev:mobile"
