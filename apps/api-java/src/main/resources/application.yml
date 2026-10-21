@@ -55,6 +55,12 @@ bq:
     # Thanh toán đối trừ vào hoá đơn (quy trình chuẩn) hay thẳng vào đơn hàng.
     payment-target: ${SAPB1_PAYMENT_TARGET:invoice}
 
+  retail:
+    # Khoá bot gửi ở header X-BQ-Retail-Key khi bắn đơn lẻ vào BQ.
+    # ĐỂ TRỐNG = TẮT endpoint nhận đơn. Cố ý fail closed: endpoint này ghi
+    # đơn THẬT, mở sẵn nghĩa là ai trên Internet cũng tạo được đơn cho BQ.
+    ingest-key: ${BQ_RETAIL_INGEST_KEY:}
+
   assistant:
     # Trợ lý AI vẫn chạy ở service Python (apps/api). Java proxy sang.
     # PHẢI khác cổng của chính Java (server.port) — trỏ trùng = proxy gọi lại chính
