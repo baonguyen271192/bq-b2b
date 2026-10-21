@@ -127,15 +127,19 @@ const SHINE_W_RATIO = 0.45;
  * gần như không ai thấy; dấu mốc ngày dùng `toISOString()` nên lật ngày theo
  * UTC, ở Việt Nam thành 7 giờ sáng; và phải đọc/ghi file ngay lúc khởi động.
  *
- * Tagline xong ở 1200, giữ thêm 600 rồi thoát.
+ * Tổng thời gian splash = 2800 (hoạt cảnh + giữ) + 400 (trượt ra) = 3200ms.
+ *
+ * Vệt sáng 900ms chứ không phải 600: ở 600ms dải lướt qua quá nhanh để kịp đọc
+ * ra là một vệt sáng. Tagline lùi xuống 1000 và kéo 500ms để còn chuyển động
+ * tới mốc 1500, nhờ vậy quãng đứng yên cuối chỉ là 1300 chứ không phải 1600.
  */
 const BEAT = {
   bg: { at: 0, dur: 500 },
   logo: { at: 0, dur: 500 },
   glow: { at: 0, dur: 900 },
-  shine: { at: 500, dur: 600 },
-  tagline: { at: 800, dur: 400 },
-  holdAfter: 600,
+  shine: { at: 500, dur: 900 },
+  tagline: { at: 1000, dur: 500 },
+  holdAfter: 1300,
 } as const;
 
 /** Mờ vào khi bật Reduce Motion. */
@@ -433,8 +437,13 @@ export function BrandSplash({
     seq.push(
       Animated.sequence([
         Animated.delay(BEAT.shine.at),
+        // Easing LINEAR, không phải inOut: inOut chạy nhanh nhất ở GIỮA quãng —
+        // đúng chỗ dải băng qua logo. Đo trên video bản Release với dur 900ms:
+        // độ sáng logo chỉ tụt trong 300ms, hai phần ba thời lượng còn lại dải
+        // nằm ngoài logo và chậm đi vô ích. Linear thì tốc độ băng qua đều, nên
+        // kéo dài thời lượng là kéo dài đúng phần nhìn thấy được.
         Animated.timing(v.shineX, {
-          toValue: 1, duration: BEAT.shine.dur, easing: Easing.inOut(Easing.quad),
+          toValue: 1, duration: BEAT.shine.dur, easing: Easing.linear,
           useNativeDriver: true,
         }),
       ]),
