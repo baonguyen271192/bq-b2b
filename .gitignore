@@ -37,9 +37,17 @@ build/
 # OS
 .DS_Store
 
-# Video demo (8MB nhị phân) — git không xoá được lịch sử file nhị phân, repo sẽ
-# phình vĩnh viễn. Cần version hoá thì dùng Git LFS: `git lfs track "*.mp4"`.
+# Tài liệu nhị phân — KHÔNG version hoá trong git.
+# Lý do: git lưu trọn vẹn từng phiên bản file nhị phân, không diff được; một file
+# .pptx sửa 10 lần là 10 bản đầy đủ nằm vĩnh viễn trong lịch sử. Bản gốc lưu ở
+# ngoài repo — xem docs/README.md.
+docs/**/*.pptx
+docs/**/*.xlsx
+docs/**/*.docx
+docs/**/*.pdf
 docs/demo-videos/
+docs/**/*.mp4
+docs/**/*.mov
 
 # Java / Maven
 target/

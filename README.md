@@ -24,6 +24,13 @@ packages/*       types · core · api-client · contracts · tsconfig (dùng chu
 
 Kiến trúc, ranh giới và kế hoạch nối SAP B1: **[`docs/architecture.md`](docs/architecture.md)**.
 
+Quyết định kiến trúc (ADR):
+- [0001 — Cấu trúc monorepo](docs/adr/0001-monorepo-structure.md)
+- [0002 — Hai backend: Python và Java](docs/adr/0002-backend-api-vs-api-java.md) 🟡 *chờ quyết định*
+
+Tài liệu nhị phân (slide, video, bảng tính) **lưu ngoài repo** — xem
+[`docs/README.md`](docs/README.md).
+
 ## Chạy thử
 
 ```bash
