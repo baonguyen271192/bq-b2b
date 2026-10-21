@@ -20,6 +20,7 @@ export default function CartPage() {
   // Chọn theo TỪNG SIZE — key = "code:size". Mặc định chọn hết.
   const K = (code: string, s: string) => `${code}:${s}`;
   useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- TODO(BQ-debt-3): đồng bộ lựa chọn theo giỏ; sửa sai cách làm mất trạng thái tick của người dùng
     setSelected((prev) => {
       const next: Record<string, boolean> = {};
       cart.forEach((l) => Object.keys(l.sizes).forEach((s) => { next[K(l.code, s)] = prev[K(l.code, s)] ?? true; }));

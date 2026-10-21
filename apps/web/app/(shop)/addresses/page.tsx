@@ -24,6 +24,7 @@ export default function AddressesPage() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- TODO(BQ-debt-2): đọc localStorage lúc render gây hydration mismatch trên App Router
       if (raw) { const l: Addr[] = JSON.parse(raw); setList(l); setSelected(l.find((a) => a.def)?.id || l[0]?.id || ""); }
     } catch { /* localStorage bị chặn (chế độ riêng tư): bỏ qua, dùng danh sách rỗng */ }
   }, []);

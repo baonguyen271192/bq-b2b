@@ -17,7 +17,7 @@ export default function ProfilePage() {
 
   const logout = () => {
     try { localStorage.clear(); } catch { /* không xoá được thì đăng xuất vẫn tiếp tục */ }
-    window.location.href = "/";
+    window.location.assign(new URL("/", window.location.origin).href);
   };
 
   // href rỗng = mục thông tin, mở bằng gọi/hotline; các mục có route thì điều hướng.
