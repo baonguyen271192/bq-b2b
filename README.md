@@ -137,7 +137,11 @@ không sửa controller, frontend hay mobile.
 
 ### Tài liệu nhị phân
 
-Slide, video, bảng tính **lưu ngoài repo** — xem [`docs/README.md`](docs/README.md).
+Không file nhị phân nào nằm trong git. Slide và bảng tính chỉ còn trong **lịch sử
+git** (có lệnh lấy lại); video demo nằm **ngoài repo, trên máy cá nhân**.
+
+**Chưa có kho lưu trữ dùng chung** — xem trạng thái từng file và rủi ro kèm theo ở
+[`docs/README.md`](docs/README.md).
 
 ---
 
