@@ -31,6 +31,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const d = localStorage.getItem("bq_dealer");
     const c = localStorage.getItem("bq_cart");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- TODO(BQ-debt-8): đọc localStorage lúc render gây hydration mismatch trên App Router
     if (d) setDealerState(d);
     if (c) try { setCart(JSON.parse(c)); } catch { /* giỏ hàng lưu hỏng: bỏ qua, bắt đầu giỏ rỗng */ }
     setReady(true);

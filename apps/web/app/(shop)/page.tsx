@@ -43,6 +43,7 @@ export default function Home() {
     };
     const dues = unpaid.map((iv) => { const t = parse(iv.created_at); t.setDate(t.getDate() + 30); return t; });
     const soonest = new Date(Math.min(...dues.map((x) => x.getTime())));
+    // eslint-disable-next-line react-hooks/purity -- TODO(BQ-debt-4): đưa Date.now() ra khỏi render sẽ đóng băng số ngày tới hạn tại lúc mount
     const days = Math.ceil((soonest.getTime() - Date.now()) / 86400000);
     const label = `${String(soonest.getDate()).padStart(2, "0")}/${String(soonest.getMonth() + 1).padStart(2, "0")}/${soonest.getFullYear()}`;
     return { label, days };

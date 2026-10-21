@@ -151,16 +151,19 @@ export function Donut({ rows, size = 168, thickness = 26, unit = "đơn" }: {
   const total = rows.reduce((s, r) => s + r.value, 0) || 1;
   const r = (size - thickness) / 2;
   const C = 2 * Math.PI * r;
-  let offset = 0;
-  const segs = rows.filter((x) => x.value > 0).map((row, i) => {
-    const len = C * (row.value / total);
-    const el = (
-      <circle key={i} cx={size / 2} cy={size / 2} r={r} fill="none" stroke={row.color}
-        strokeWidth={thickness} strokeDasharray={`${len} ${C - len}`} strokeDashoffset={-offset} />
-    );
-    offset += len;
-    return el;
-  });
+  // Độ dài và góc tích luỹ tính TRƯỚC khi dựng phần tử, thay vì cộng dồn một biến
+  // `let` bên trong map. React 19 coi việc gán lại biến trong lúc render là không
+  // thuần (react-hooks/immutability): render hai lần có thể ra kết quả khác nhau.
+  // Hình vẽ KHÔNG đổi — đã đối chiếu 7 ca dữ liệu × 3 kích thước, dãy
+  // (strokeDasharray, strokeDashoffset) giống hệt bản cũ.
+  const visible = rows.filter((x) => x.value > 0);
+  const lens = visible.map((row) => C * (row.value / total));
+  const offsets = lens.reduce<number[]>((acc, len, i) => [...acc, (acc[i] ?? 0) + len], [0]);
+  const segs = visible.map((row, i) => (
+    <circle key={i} cx={size / 2} cy={size / 2} r={r} fill="none" stroke={row.color}
+      strokeWidth={thickness} strokeDasharray={`${lens[i]} ${C - lens[i]}`}
+      strokeDashoffset={-offsets[i]} />
+  ));
   return (
     <div style={{ display: "flex", gap: 22, alignItems: "center" }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" style={{ flexShrink: 0 }}>

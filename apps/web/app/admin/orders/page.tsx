@@ -351,6 +351,7 @@ function DetailItemRow({ it, image }: { it: { code: string; name: string; sizes?
   return (
     <div style={{ display: "flex", gap: 10, padding: "10px 0", borderBottom: "1px solid var(--bq-line)" }}>
       {image
+      // eslint-disable-next-line @next/next/no-img-element -- TODO(BQ-debt-6): next/image cần khai remotePatterns cho domain ảnh, mà domain sẽ đổi khi nối SAP B1
         ? <img src={image} alt={it.name} style={{ width: 48, height: 48, borderRadius: 8, objectFit: "cover",
             flexShrink: 0, background: "#f4f6f8" }} />
         : <div style={{ width: 48, height: 48, borderRadius: 8, background: "#f4f6f8", flexShrink: 0 }} />}

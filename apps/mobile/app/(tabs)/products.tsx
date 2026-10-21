@@ -37,6 +37,7 @@ export default function ProductsScreen() {
     }
   }, [dealer, category]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- TODO(BQ-debt-1): đổi sang useSyncExternalStore kéo theo viết lại luồng load() dùng chung với onRefresh
   useEffect(() => { void load(); }, [load]);
 
   const visible = useMemo(() => {
