@@ -42,6 +42,12 @@ for a in "$@"; do
 done
 log "cấu hình: $config"
 
+# Đóng dấu ngày giờ build vào bundle. BrandSplash hiện dấu này ngay trên màn khi
+# EXPO_PUBLIC_SPLASH_DEBUG=1, nên video quay ra tự mang danh tính bản build —
+# đã mất ba vòng vào chuyện xem nhầm máy ảo còn bản cũ.
+export EXPO_PUBLIC_SPLASH_VERSION="${EXPO_PUBLIC_SPLASH_VERSION:-$(date '+%m%d-%H%M%S')}"
+log "dấu build: $EXPO_PUBLIC_SPLASH_VERSION"
+
 # --- 1. Chọn máy ảo ---------------------------------------------------------
 udid_of() { sed -n 's/.*(\([0-9A-F][0-9A-F-]\{35\}\)).*/\1/p' | head -1; }
 
@@ -61,17 +67,16 @@ fi
 name=$(xcrun simctl list devices | grep -F "$udid" | sed 's/^ *//;s/ (.*//' || true)
 log "máy ảo: $name ($udid)"
 
-# Script chỉ cài lên MỘT máy. Nếu đang bật nhiều máy thì DeviceHub liệt kê hết,
-# rất dễ mở nhầm máy còn bản cũ rồi tưởng sửa chưa ăn. Đã mất một vòng vì đúng
-# chuyện này: bản cũ trên iPhone 17 Pro Max còn ảnh giày sau khi đã gỡ.
-booted=$(xcrun simctl list devices booted | grep -cE '^ +[A-Za-z]' || true)
-if [ "${booted:-0}" -gt 1 ]; then
-  log ""
-  log "LƯU Ý: đang bật $booted máy ảo, script chỉ cài lên \"$name\"."
-  log "DeviceHub liệt kê cả $booted máy — các máy kia có thể còn BẢN CŨ."
-  log "Cài bản này lên máy khác:"
-  log "  xcrun simctl install <UDID> \"\$PWD/ios/build/Build/Products/$config-iphonesimulator/<scheme>.app\""
-  log ""
+# Nhiều máy ảo cùng bật là cái bẫy đã ba lần làm mất một vòng làm việc: script
+# cài lên một máy, DeviceHub liệt kê hết, xem nhầm máy còn bản cũ rồi kết luận
+# build không ăn. Cảnh báo không đủ — nên từ đây script CÀI LÊN MỌI MÁY ĐANG BẬT
+# (xem mục 4), và liệt kê ra ngay để biết sẽ đụng vào những máy nào.
+others=$(xcrun simctl list devices booted | sed -n 's/.*(\([0-9A-F][0-9A-F-]\{35\}\)).*/\1/p' | grep -v "$udid" || true)
+if [ -n "$others" ]; then
+  log "máy ảo khác đang bật, sẽ cài bản này lên luôn:"
+  for o in $others; do
+    log "  - $(xcrun simctl list devices | grep -F "$o" | sed 's/^ *//;s/ (.*//')"
+  done
 fi
 
 # --- 2. Sinh project native nếu chưa có -------------------------------------
@@ -132,7 +137,17 @@ xcrun simctl boot "$udid" 2>/dev/null || true
 xcrun simctl bootstatus "$udid" -b >/dev/null
 xcrun simctl install "$udid" "$app"
 xcrun simctl launch "$udid" "$bundle_id" >/dev/null
-log "đã cài và chạy"
+log "đã cài và chạy trên $name"
+
+# Mọi máy đang bật đều nhận cùng bản này. Gỡ trước khi cài: iOS giữ cache
+# launch screen theo bundle, cài đè không phải lúc nào cũng làm mới nó.
+for o in $others; do
+  on=$(xcrun simctl list devices | grep -F "$o" | sed 's/^ *//;s/ (.*//')
+  xcrun simctl terminate "$o" "$bundle_id" 2>/dev/null || true
+  xcrun simctl uninstall "$o" "$bundle_id" 2>/dev/null || true
+  xcrun simctl install "$o" "$app"
+  log "đã cài lên $on"
+done
 
 # --- 5. Mở trình xem máy ảo -------------------------------------------------
 # Xcode >= 27: DeviceHub.app. Xcode <= 26: Simulator.app. Thử cả hai.

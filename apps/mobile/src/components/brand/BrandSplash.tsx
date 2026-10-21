@@ -39,6 +39,20 @@ const SPLASH_DEBUG = __DEV__ || process.env.EXPO_PUBLIC_SPLASH_DEBUG === "1";
  */
 const FORCE_FULL = process.env.EXPO_PUBLIC_SPLASH_FORCE === "full";
 
+/**
+ * Dấu nhận diện bản build, hiện ngay trên màn khi bật SPLASH_DEBUG.
+ *
+ * KHÔNG viết tay hằng này: `scripts/run-ios.sh` tự đặt
+ * `EXPO_PUBLIC_SPLASH_VERSION=<ngày giờ>` ở mỗi lần build, nên mỗi bản có một
+ * dấu khác nhau mà không phải nhớ sửa. Metro thay biến môi trường bằng hằng số
+ * lúc đóng gói nên đây vẫn là hằng ở runtime.
+ *
+ * Có cái này là vì đã mất ba vòng vào cùng một chuyện: máy có nhiều máy ảo cùng
+ * bật, bản cũ nằm ở máy khác, xem nhầm máy rồi kết luận build không ăn. Dấu nằm
+ * NGAY TRONG VIDEO thì không thể nhầm nữa.
+ */
+const SPLASH_VERSION = process.env.EXPO_PUBLIC_SPLASH_VERSION ?? "không-rõ";
+
 // ---------------------------------------------------------------------------
 // Hình học
 // ---------------------------------------------------------------------------
@@ -160,6 +174,26 @@ const MaskedView = MaskedViewRaw as unknown as React.ComponentType<{
 /** RN 0.88 bỏ `StyleSheet.absoluteFillObject` khỏi kiểu; khai tường minh. */
 const ABSOLUTE_FILL = { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 } as const;
 
+/**
+ * Chạy `cb` khi JS thread rảnh, muộn nhất là sau `timeout`.
+ *
+ * React Native 0.88 ĐÃ BỎ `InteractionManager` khỏi core — truy cập nó ở bản
+ * dev sẽ ném invariant với đúng câu "Please refactor long tasks into smaller
+ * ones, and use 'requestIdleCallback' instead" (xem
+ * node_modules/react-native/index.js). Nên đây là cách thay thế chính chủ.
+ *
+ * `timeout` là bắt buộc: không có nó thì trên máy yếu, hàng đợi không bao giờ
+ * rỗng và splash đứng mãi. Hết hạn thì cứ chạy — thà hoạt cảnh hơi giật còn hơn
+ * một app không bao giờ mở.
+ */
+function whenIdle(cb: () => void, timeout = 1200): void {
+  const g = globalThis as {
+    requestIdleCallback?: (fn: () => void, opts?: { timeout: number }) => unknown;
+  };
+  if (typeof g.requestIdleCallback === "function") g.requestIdleCallback(cb, { timeout });
+  else cb();
+}
+
 const STAMP_FILE = "bq-splash-last-open.txt";
 /** Nơi đổ nhật ký mốc thời gian khi bật SPLASH_DEBUG. */
 const DEBUG_LOG_FILE = "bq-splash-debug.log";
@@ -237,6 +271,9 @@ export function BrandSplash({
   const [variant, setVariant] = useState<Variant | null>(null);
   /** Hoạt cảnh vào đã chạy hết chưa — mốc neo cho nhịp giữ. */
   const [timelineDone, setTimelineDone] = useState(false);
+  /** Số ms kể từ lúc dòng thời gian khởi động — CHỈ dùng cho dòng gỡ rối. */
+  const [elapsed, setElapsed] = useState<number | null>(null);
+  const startedAt = useRef<number | null>(null);
 
   const beat = variant?.full === false ? SHORT : FULL;
 
@@ -301,12 +338,27 @@ export function BrandSplash({
     log("onLayout — khung JS đầu đã vẽ, gọi hideAsync()");
     void Promise.resolve(onReadyToReveal?.()).then(() => {
       log("hideAsync xong — native splash đã gỡ");
-      // Thêm MỘT frame: hideAsync resolve không có nghĩa là khung đầu tiên
-      // không-còn-native đã lên màn. Không chờ thì vài khung đầu của hoạt cảnh
-      // chạy sau tấm che.
-      requestAnimationFrame(() => {
-        log("qua thêm 1 frame — mở cổng dòng thời gian");
-        setOnScreen(true);
+      // Chờ JS thread rảnh RỒI MỚI mở cổng.
+      //
+      // Vì sao cần: đo bằng bộ đếm hiện ngay trên màn (đồng hồ chung giữa video
+      // và JS) trên bản Release dựng sạch — ở khung video 600ms bộ đếm đã chạy
+      // 498ms nhưng logo mới nở được 45ms. Nghĩa là `.start()` với
+      // useNativeDriver KHÔNG sinh khung nào trong ~450ms đầu: lúc khởi động
+      // nguội, việc gắn node vào native driver phải đi qua JS thread đang bận
+      // (expo-router dựng cây, nạp font, gọi khởi tạo). Người dùng thấy logo
+      // đứng yên nửa giây rồi hoạt cảnh mới nhúc nhích.
+      //
+      // whenIdle đẩy việc start ra sau khi hàng đợi đó rỗng, nên
+      // hoạt cảnh bắt đầu sinh khung NGAY. Native splash phải che lâu hơn một
+      // chút — không ai thấy, vì khung JS lúc t=0 trùng khít nó.
+      //
+      // Vẫn giữ thêm MỘT frame sau đó: hideAsync resolve không có nghĩa là
+      // khung đầu tiên không-còn-native đã lên màn.
+      whenIdle(() => {
+        requestAnimationFrame(() => {
+          log("JS thread rảnh + qua 1 frame — mở cổng dòng thời gian");
+          setOnScreen(true);
+        });
       });
     });
   }, [onReadyToReveal, log]);
@@ -342,6 +394,7 @@ export function BrandSplash({
       // Mờ dần không phải chuyển động; đó chính là thứ Apple khuyến nghị dùng
       // thay cho chuyển động, và lối thoát của màn này vốn đã mờ dần.
       log("bắt đầu dòng thời gian", "Reduce Motion — chỉ mờ dần");
+      startedAt.current = Date.now();
       // Logo GIỮ NGUYÊN 0.92 — đúng cỡ native splash đặt nó.
       //
       // Bản trước gọi setValue(1) ở đây. Đo trên video bản Release: logo nhảy
@@ -372,6 +425,7 @@ export function BrandSplash({
     }
 
     log("bắt đầu dòng thời gian", isFull ? "bản ĐẦY ĐỦ" : "bản NGẮN");
+    startedAt.current = Date.now();
     const seq: Animated.CompositeAnimation[] = [
       Animated.sequence([
         Animated.delay(beat.bg.at),
@@ -443,6 +497,23 @@ export function BrandSplash({
       setTimelineDone(true);
     });
   }, [onScreen, reduceMotion, variant, beat, v, log]);
+
+  // --- Bộ đếm cho dòng gỡ rối ----------------------------------------------
+  // CHỈ chạy khi SPLASH_DEBUG. Nó setState mỗi 50ms nên có làm render lại, mà
+  // mục 2 của yêu cầu cấm chạy JS nặng trong lúc dòng thời gian đang chạy —
+  // chấp nhận được vì mọi hoạt cảnh đều useNativeDriver (chạy trên UI thread,
+  // không phụ thuộc JS thread) và vì nhánh này KHÔNG có trong bản production:
+  // Metro loại hẳn nó khi EXPO_PUBLIC_SPLASH_DEBUG không bật.
+  useEffect(() => {
+    if (!SPLASH_DEBUG || !onScreen) return;
+    const id = setInterval(() => {
+      const t = startedAt.current;
+      setElapsed(t === null ? null : Date.now() - t);
+    }, 50);
+    return () => clearInterval(id);
+  }, [onScreen]);
+
+  const debugMode = reduceMotion ? "reduce-motion" : (variant?.full === false ? "short" : "full");
 
   // --- Thanh tiến độ bám tiến độ nạp THẬT -----------------------------------
   useEffect(() => {
@@ -659,6 +730,14 @@ export function BrandSplash({
         </Animated.View>
       ) : null}
 
+      {SPLASH_DEBUG ? (
+        <View style={[styles.debugWrap, { bottom: height * 0.04 }]}>
+          <T variant="small" tone="white" style={styles.debug}>
+            {`v${SPLASH_VERSION} · ${debugMode} · ${elapsed === null ? "chưa start" : `${elapsed}ms`}`}
+          </T>
+        </View>
+      ) : null}
+
       {showBar ? (
         <View style={[styles.barWrap, { bottom: height * 0.12 }]}>
           <View style={styles.barTrack}>
@@ -684,6 +763,8 @@ const styles = StyleSheet.create({
   tagline: { textAlign: "center", opacity: 0.9, letterSpacing: 0.2, maxWidth: 280 },
   dim: { opacity: 0.8 },
   textCenter: { textAlign: "center" },
+  debugWrap: { position: "absolute", left: 0, right: 0, alignItems: "center" },
+  debug: { opacity: 0.75, letterSpacing: 0.3 },
   barWrap: { position: "absolute", left: 0, right: 0, alignItems: "center" },
   barTrack: {
     width: 64, height: 2, borderRadius: radius.pill,
