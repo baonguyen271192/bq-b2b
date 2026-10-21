@@ -1,6 +1,7 @@
 package vn.com.giaybq.api.adapters.demo;
 
 import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import java.nio.file.Files;
@@ -16,7 +17,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import vn.com.giaybq.api.config.BqProperties;
 import vn.com.giaybq.api.domain.Dealer;
@@ -37,6 +41,8 @@ import vn.com.giaybq.api.ports.OrderPort;
 @ConditionalOnProperty(name = "bq.data-source", havingValue = "demo", matchIfMissing = true)
 class DemoOrders implements OrderPort {
 
+  private static final Logger log = LoggerFactory.getLogger(DemoOrders.class);
+
   private final String jdbcUrl;
   private final Path dbPath;
   private final ObjectMapper mapper;
@@ -48,14 +54,25 @@ class DemoOrders implements OrderPort {
     this.mapper = mapper;
   }
 
+  /**
+   * Dựng DB demo nếu chưa có, rồi mồi dữ liệu từ {@code resources/demo/orders.json}.
+   *
+   * <p>Trước đây hàm này NÉM LỖI khi thiếu file, với lý do "không im lặng tạo DB rỗng".
+   * Lý do đó đúng cho máy lập trình viên nhưng sai cho môi trường triển khai: file
+   * {@code data/orders.db} bị .gitignore nên không có trong repo mà Render clone, và
+   * Dockerfile cũng không COPY thư mục đó — container crash ngay lúc khởi động.
+   *
+   * <p>Cách đúng là làm dữ liệu demo TÁI LẬP ĐƯỢC TỪ NGUỒN, giống
+   * {@code products.json} và {@code dealers.json}: schema và dữ liệu mồi đều nằm
+   * trong repo, DB chỉ là nơi chứa lúc chạy. Mồi CHỈ chạy khi bảng còn rỗng, nên đơn
+   * đặt trong lúc demo không bị ghi đè khi khởi động lại.
+   */
   @PostConstruct
   void initDb() throws SQLException {
-    if (!Files.exists(dbPath)) {
-      // Không im lặng tạo DB rỗng ở sai đường dẫn — đó là cách bug "mất hết đơn"
-      // xuất hiện. Báo rõ đường dẫn đang dùng.
-      throw new IllegalStateException(
-          "Không tìm thấy DB demo tại " + dbPath
-              + ". Đặt lại bq.demo.orders-db (hoặc BQ_DEMO_ORDERS_DB).");
+    try {
+      Files.createDirectories(dbPath.getParent());
+    } catch (java.io.IOException e) {
+      throw new IllegalStateException("Không tạo được thư mục cho DB demo: " + dbPath, e);
     }
     try (var c = DriverManager.getConnection(jdbcUrl); var st = c.createStatement()) {
       st.execute("""
@@ -72,6 +89,72 @@ class DemoOrders implements OrderPort {
             amount INTEGER NOT NULL, method TEXT NOT NULL, created_at TEXT NOT NULL)
           """);
     }
+    seedIfEmpty();
+  }
+
+  /** Nạp dữ liệu mồi từ resources/demo/orders.json — chỉ khi bảng orders còn rỗng. */
+  private void seedIfEmpty() throws SQLException {
+    try (var c = DriverManager.getConnection(jdbcUrl);
+         var ps = c.prepareStatement("SELECT COUNT(*) FROM orders");
+         var rs = ps.executeQuery()) {
+      rs.next();
+      if (rs.getLong(1) > 0) {
+        return;
+      }
+    }
+
+    JsonNode seed;
+    try (var in = new ClassPathResource("demo/orders.json").getInputStream()) {
+      seed = mapper.readTree(in);
+    } catch (java.io.IOException e) {
+      throw new IllegalStateException("Không đọc được demo/orders.json", e);
+    }
+
+    try (var c = DriverManager.getConnection(jdbcUrl)) {
+      c.setAutoCommit(false);
+      try (var ps = c.prepareStatement("""
+          INSERT INTO orders (id, dealer_code, dealer_name, items_json, subtotal,
+            delivery, payment, status, channel, over_limit, created_at, approver, approve_note)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+          """)) {
+        for (var o : seed.path("orders")) {
+          ps.setString(1, o.path("id").asText());
+          ps.setString(2, o.path("dealer_code").asText());
+          ps.setString(3, o.path("dealer_name").asText());
+          ps.setString(4, mapper.writeValueAsString(o.path("items")));
+          ps.setLong(5, o.path("subtotal").asLong());
+          ps.setString(6, o.path("delivery").asText(null));
+          ps.setString(7, o.path("payment").asText(null));
+          ps.setString(8, o.path("status").asText());
+          ps.setString(9, o.path("channel").asText());
+          ps.setInt(10, o.path("over_limit").asBoolean(false) ? 1 : 0);
+          ps.setString(11, o.path("created_at").asText());
+          ps.setString(12, o.path("approver").isNull() ? null : o.path("approver").asText(null));
+          ps.setString(13, o.path("approve_note").isNull() ? null
+              : o.path("approve_note").asText(null));
+          ps.addBatch();
+        }
+        ps.executeBatch();
+      }
+      try (var ps = c.prepareStatement("""
+          INSERT INTO payments (id, dealer_code, order_id, amount, method, created_at)
+          VALUES (?,?,?,?,?,?)
+          """)) {
+        for (var t : seed.path("payments")) {
+          ps.setString(1, t.path("id").asText());
+          ps.setString(2, t.path("dealer_code").asText());
+          ps.setString(3, t.path("order_id").asText(null));
+          ps.setLong(4, t.path("amount").asLong());
+          ps.setString(5, t.path("method").asText());
+          ps.setString(6, t.path("created_at").asText());
+          ps.addBatch();
+        }
+        ps.executeBatch();
+      }
+      c.commit();
+    }
+    log.info("DB demo trống -> đã mồi {} đơn, {} thanh toán từ demo/orders.json",
+        seed.path("orders").size(), seed.path("payments").size());
   }
 
   @Override

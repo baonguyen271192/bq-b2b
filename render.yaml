@@ -15,9 +15,35 @@ services:
     dockerContext: .
     plan: starter
     healthCheckPath: /health
+
+    # Chỉ build lại khi thứ service này THẬT SỰ dùng có thay đổi.
+    # Dockerfile chỉ COPY apps/api-java/{.mvn,mvnw,pom.xml,src} — không đụng
+    # packages/, apps/web hay apps/mobile, nên sửa frontend không cần dựng lại backend.
+    # [Chưa xác minh] Đường dẫn ở đây hiểu là tương đối so với GỐC repo; chưa chạy
+    # thử trên Render để xác nhận.
+    buildFilter:
+      paths:
+        - apps/api-java/**
+        - render.yaml
+      ignoredPaths:
+        - apps/api-java/**/*.md
+        - apps/api-java/.env.example
+
     envVars:
+      # DB demo tự dựng và tự mồi từ resources/demo/orders.json lúc khởi động nếu
+      # chưa có, nên container trống vẫn chạy được. Mồi CHỈ khi bảng rỗng — đơn đặt
+      # trong lúc demo không bị ghi đè khi khởi động lại.
+      # Lưu ý: ổ đĩa của Render là tạm, đơn demo mất sau mỗi lần deploy. Muốn giữ
+      # thì gắn persistent disk và trỏ BQ_DEMO_ORDERS_DB vào đó.
       - key: BQ_DATA_SOURCE
         value: demo
+      - key: BQ_DEMO_ORDERS_DB
+        value: data/orders.db
+
+      # Swagger UI phơi TOÀN BỘ bề mặt API ra Internet. Tắt ở môi trường chạy thật.
+      - key: SPRINGDOC_UI_ENABLED
+        value: "false"
+
       - key: BQ_ASSISTANT_URL
         fromService:
           type: web
@@ -40,6 +66,24 @@ services:
         sync: false
       - key: SAPB1_TIER_BY_PRICELIST
         sync: false
+      - key: SAPB1_VERIFY_SSL
+        sync: false
+      - key: SAPB1_ORDER_STATUS_FIELD
+        sync: false
+      - key: SAPB1_ORDER_STATUS_VALUES
+        sync: false
+      - key: SAPB1_ORDER_APPROVER_FIELD
+        sync: false
+      - key: SAPB1_ORDER_APPROVE_NOTE_FIELD
+        sync: false
+      - key: SAPB1_STOCK_FORMULA
+        sync: false
+      - key: SAPB1_USE_SPECIAL_PRICES
+        sync: false
+      - key: SAPB1_PAYMENT_TARGET
+        sync: false
+      - key: SAPB1_CATALOG_CACHE_TTL
+        sync: false
 
   # --- Trợ lý AI (Python) ---------------------------------------------------
   # Giữ bằng Python có chủ ý: ~1.000 dòng xử lý tiếng Việt + 2 client LLM. Xem
@@ -52,11 +96,37 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
+
+    buildFilter:
+      paths:
+        - apps/api/**
+        - render.yaml
+      ignoredPaths:
+        - apps/api/**/*.md
+        - apps/api/.env.example
+        - apps/api/ruff.toml
+
     envVars:
       - key: PYTHON_VERSION
         value: "3.12"
-      - key: BQ_DATA_SOURCE
-        value: demo
+
+      # BẮT BUỘC: service này không còn dữ liệu riêng, mọi số liệu đọc từ bq-api.
+      # Thiếu biến này thì bq_client rơi về mặc định http://127.0.0.1:8100 — trong
+      # container của Render KHÔNG có gì nghe ở đó, trợ lý sẽ hỏng im lặng.
+      #
+      # KHÔNG dùng `fromService` trỏ về bq-api: bq-api đã có fromService trỏ sang
+      # bq-assistant, khai thêm chiều ngược lại sẽ tạo tham chiếu VÒNG giữa hai
+      # service. [Chưa xác minh] Render có từ chối cấu hình vòng hay không — chưa
+      # thử. Đặt tay trong dashboard để tránh rủi ro: dùng địa chỉ nội bộ của
+      # bq-api, dạng http://bq-api:<port>.
+      - key: BQ_API_URL
+        sync: false
+
+      - key: BQ_API_TIMEOUT
+        sync: false
+      - key: BQ_API_CACHE_TTL
+        sync: false
+
       - key: GROQ_API_KEY
         sync: false
       - key: GEMINI_API_KEY

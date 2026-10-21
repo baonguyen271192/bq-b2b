@@ -51,8 +51,6 @@ export default function OrdersPage() {
     [o.id, o.customer_name, o.customer_phone, o.items[0]?.name, o.status]
       .some((f) => (f || "").toLowerCase().includes(kw)));
 
-  const active = (status: string) => !/(huỷ|hủy|từ chối)/i.test(status);
-
   return (
     <div>
       <PageHeader title="Đơn hàng"

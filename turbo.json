@@ -1,25 +1,93 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
-  "globalEnv": ["NODE_ENV"],
+  "globalEnv": [
+    "NODE_ENV"
+  ],
   "globalPassThroughEnv": [
     "NEXT_PUBLIC_API_BASE",
     "EXPO_PUBLIC_API_BASE",
     "BQ_API_URL",
-    "COMMERCE_API_URL"
+    "COMMERCE_API_URL",
+    "BQ_ASSISTANT_URL",
+    "BQ_DATA_SOURCE",
+    "PORT",
+    "JAVA_HOME",
+    "MAVEN_OPTS"
   ],
+  "globalDependencies": [
+    ".nvmrc",
+    ".npmrc",
+    "pnpm-lock.yaml"
+  ],
+
+  // outputs khai ở turbo.json CỦA TỪNG PACKAGE (Package Configuration).
+  // Khai chung ở đây làm mọi package bị gán cả .next/**, dist/** lẫn target/** —
+  // turbo đi tìm đường dẫn không tồn tại và cache key kém chính xác.
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "src/**",
+        "app/**",
+        "pom.xml",
+        "requirements.txt",
+        "!**/*.md",
+        "!**/.env*",
+        "!**/*.test.*",
+        "!**/__tests__/**"
+      ],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "src/**",
+        "app/**",
+        "pom.xml",
+        "requirements.txt",
+        "!**/*.md"
+      ],
+      "outputs": []
     },
     "typecheck": {
-      "dependsOn": ["^build"]
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "src/**",
+        "app/**",
+        "pom.xml",
+        "tsconfig.json",
+        "!**/*.md"
+      ],
+      "outputs": []
     },
     "lint": {
-      "dependsOn": ["^build"]
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/*.md"
+      ],
+      "outputs": []
     },
     "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "start": {
+      "dependsOn": [
+        "build"
+      ],
       "cache": false,
       "persistent": true
     },

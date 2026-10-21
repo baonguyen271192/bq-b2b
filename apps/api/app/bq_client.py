@@ -19,7 +19,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 API_BASE = os.getenv("BQ_API_URL", "http://127.0.0.1:8100").rstrip("/")
 TIMEOUT = float(os.getenv("BQ_API_TIMEOUT", "20"))
@@ -28,7 +28,7 @@ TIMEOUT = float(os.getenv("BQ_API_TIMEOUT", "20"))
 # không bắn hàng chục request cho cùng một câu — nhưng đủ ngắn để số tồn/công nợ
 # không bị cũ giữa các câu hỏi.
 _CACHE_TTL = float(os.getenv("BQ_API_CACHE_TTL", "15"))
-_cache: Dict[str, tuple[float, Any]] = {}
+_cache: dict[str, tuple[float, Any]] = {}
 
 
 class BqApiError(RuntimeError):
@@ -64,12 +64,12 @@ def _q(value: str) -> str:
 
 # ---------- Đại lý ----------
 
-def dealer(code: str) -> Optional[dict]:
+def dealer(code: str) -> dict | None:
     """Hồ sơ đại lý. Đã kèm sẵn credit_used / credit_available do Java tính."""
     return _get(f"/api/dealers/{_q(code.upper())}")
 
 
-def dealers() -> List[dict]:
+def dealers() -> list[dict]:
     return _get("/api/dealers") or []
 
 
@@ -82,12 +82,12 @@ def credit(code: str) -> dict:
 
 # ---------- Danh mục ----------
 
-def products(dealer_code: str) -> List[dict]:
+def products(dealer_code: str) -> list[dict]:
     """Sản phẩm kèm `price` ĐÃ áp bậc của đại lý — không phải tự tính lại."""
     return _get(f"/api/products?dealer={_q(dealer_code.upper())}") or []
 
 
-def product(dealer_code: str, code: str) -> Optional[dict]:
+def product(dealer_code: str, code: str) -> dict | None:
     target = code.upper()
     for p in products(dealer_code):
         if p.get("code", "").upper() == target:
@@ -95,22 +95,22 @@ def product(dealer_code: str, code: str) -> Optional[dict]:
     return None
 
 
-def categories() -> List[str]:
+def categories() -> list[str]:
     return _get("/api/categories") or []
 
 
 # ---------- Đơn hàng ----------
 
-def orders(dealer_code: Optional[str] = None) -> List[dict]:
+def orders(dealer_code: str | None = None) -> list[dict]:
     path = "/api/orders" + (f"?dealer={_q(dealer_code.upper())}" if dealer_code else "")
     return _get(path) or []
 
 
-def credit_orders(dealer_code: str) -> List[dict]:
+def credit_orders(dealer_code: str) -> list[dict]:
     return credit(dealer_code).get("invoices", [])
 
 
-def payments(dealer_code: str) -> List[dict]:
+def payments(dealer_code: str) -> list[dict]:
     return credit(dealer_code).get("transactions", [])
 
 

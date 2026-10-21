@@ -8,10 +8,13 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf .turbo node_modules"
+    "clean": "rm -rf .turbo node_modules",
+    "lint": "eslint ."
   },
   "devDependencies": {
+    "@bq/config": "workspace:*",
     "@bq/tsconfig": "workspace:*",
+    "eslint": "^9.39.5",
     "typescript": "^5.7.2"
   }
 }

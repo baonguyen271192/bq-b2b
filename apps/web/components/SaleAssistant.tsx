@@ -46,7 +46,7 @@ export default function SaleAssistant() {
   const onPointerUp = (e: React.PointerEvent) => {
     draggedRef.current = !!dragRef.current?.moved;   // nhớ vừa KÉO hay chỉ BẤM để onClick xử lý
     dragRef.current = null;
-    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
+    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch { /* con trỏ đã nhả rồi: không sao */ }
   };
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, open]);

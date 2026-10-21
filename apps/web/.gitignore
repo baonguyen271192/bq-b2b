@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# Phủ định PHẢI nằm ở chính file này: .gitignore con đè .gitignore gốc,
+# nên `!.env.example` ở root không cứu được file trong thư mục này.
+!.env.example
 
 # vercel
 .vercel

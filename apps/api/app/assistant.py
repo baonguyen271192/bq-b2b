@@ -9,6 +9,7 @@ API ngoài. Khi có RAI: đặt biến môi trường RAI_URL, hàm _rag_answer 
 (context + câu hỏi) sang RAI và trả lời bằng kết quả của RAI.
 """
 from __future__ import annotations
+
 import os
 import re
 import unicodedata
@@ -368,7 +369,7 @@ _NAME_STOP = {"giay", "dep", "sandal", "nu", "nam", "tre", "em", "be", "quai", "
               "co", "khong", "cho", "xem", "ban", "con", "gia", "bao", "nhieu", "nao", "gi",
               "list", "danh", "sach", "tat", "ca", "cac", "voi", "muon", "minh", "toi", "shop",
               "la", "va", "hay", "cua", "moi", "loai", "kieu", "duoc", "a", "oi", "day", "them",
-              "hang", "dang", "nhung", "hien", "deu", "van", "gio", "nay", "con", "het", "cung"
+              "hang", "dang", "nhung", "hien", "deu", "van", "gio", "nay", "het", "cung"
               } | set(_COLOR_WORDS)
 
 
@@ -583,16 +584,15 @@ def _finalize_action(ctx: dict, action: dict) -> dict | None:
     Ở đây ta VALIDATE mã hàng có thật, cap theo tồn, và bồi tên/ảnh/giá/tổng tiền."""
     if not action or action.get("type") != "create_order":
         return None
-    d = ctx["dealer"]
     by_code = {p["code"]: p for p in ctx["products"]}
     lines, subtotal, total_pairs = [], 0, 0
-    for l in action.get("lines", []):
-        p = by_code.get(str(l.get("code", "")).upper())
+    for line in action.get("lines", []):
+        p = by_code.get(str(line.get("code", "")).upper())
         if not p:
             continue
         price = p["price"]
         picked = {}
-        for sz, q in (l.get("sizes") or {}).items():
+        for sz, q in (line.get("sizes") or {}).items():
             stock = p["sizes"].get(str(sz), 0)
             q = int(q) if str(q).isdigit() else 0
             if stock > 0 and q > 0:
@@ -667,7 +667,8 @@ def _groq_raw(system_prompt: str, data_obj: dict, q: str) -> dict | None:
         return None
     model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
     try:
-        import json, urllib.request
+        import json
+        import urllib.request
         prompt = f"{system_prompt}\n\nDATA:\n{json.dumps(data_obj, ensure_ascii=False)}\n\nCâu hỏi: {q}"
         body = {"model": model, "temperature": 0.3,
                 "response_format": {"type": "json_object"},
@@ -704,7 +705,8 @@ def _gemini_raw(system_prompt: str, data_obj: dict, q: str) -> dict | None:
         return None
     model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
     try:
-        import json, urllib.request
+        import json
+        import urllib.request
         prompt = f"{system_prompt}\n\nDATA:\n{json.dumps(data_obj, ensure_ascii=False)}\n\nCâu hỏi: {q}"
         body = {
             "contents": [{"parts": [{"text": prompt}]}],
@@ -764,7 +766,8 @@ def _rag_answer(ctx: dict, q: str) -> dict | None:
     if not url:
         return None
     try:
-        import json, urllib.request
+        import json
+        import urllib.request
         payload = json.dumps({"question": q, "context": ctx}, ensure_ascii=False).encode("utf-8")
         req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
         with urllib.request.urlopen(req, timeout=20) as r:
@@ -831,7 +834,8 @@ def build_sale_context() -> dict:
         if p["retail"] < e["gia_le_tu"]:
             e["gia_le_tu"] = p["retail"]
         if p["retail"] > e["gia_le_den"]:
-            e["gia_le_den"] = p["retail"]; e["mau_dat_nhat"] = p["name"]
+            e["gia_le_den"] = p["retail"]
+            e["mau_dat_nhat"] = p["name"]
     low = [{"ten": p["name"], "size": sz, "ton": n}
            for p in all_products for sz, n in p["sizes"].items() if n <= 5]
     prices = [p["retail"] for p in all_products]

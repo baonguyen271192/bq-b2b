@@ -2,12 +2,16 @@
   "name": "@bq/api",
   "version": "0.1.0",
   "private": true,
-  "description": "Service trợ lý AI (Python/FastAPI). Lõi giao dịch đã chuyển sang apps/api-java; service này giữ phần xử lý tiếng Việt + LLM.",
+  "description": "Service trợ lý AI (Python/FastAPI). Không phải package Node — package.json chỉ để Turborepo điều phối lệnh.",
   "scripts": {
     "dev": "./.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8101 --reload",
     "start": "./.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8101}",
+    "build": "./.venv/bin/python -m compileall -q app",
+    "test": "./.venv/bin/python -m compileall -q app && ./.venv/bin/python -c 'import app.main'",
+    "lint": "./.venv/bin/ruff check app",
+    "typecheck": "echo '[@bq/api] CHƯA cấu hình mypy — quyết định riêng, xem báo cáo Phase 4'",
     "setup": "python3.12 -m venv .venv && ./.venv/bin/pip install -r requirements.txt",
-    "typecheck": "echo 'Backend là Python — dùng: ./.venv/bin/python -m compileall -q app'",
-    "clean": "rm -rf .venv __pycache__ .turbo"
+    "clean": "rm -rf .venv __pycache__ .turbo",
+    "format": "./.venv/bin/ruff format app"
   }
 }

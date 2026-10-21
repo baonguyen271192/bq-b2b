@@ -25,9 +25,9 @@ export default function AddressesPage() {
     try {
       const raw = localStorage.getItem(KEY);
       if (raw) { const l: Addr[] = JSON.parse(raw); setList(l); setSelected(l.find((a) => a.def)?.id || l[0]?.id || ""); }
-    } catch {}
+    } catch { /* localStorage bị chặn (chế độ riêng tư): bỏ qua, dùng danh sách rỗng */ }
   }, []);
-  const persist = (l: Addr[]) => { setList(l); try { localStorage.setItem(KEY, JSON.stringify(l)); } catch {} };
+  const persist = (l: Addr[]) => { setList(l); try { localStorage.setItem(KEY, JSON.stringify(l)); } catch { /* không lưu được thì vẫn giữ trong state */ } };
 
   const setDefault = (id: string) => { setSelected(id); persist(list.map((a) => ({ ...a, def: a.id === id }))); };
   const remove = (a: Addr) => {

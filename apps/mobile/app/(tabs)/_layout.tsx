@@ -1,9 +1,8 @@
 import { Tabs } from "expo-router";
-import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useCart } from "@/lib/cart";
-import { Text, colors, radius } from "@/theme";
+import { colors } from "@/theme";
 
 /**
  * Icon cho thanh tab.

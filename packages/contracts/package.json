@@ -9,6 +9,10 @@
   },
   "scripts": {
     "pull": "node scripts/pull-openapi.mjs",
-    "clean": "rm -rf .turbo node_modules"
+    "clean": "rm -rf .turbo node_modules",
+    "test": "node scripts/check-drift.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
   }
 }

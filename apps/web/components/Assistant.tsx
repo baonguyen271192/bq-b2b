@@ -75,7 +75,7 @@ export default function Assistant() {
       // đánh dấu đơn nháp này đã đặt → khoá nút
       setMsgs((m) => m.map((x, i) => (i === idx ? { ...x, action: undefined, done: order.id } : x)));
       setMsgs((m) => [...m, { role: "bot", text: `Đã tạo đơn **${order.id}** ✓ Trạng thái: ${order.status}. Bạn vào xem chi tiết & theo dõi nhé.`, chips: [] }]);
-    } catch (e) {
+    } catch {
       setMsgs((m) => [...m, { role: "bot", text: "Không tạo được đơn (có thể vượt hạn mức). Bạn kiểm tra công nợ giúp mình nhé." }]);
     } finally { setPlacing(false); }
   };
