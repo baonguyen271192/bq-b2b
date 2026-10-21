@@ -29,10 +29,25 @@ const SHOE_CENTER_RATIO = 0.47;
 /** Đỉnh khối wordmark, theo tỉ lệ chiều cao màn. */
 const WORD_TOP_RATIO = 0.63;
 
+/**
+ * Nhịp hoạt cảnh.
+ *
+ * Bản đầu dùng 300/700/500ms và tổng 1,2s — xem thật thì GẤP: ba lớp chồng lên
+ * nhau gần như cùng lúc nên mắt không kịp đọc lớp nào. Giãn ra, và cho mỗi lớp
+ * khởi động lệch nhau đủ xa để thành một chuỗi chứ không thành một đống.
+ */
+const BEAT = {
+  glow: 520,
+  shoeDelay: 260,
+  shoe: 900,
+  wordDelay: 820,
+  word: 600,
+} as const;
+
 /** Giữ splash tối thiểu bấy nhiêu, kể cả khi nạp xong sớm. */
-const MIN_MS = 1200;
+const MIN_MS = 2300;
 /** Thời lượng mờ dần khi đóng. */
-const OUT_MS = 250;
+const OUT_MS = 420;
 
 export interface BrandSplashProps {
   /** Đã nạp xong mọi thứ cần thiết chưa. */
@@ -71,6 +86,7 @@ export function BrandSplash({ ready, progress, error, onRetry, onFinish }: Brand
     shoeX: new Animated.Value(60),
     shoeOpacity: new Animated.Value(0),
     shoeRot: new Animated.Value(0),
+    shoeScale: new Animated.Value(0.9),
     wordOpacity: new Animated.Value(0),
     wordY: new Animated.Value(12),
     screenOpacity: new Animated.Value(1),
@@ -93,28 +109,32 @@ export function BrandSplash({ ready, progress, error, onRetry, onFinish }: Brand
     if (reduceMotion) {
       // Tôn trọng Reduce Motion: hiện thẳng, không trượt, không xoay.
       v.glow.setValue(1); v.shoeOpacity.setValue(1); v.shoeX.setValue(0);
-      v.shoeRot.setValue(1); v.wordOpacity.setValue(1); v.wordY.setValue(0);
+      v.shoeRot.setValue(1); v.shoeScale.setValue(1);
+      v.wordOpacity.setValue(1); v.wordY.setValue(0);
       v.logoY.setValue(1);
       return;
     }
 
     const ease = Easing.out(Easing.cubic);
     Animated.parallel([
-      Animated.timing(v.glow, { toValue: 1, duration: 300, easing: ease, useNativeDriver: true }),
-      Animated.timing(v.logoY, { toValue: 1, duration: 300, easing: ease, useNativeDriver: true }),
+      Animated.timing(v.glow, { toValue: 1, duration: BEAT.glow, easing: ease, useNativeDriver: true }),
+      Animated.timing(v.logoY, { toValue: 1, duration: BEAT.glow, easing: ease, useNativeDriver: true }),
       Animated.sequence([
-        Animated.delay(200),
+        Animated.delay(BEAT.shoeDelay),
         Animated.parallel([
-          Animated.timing(v.shoeX, { toValue: 0, duration: 700, easing: ease, useNativeDriver: true }),
-          Animated.timing(v.shoeOpacity, { toValue: 1, duration: 700, easing: ease, useNativeDriver: true }),
-          Animated.timing(v.shoeRot, { toValue: 1, duration: 700, easing: ease, useNativeDriver: true }),
+          Animated.timing(v.shoeX, { toValue: 0, duration: BEAT.shoe, easing: ease, useNativeDriver: true }),
+          // Ảnh hiện nhanh hơn chuyển động: giày bán trong suốt trên nền cam ra
+          // màu nâu bẩn, kéo dài làm người xem tưởng ảnh sai màu.
+          Animated.timing(v.shoeOpacity, { toValue: 1, duration: 380, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+          Animated.timing(v.shoeRot, { toValue: 1, duration: BEAT.shoe, easing: ease, useNativeDriver: true }),
+          Animated.timing(v.shoeScale, { toValue: 1, duration: BEAT.shoe, easing: ease, useNativeDriver: true }),
         ]),
       ]),
       Animated.sequence([
-        Animated.delay(600),
+        Animated.delay(BEAT.wordDelay),
         Animated.parallel([
-          Animated.timing(v.wordOpacity, { toValue: 1, duration: 500, easing: ease, useNativeDriver: true }),
-          Animated.timing(v.wordY, { toValue: 0, duration: 500, easing: ease, useNativeDriver: true }),
+          Animated.timing(v.wordOpacity, { toValue: 1, duration: BEAT.word, easing: ease, useNativeDriver: true }),
+          Animated.timing(v.wordY, { toValue: 0, duration: BEAT.word, easing: ease, useNativeDriver: true }),
         ]),
       ]),
     ]).start();
@@ -126,9 +146,12 @@ export function BrandSplash({ ready, progress, error, onRetry, onFinish }: Brand
       toValue: Math.max(0, Math.min(1, progress)),
       duration: 220,
       easing: Easing.out(Easing.quad),
-      // Chiều rộng không chạy được trên UI thread. Đây là một thanh 120px nên chi
-      // phí trên JS thread không đáng kể; đổi sang scaleX sẽ làm méo bo góc.
-      useNativeDriver: false,
+      // scaleX chạy được trên UI THREAD; `width` thì không. Bản đầu animate
+      // width và nó giật thấy rõ — mỗi khung của thanh này phải đi qua JS
+      // thread, đúng lúc JS thread đang bận mount màn phía dưới splash.
+      // `transformOrigin: left` giữ thanh mọc từ trái, và vì phần chạy là một
+      // khối đặc bo tròn hai đầu nên scaleX không làm méo bo góc nhìn thấy được.
+      useNativeDriver: true,
     }).start();
   }, [progress, v.bar]);
 
@@ -230,8 +253,13 @@ export function BrandSplash({ ready, progress, error, onRetry, onFinish }: Brand
       <View style={[styles.absCenterX, { top: height * SHOE_CENTER_RATIO - (shoeW * 0.545) / 2 }]}>
         {/* Bóng elip để RỜI khỏi giày: gắn chung sẽ nghiêng theo lúc giày xoay,
             trông như bóng bị lệch khỏi mặt sàn. */}
+        {/* Hai lớp bóng: một lớp rộng mờ làm vùng toả, một lớp hẹp đậm làm điểm
+            tiếp đất. Một viên thuốc phẳng trông như miếng dán dưới giày. */}
         <Animated.View
-          style={[styles.shadow, { width: shoeW * 0.72, opacity: v.shoeOpacity }]}
+          style={[styles.shadowSoft, { width: shoeW * 0.92, opacity: v.shoeOpacity }]}
+        />
+        <Animated.View
+          style={[styles.shadowCore, { width: shoeW * 0.62, opacity: v.shoeOpacity }]}
         />
         <Animated.Image
           source={require("../../../assets/splash/shoe.png")}
@@ -247,6 +275,7 @@ export function BrandSplash({ ready, progress, error, onRetry, onFinish }: Brand
                     outputRange: ["-8deg", "-4deg"],
                   }),
                 },
+                { scale: v.shoeScale },
               ],
             },
           ]}
@@ -270,9 +299,7 @@ export function BrandSplash({ ready, progress, error, onRetry, onFinish }: Brand
       <View style={[styles.barWrap, { bottom: height * 0.15 }]}>
         <View style={styles.barTrack}>
           <Animated.View
-            style={[styles.barFill, {
-              width: v.bar.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] }),
-            }]}
+            style={[styles.barFill, { transform: [{ scaleX: v.bar }] }]}
           />
         </View>
       </View>
@@ -286,9 +313,13 @@ const styles = StyleSheet.create({
   glowBand: { opacity: 0.45 },
   logo: { width: LOGO_W, height: LOGO_W * LOGO_RATIO },
   absCenterX: { position: "absolute", left: 0, right: 0, alignItems: "center" },
-  shadow: {
-    position: "absolute", bottom: 6, height: 16,
-    borderRadius: radius.pill, backgroundColor: color.blackA(0.25),
+  shadowSoft: {
+    position: "absolute", bottom: 0, height: 30,
+    borderRadius: radius.pill, backgroundColor: color.blackA(0.10),
+  },
+  shadowCore: {
+    position: "absolute", bottom: 10, height: 14,
+    borderRadius: radius.pill, backgroundColor: color.blackA(0.22),
   },
   word: { alignItems: "center" },
   // Thang chữ `display` là 34; wordmark splash cần 56 nên ghi đè TẠI ĐÂY, có chủ
@@ -301,7 +332,10 @@ const styles = StyleSheet.create({
     width: 120, height: 3, borderRadius: radius.pill,
     backgroundColor: color.whiteA(0.25), overflow: "hidden",
   },
-  barFill: { height: 3, borderRadius: radius.pill, backgroundColor: color.white },
+  barFill: {
+    width: "100%", height: 3, borderRadius: radius.pill, backgroundColor: color.white,
+    transformOrigin: "left center",
+  },
   errorWrap: {
     backgroundColor: color.bqDeep, alignItems: "center", justifyContent: "center",
     gap: space.x3, paddingHorizontal: space.x8,
