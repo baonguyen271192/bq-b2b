@@ -5,7 +5,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import { color, radius, space } from "@/theme";
-import { Num, Pill, T } from "../ui";
+import { Pill, T } from "../ui";
 
 /** RN 0.88 bỏ `StyleSheet.absoluteFillObject` khỏi kiểu; khai tường minh. */
 const ABSOLUTE_FILL = { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 } as const;
@@ -27,7 +27,7 @@ const LOGO_TOP_RATIO = 0.26;
 /** Tâm chiếc giày, theo tỉ lệ chiều cao màn. */
 const SHOE_CENTER_RATIO = 0.47;
 /** Đỉnh khối wordmark, theo tỉ lệ chiều cao màn. */
-const WORD_TOP_RATIO = 0.63;
+const WORD_TOP_RATIO = 0.645;
 
 /**
  * Nhịp hoạt cảnh.
@@ -43,6 +43,21 @@ const BEAT = {
   wordDelay: 820,
   word: 600,
 } as const;
+
+/**
+ * Slogan đầy đủ của BQ, do phía BQ cung cấp:
+ *
+ *   "Giày BQ đồng hành cùng khách hàng công sở với chất lượng cao,
+ *    trải nghiệm tự tin trên mọi hành trình."
+ *
+ * Trên splash chỉ dùng VẾ CUỐI: bản đầy đủ ~95 ký tự, ở cỡ `small` sẽ xuống 4
+ * dòng và nuốt mất chiếc giày — thứ đáng là nhân vật chính ở màn này. Bản đầy
+ * đủ để dành cho chỗ có không gian (màn Hồ sơ, trang giới thiệu).
+ */
+export const BQ_SLOGAN_FULL =
+  "Giày BQ đồng hành cùng khách hàng công sở với chất lượng cao, "
+  + "trải nghiệm tự tin trên mọi hành trình.";
+const SPLASH_TAGLINE = "Tự tin trên mọi hành trình";
 
 /** Giữ splash tối thiểu bấy nhiêu, kể cả khi nạp xong sớm. */
 const MIN_MS = 2300;
@@ -234,9 +249,12 @@ export function BrandSplash({ ready, progress, error, onRetry, onFinish }: Brand
       {/* Ba khối định vị TUYỆT ĐỐI theo tỉ lệ màn hình, không xếp theo flex: xếp
           flex thì chiếc giày (dù opacity 0) vẫn chiếm chỗ và đẩy logo lên cao,
           làm khung đầu tiên lệch khỏi native splash. */}
-      <Animated.Image
-        source={require("../../../assets/brand/logo-mark-white.png")}
-        style={[styles.logo, styles.absCenterX, {
+      {/* Logo nằm trong một View căn giữa, KHÔNG gán absCenterX thẳng lên Image:
+          `left: 0 + right: 0` kéo ảnh rộng hết màn và đá nhau với `width: 120`,
+          còn `alignItems` thì không có tác dụng lên node lá — kết quả là logo
+          dính sát mép trái và cụt mất nét chữ B. */}
+      <Animated.View
+        style={[styles.absCenterX, {
           // Vị trí tĩnh = CHÍNH GIỮA màn, khớp native splash.
           top: height / 2 - (LOGO_W * LOGO_RATIO) / 2,
           transform: [{
@@ -246,9 +264,14 @@ export function BrandSplash({ ready, progress, error, onRetry, onFinish }: Brand
             }),
           }],
         }]}
-        resizeMode="contain"
-        accessibilityIgnoresInvertColors
-      />
+      >
+        <Image
+          source={require("../../../assets/brand/logo-mark-white.png")}
+          style={styles.logo}
+          resizeMode="contain"
+          accessibilityIgnoresInvertColors
+        />
+      </Animated.View>
 
       <View style={[styles.absCenterX, { top: height * SHOE_CENTER_RATIO - (shoeW * 0.545) / 2 }]}>
         {/* Bóng elip để RỜI khỏi giày: gắn chung sẽ nghiêng theo lúc giày xoay,
@@ -256,7 +279,7 @@ export function BrandSplash({ ready, progress, error, onRetry, onFinish }: Brand
         {/* Hai lớp bóng: một lớp rộng mờ làm vùng toả, một lớp hẹp đậm làm điểm
             tiếp đất. Một viên thuốc phẳng trông như miếng dán dưới giày. */}
         <Animated.View
-          style={[styles.shadowSoft, { width: shoeW * 0.92, opacity: v.shoeOpacity }]}
+          style={[styles.shadowSoft, { width: shoeW * 0.82, opacity: v.shoeOpacity }]}
         />
         <Animated.View
           style={[styles.shadowCore, { width: shoeW * 0.62, opacity: v.shoeOpacity }]}
@@ -291,9 +314,11 @@ export function BrandSplash({ ready, progress, error, onRetry, onFinish }: Brand
           transform: [{ translateY: v.wordY }],
         }]}
       >
-        <Num variant="display" tone="white" style={styles.wordmark}>BQ</Num>
-        {/* Nội dung dòng phụ CHƯA được chốt — xem báo cáo Phase Splash. */}
-        <T variant="small" tone="white" style={styles.dim}>TODO_TAGLINE</T>
+        {/* KHÔNG lặp lại wordmark "BQ" ở đây: logo phía trên ĐÃ là hai chữ đó,
+            nên một chữ BQ thứ hai không thêm thông tin, chỉ thêm nhiễu. */}
+        <T variant="bodyStrong" tone="white" style={styles.tagline}>
+          {SPLASH_TAGLINE}
+        </T>
       </Animated.View>
 
       <View style={[styles.barWrap, { bottom: height * 0.15 }]}>
@@ -314,17 +339,21 @@ const styles = StyleSheet.create({
   logo: { width: LOGO_W, height: LOGO_W * LOGO_RATIO },
   absCenterX: { position: "absolute", left: 0, right: 0, alignItems: "center" },
   shadowSoft: {
-    position: "absolute", bottom: 0, height: 30,
-    borderRadius: radius.pill, backgroundColor: color.blackA(0.10),
+    position: "absolute", bottom: 2, height: 22,
+    borderRadius: radius.pill, backgroundColor: color.blackA(0.07),
   },
   shadowCore: {
     position: "absolute", bottom: 10, height: 14,
     borderRadius: radius.pill, backgroundColor: color.blackA(0.22),
   },
   word: { alignItems: "center" },
-  // Thang chữ `display` là 34; wordmark splash cần 56 nên ghi đè TẠI ĐÂY, có chủ
-  // ý: đây là chữ-hình của thương hiệu, không phải một bậc trong thang chữ app.
-  wordmark: { fontSize: 56, lineHeight: 62, letterSpacing: -2 },
+  tagline: {
+    textAlign: "center",
+    opacity: 0.92,
+    // Bó chiều ngang để câu xuống dòng ở chỗ dễ đọc thay vì sát mép màn.
+    maxWidth: 260,
+    letterSpacing: 0.2,
+  },
   dim: { opacity: 0.8 },
   textCenter: { textAlign: "center" },
   barWrap: { position: "absolute", left: 0, right: 0, alignItems: "center" },
