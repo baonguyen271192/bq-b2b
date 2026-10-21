@@ -13,7 +13,9 @@ function CheckoutInner() {
   const { cart, dealer } = useStore();
   const router = useRouter();
   const sel = useSearchParams().get("sel") || "";
-  const [d, setD] = useState<Dealer | null>(null);
+  // State chỉ-ghi: hồ sơ đại lý được tải về nhưng màn này chưa đọc tới.
+  // Giữ lời gọi để không đổi hành vi mạng; cần rà lại xem còn cần không.
+  const [, setD] = useState<Dealer | null>(null);
   const [warehouse, setWarehouse] = useState("Kho tổng Q.5 (Mặc định)");
   const [payment, setPayment] = useState("Công nợ 30 ngày");
   const [warehouseOpen, setWarehouseOpen] = useState(false);

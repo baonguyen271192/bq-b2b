@@ -190,7 +190,11 @@ importers:
         specifier: ^8.72.0
         version: 8.72.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3)
 
-  packages/contracts: {}
+  packages/contracts:
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
 
   packages/core:
     dependencies:

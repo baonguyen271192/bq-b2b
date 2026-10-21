@@ -16,7 +16,7 @@ export default function ProfilePage() {
   const initials = shortName.split(" ").filter(Boolean).slice(-2).map((w) => w[0]).join("").toUpperCase() || "BQ";
 
   const logout = () => {
-    try { localStorage.clear(); } catch {}
+    try { localStorage.clear(); } catch { /* không xoá được thì đăng xuất vẫn tiếp tục */ }
     window.location.href = "/";
   };
 

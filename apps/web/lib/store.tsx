@@ -32,7 +32,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const d = localStorage.getItem("bq_dealer");
     const c = localStorage.getItem("bq_cart");
     if (d) setDealerState(d);
-    if (c) try { setCart(JSON.parse(c)); } catch {}
+    if (c) try { setCart(JSON.parse(c)); } catch { /* giỏ hàng lưu hỏng: bỏ qua, bắt đầu giỏ rỗng */ }
     setReady(true);
   }, []);
 

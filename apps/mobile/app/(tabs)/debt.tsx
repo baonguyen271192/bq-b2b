@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect } from "expo-router";
 import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { CreditDetail } from "@bq/types";
@@ -13,7 +13,6 @@ import { useSession } from "@/lib/session";
 import { Text, colors, space } from "@/theme";
 
 export default function DebtScreen() {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { dealer } = useSession();
   const [detail, setDetail] = useState<CreditDetail | null>(null);
