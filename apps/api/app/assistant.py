@@ -1049,3 +1049,23 @@ def answer(dealer_code: str, question: str) -> dict:
     out = _local_answer(ctx, question)
     out["engine"] = "local"
     return out
+
+
+# ---------------------------------------------------------------------------
+# Dùng lại cho bot bán lẻ (app/bot/).
+#
+# Các hàm xử lý tiếng Việt dưới đây là NGUỒN DUY NHẤT: bỏ dấu, tách size, tách số
+# lượng, khớp tên sản phẩm. Bot bán lẻ nói chuyện với khách lẻ bằng đúng thứ tiếng
+# Việt lộn xộn đó ("sz 39 lấy 2 đôi"), nên chép sang một bản thứ hai chắc chắn sẽ
+# lệch. Công khai bằng alias thay vì cho bot import tên có gạch dưới.
+# ---------------------------------------------------------------------------
+strip_accents = _strip
+parse_sizes = _parse_sizes
+parse_qty = _parse_qty
+match_products_by_name = _match_products_by_name
+match_category = _match_category
+fmt_vnd = _fmt
+
+# LLM dùng chung (ưu tiên Groq, lùi về Gemini). Trả dict JSON đã parse, hoặc None
+# khi chưa cấu hình khoá hoặc nhà cung cấp lỗi — nơi gọi PHẢI có đường lùi.
+llm_json = _gemini_raw

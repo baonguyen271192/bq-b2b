@@ -58,6 +58,29 @@ def _get(path: str, *, cache: bool = True) -> Any:
     return data
 
 
+def _post(path: str, body: dict, *, headers: dict[str, str] | None = None) -> Any:
+    """Ghi sang backend Java. KHÔNG cache, KHÔNG nuốt lỗi.
+
+    Đọc sai thì trợ lý trả lời cũ một chút; ghi sai thì khách mất đơn hoặc lên hai
+    đơn. Nên đường ghi để lỗi nổ ra cho tầng gọi xử lý tử tế.
+    """
+    url = f"{API_BASE}{path}"
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+        headers={"Content-Type": "application/json", **(headers or {})},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as res:
+            return json.loads(res.read())
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode("utf-8", "replace")[:300]
+        raise BqApiError(f"{url} -> HTTP {e.code}: {detail}") from e
+    except Exception as e:
+        raise BqApiError(f"{url} -> {e}") from e
+
+
 def _q(value: str) -> str:
     return urllib.parse.quote(str(value), safe="")
 
@@ -93,6 +116,22 @@ def product(dealer_code: str, code: str) -> dict | None:
         if p.get("code", "").upper() == target:
             return p
     return None
+
+
+def admin_products() -> list[dict]:
+    """Danh mục KHÔNG gắn đại lý — dùng cho bán lẻ.
+
+    `products(dealer_code)` trả `price` đã áp bậc của đại lý; khách lẻ không có bậc
+    nào, giá của họ là `retail`. Gọi bằng một mã đại lý bất kỳ rồi lờ `price` đi sẽ
+    chạy, nhưng là nói dối trong code — ai đọc sau cũng tưởng bot bán giá sỉ.
+    """
+    return _get("/api/admin/products") or []
+
+
+def create_retail_order(payload: dict, ingest_key: str) -> dict:
+    """Bot chốt đơn lẻ. Backend tự kiểm lại tổng tiền và từ chối nếu lệch."""
+    return _post("/api/retail/orders", payload,
+                 headers={"X-BQ-Retail-Key": ingest_key})
 
 
 def categories() -> list[str]:

@@ -15,6 +15,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api import router as api_router
+from .bot.webhook import router as bot_router
 
 load_dotenv()
 
@@ -34,6 +35,10 @@ if os.getenv("BQ_ASSISTANT_CORS", "").strip():
     )
 
 app.include_router(api_router)
+
+# Bot bán lẻ: webhook Facebook + luồng chốt đơn cho khách vãng lai.
+# Tắt theo mặc định ở tầng cấu hình (thiếu FB_APP_SECRET -> 503), xem bot/webhook.py.
+app.include_router(bot_router)
 
 
 @app.get("/health")
