@@ -30,12 +30,11 @@ services:
         - apps/api-java/.env.example
 
     envVars:
-      # ⚠️ CHẶN DEPLOY — chưa xử lý, xem báo cáo Phase 5.
-      # Với BQ_DATA_SOURCE=demo, DemoOrders cần file apps/api-java/data/orders.db.
-      # File đó bị .gitignore nên KHÔNG có trong repo mà Render clone, và Dockerfile
-      # cũng không COPY thư mục data/. Container sẽ ném IllegalStateException lúc
-      # khởi động. Phải chốt một trong: commit DB mồi, sinh DB từ resources/demo/*.json
-      # lúc khởi động, hay deploy thẳng với BQ_DATA_SOURCE=sapb1.
+      # DB demo tự dựng và tự mồi từ resources/demo/orders.json lúc khởi động nếu
+      # chưa có, nên container trống vẫn chạy được. Mồi CHỈ khi bảng rỗng — đơn đặt
+      # trong lúc demo không bị ghi đè khi khởi động lại.
+      # Lưu ý: ổ đĩa của Render là tạm, đơn demo mất sau mỗi lần deploy. Muốn giữ
+      # thì gắn persistent disk và trỏ BQ_DEMO_ORDERS_DB vào đó.
       - key: BQ_DATA_SOURCE
         value: demo
       - key: BQ_DEMO_ORDERS_DB

@@ -1,0 +1,126 @@
+{
+  "orders": [
+    {
+      "id": "BQ1014",
+      "dealer_code": "DL003",
+      "dealer_name": "NPP Thành Đạt",
+      "subtotal": 1131600,
+      "delivery": "Kho HCM",
+      "payment": "Công nợ",
+      "status": "Chờ xác nhận",
+      "channel": "web",
+      "over_limit": false,
+      "created_at": "16/09/2026 00:39",
+      "approver": null,
+      "approve_note": null,
+      "items": [
+        {
+          "code": "BQE2002",
+          "name": "Giày công sở BQ Elite",
+          "sizes": {
+            "37": 3
+          },
+          "unit_price": 377200,
+          "qty_total": 3,
+          "line_total": 1131600
+        }
+      ]
+    },
+    {
+      "id": "BQ1015",
+      "dealer_code": "DL002",
+      "dealer_name": "Cửa hàng Hồng Phúc",
+      "subtotal": 20176000,
+      "delivery": "Kho HCM",
+      "payment": "Công nợ",
+      "status": "Đang bàn giao vận chuyển",
+      "channel": "app",
+      "over_limit": true,
+      "created_at": "16/09/2026 00:39",
+      "approver": "Quản lý bán hàng",
+      "approve_note": "Cập nhật bởi Quản lý bán hàng",
+      "items": [
+        {
+          "code": "SDM0259",
+          "name": "Sandal nam quai chéo",
+          "sizes": {
+            "40": 80
+          },
+          "unit_price": 252200,
+          "qty_total": 80,
+          "line_total": 20176000
+        }
+      ]
+    },
+    {
+      "id": "BQ1016",
+      "dealer_code": "DL001",
+      "dealer_name": "Đại lý Minh Anh",
+      "subtotal": 2128000,
+      "delivery": "Kho tổng Q.5 (Mặc định)",
+      "payment": "Công nợ 30 ngày",
+      "status": "Đại lý đã nhận",
+      "channel": "app",
+      "over_limit": false,
+      "created_at": "22/09/2026 14:55",
+      "approver": "Quản lý bán hàng",
+      "approve_note": "Cập nhật bởi Quản lý bán hàng",
+      "items": [
+        {
+          "code": "GBW0295",
+          "name": "Giày cao gót mũi vuông quai ngang Solara GBW0295",
+          "sizes": {
+            "35": 5
+          },
+          "unit_price": 425600,
+          "qty_total": 5,
+          "line_total": 2128000
+        }
+      ]
+    },
+    {
+      "id": "BQ1017",
+      "dealer_code": "DL001",
+      "dealer_name": "Đại lý Minh Anh",
+      "subtotal": 1197000,
+      "delivery": "Kho tổng Q.5 (Mặc định)",
+      "payment": "Công nợ 30 ngày",
+      "status": "Đang bàn giao vận chuyển",
+      "channel": "app",
+      "over_limit": false,
+      "created_at": "22/09/2026 15:12",
+      "approver": "Quản lý bán hàng",
+      "approve_note": "Cập nhật bởi Quản lý bán hàng",
+      "items": [
+        {
+          "code": "SDG0141",
+          "name": "Giày sandal bé gái đi học quai ngang BQ SDG0141",
+          "sizes": {
+            "31": 6
+          },
+          "unit_price": 199500,
+          "qty_total": 6,
+          "line_total": 1197000
+        }
+      ]
+    }
+  ],
+  "payments": [
+    {
+      "id": "TT-1001",
+      "dealer_code": "DL003",
+      "order_id": "BQ1014",
+      "amount": 1131600,
+      "method": "Chuyển khoản",
+      "created_at": "16/09/2026 01:04"
+    },
+    {
+      "id": "TT-1002",
+      "dealer_code": "DL001",
+      "order_id": "BQ1016",
+      "amount": 2128000,
+      "method": "Chuyển khoản",
+      "created_at": "23/09/2026 16:00"
+    }
+  ]
+}
