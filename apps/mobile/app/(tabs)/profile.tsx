@@ -6,7 +6,7 @@ import { vnd } from "@bq/core";
 import { Badge } from "@/components/Badge";
 import { Card } from "@/components/Card";
 import { useSession } from "@/lib/session";
-import { Text, colors, radius, space } from "@/theme";
+import { Text, colors, radius, space } from "@/legacy-theme";
 
 const MENU = [
   { icon: "location-outline", label: "Sổ địa chỉ", hint: "Kho nhận hàng & địa chỉ giao" },

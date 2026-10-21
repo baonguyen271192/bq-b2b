@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { OrderRow } from "@/components/OrderRow";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/session";
-import { Text, colors, radius, space } from "@/theme";
+import { Text, colors, radius, space } from "@/legacy-theme";
 
 const FILTERS = [
   { key: "all", label: "Tất cả", match: () => true },

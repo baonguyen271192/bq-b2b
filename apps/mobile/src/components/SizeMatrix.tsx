@@ -3,7 +3,7 @@ import * as Haptics from "expo-haptics";
 import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { vnd } from "@bq/core";
-import { Text, colors, radius, space } from "@/theme";
+import { Text, colors, radius, space } from "@/legacy-theme";
 
 export type SizeQty = Record<string, number>;
 

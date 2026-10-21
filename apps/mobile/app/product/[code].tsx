@@ -12,7 +12,7 @@ import { Screen } from "@/components/Screen";
 import { api } from "@/lib/api";
 import { useCart } from "@/lib/cart";
 import { useSession } from "@/lib/session";
-import { Text, colors, radius, space } from "@/theme";
+import { Text, colors, radius, space } from "@/legacy-theme";
 
 export default function ProductScreen() {
   const { code } = useLocalSearchParams<{ code: string }>();

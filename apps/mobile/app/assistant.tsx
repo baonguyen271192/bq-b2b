@@ -11,7 +11,7 @@ import type { AssistantProductCard } from "@bq/types";
 import { vnd } from "@bq/core";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/session";
-import { Text, colors, radius, space } from "@/theme";
+import { Text, colors, radius, space } from "@/legacy-theme";
 
 interface Bubble {
   id: string;

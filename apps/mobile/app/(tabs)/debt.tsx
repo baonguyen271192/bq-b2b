@@ -10,7 +10,7 @@ import { CreditMeter } from "@/components/CreditMeter";
 import { EmptyState } from "@/components/EmptyState";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/session";
-import { Text, colors, space } from "@/theme";
+import { Text, colors, space } from "@/legacy-theme";
 
 export default function DebtScreen() {
   const insets = useSafeAreaInsets();

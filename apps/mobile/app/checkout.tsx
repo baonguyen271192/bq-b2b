@@ -9,7 +9,7 @@ import { Screen } from "@/components/Screen";
 import { api } from "@/lib/api";
 import { useCart } from "@/lib/cart";
 import { useSession } from "@/lib/session";
-import { Text, colors, radius, space } from "@/theme";
+import { Text, colors, radius, space } from "@/legacy-theme";
 
 const WAREHOUSES = ["Kho HCM", "Kho Hà Nội", "Kho Đà Nẵng"];
 const PAYMENTS = ["Công nợ", "Công nợ 30 ngày", "Chuyển khoản"];

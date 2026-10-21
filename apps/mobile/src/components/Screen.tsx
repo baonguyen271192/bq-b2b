@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { ScrollView, StyleSheet, View, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors, space } from "@/theme";
+import { colors, space } from "@/legacy-theme";
 
 interface Props {
   children: ReactNode;

@@ -4,7 +4,7 @@ import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput, View 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/Button";
 import { useDemoSignIn, useSession } from "@/lib/session";
-import { Text, colors, radius, shadow, space } from "@/theme";
+import { Text, colors, radius, shadow, space } from "@/legacy-theme";
 
 export default function LoginScreen() {
   const router = useRouter();

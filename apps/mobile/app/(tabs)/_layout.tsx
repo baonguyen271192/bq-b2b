@@ -2,7 +2,7 @@ import { Tabs } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useCart } from "@/lib/cart";
-import { colors } from "@/theme";
+import { colors } from "@/legacy-theme";
 
 /**
  * Icon cho thanh tab.

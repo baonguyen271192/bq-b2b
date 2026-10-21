@@ -1,6 +1,6 @@
 import { View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Text, colors, radius, space } from "@/theme";
+import { Text, colors, radius, space } from "@/legacy-theme";
 import { Button } from "./Button";
 
 interface Props {

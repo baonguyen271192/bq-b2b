@@ -1,5 +1,5 @@
 import { StyleSheet, View, type ViewProps } from "react-native";
-import { colors, radius, shadow, space } from "@/theme";
+import { colors, radius, shadow, space } from "@/legacy-theme";
 
 interface Props extends ViewProps {
   /** `flat` bỏ bóng đổ — dùng khi thẻ nằm trong thẻ khác, tránh bóng chồng bóng. */

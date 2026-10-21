@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { Order } from "@bq/types";
 import { vnd } from "@bq/core";
-import { Text, colors, radius, space } from "@/theme";
+import { Text, colors, radius, space } from "@/legacy-theme";
 import { Badge, toneForStatus } from "./Badge";
 
 export function OrderRow({ order, onPress }: { order: Order; onPress?: () => void }) {

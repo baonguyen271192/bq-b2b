@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { Screen } from "@/components/Screen";
 import { pairsOf, useCart } from "@/lib/cart";
 import { useSession } from "@/lib/session";
-import { Text, colors, radius, space } from "@/theme";
+import { Text, colors, radius, space } from "@/legacy-theme";
 
 export default function CartScreen() {
   const router = useRouter();

@@ -42,3 +42,6 @@ yarn-error.*
 
 # Expo
 expo-env.d.ts
+
+# Bản export web dùng để soi giao diện (scripts/preview-web.sh)
+/dist-web

@@ -8,7 +8,7 @@ import { Badge, toneForStatus } from "@/components/Badge";
 import { Card } from "@/components/Card";
 import { Screen } from "@/components/Screen";
 import { api } from "@/lib/api";
-import { Text, colors, radius, space } from "@/theme";
+import { Text, colors, radius, space } from "@/legacy-theme";
 
 /** Các mốc của vòng đời đơn sỉ — dùng để vẽ dòng thời gian. */
 const STEPS = [

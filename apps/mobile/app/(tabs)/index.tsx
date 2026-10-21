@@ -12,7 +12,7 @@ import { OrderRow } from "@/components/OrderRow";
 import { api } from "@/lib/api";
 import { useCart } from "@/lib/cart";
 import { useSession } from "@/lib/session";
-import { Text, colors, radius, space } from "@/theme";
+import { Text, colors, radius, space } from "@/legacy-theme";
 
 export default function HomeScreen() {
   const router = useRouter();

@@ -1,7 +1,7 @@
 import { StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { vnd } from "@bq/core";
-import { Text, colors, radius, space } from "@/theme";
+import { Text, colors, radius, space } from "@/legacy-theme";
 import { Card } from "./Card";
 
 interface Props {

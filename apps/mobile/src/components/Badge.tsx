@@ -1,5 +1,5 @@
 import { StyleSheet, View } from "react-native";
-import { Text, colors, radius, space } from "@/theme";
+import { Text, colors, radius, space } from "@/legacy-theme";
 
 export type Tone = "success" | "warning" | "danger" | "info" | "neutral" | "brand";
 

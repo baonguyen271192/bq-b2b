@@ -2,7 +2,7 @@ import { Image } from "expo-image";
 import { Pressable, StyleSheet, View } from "react-native";
 import type { Product } from "@bq/types";
 import { vnd } from "@bq/core";
-import { Text, colors, radius, shadow, space } from "@/theme";
+import { Text, colors, radius, shadow, space } from "@/legacy-theme";
 import { Badge } from "./Badge";
 
 interface Props {

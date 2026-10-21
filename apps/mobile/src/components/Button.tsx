@@ -1,7 +1,7 @@
 import * as Haptics from "expo-haptics";
 import { ActivityIndicator, Platform, Pressable, StyleSheet, View, type ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Text, colors, radius, shadow, space } from "@/theme";
+import { Text, colors, radius, shadow, space } from "@/legacy-theme";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 type Size = "md" | "lg";
