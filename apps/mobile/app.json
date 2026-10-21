@@ -33,7 +33,7 @@
         {
           "backgroundColor": "#E65C00",
           "image": "./assets/brand/logo-mark-white.png",
-          "imageWidth": 120,
+          "imageWidth": 96,
           "resizeMode": "contain",
           "dark": {
             "backgroundColor": "#E65C00",
