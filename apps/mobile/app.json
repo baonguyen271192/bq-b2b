@@ -27,7 +27,20 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-image"
+      "expo-image",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#E65C00",
+          "image": "./assets/brand/logo-mark-white.png",
+          "imageWidth": 120,
+          "resizeMode": "contain",
+          "dark": {
+            "backgroundColor": "#E65C00",
+            "image": "./assets/brand/logo-mark-white.png"
+          }
+        }
+      ]
     ],
     "extra": {
       "comment": "API base đọc từ EXPO_PUBLIC_API_BASE (xem .env.example) — app native KHÔNG có lớp proxy như Next nên bắt buộc URL tuyệt đối."
