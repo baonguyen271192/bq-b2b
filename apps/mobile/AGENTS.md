@@ -37,5 +37,6 @@ Docs: https://docs.expo.dev/eas/index.md
 ## Rules
 
 - If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.
-- Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
+- Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `eas build --profile development`, or locally `npx expo run:android` / `pnpm ios` for iOS.
+- **Do NOT run `npx expo run:ios` or `expo start --ios` in this repo.** Xcode 27 removed `Simulator.app` (replaced by `Contents/Applications/DeviceHub.app`); Expo CLI still probes the old path and stalls after building ([expo/expo#46671](https://github.com/expo/expo/issues/46671)). Use `scripts/run-ios.sh` (`pnpm ios`), which drives `xcodebuild` + `simctl` directly.
 - Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md

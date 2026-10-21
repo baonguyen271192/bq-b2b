@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "expo start",
     "android": "expo start --android",
-    "ios": "expo start --ios",
+    "ios": "./scripts/run-ios.sh",
     "web": "expo start --web",
     "build": "expo export --platform ios --output-dir dist/ios && expo export --platform android --output-dir dist/android",
     "test": "echo '[@bq/mobile] CHƯA có test — xem Phase 4'",
