@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Animated, Easing } from "react-native";
+import { useCallback, useEffect, useState } from "react";
 import { useFonts } from "expo-font";
 import {
   Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold,
@@ -126,43 +125,27 @@ export default function RootLayout() {
   const ready = fontsSettled && warmupDone;
 
   const [splashGone, setSplashGone] = useState(false);
+  /** Nền đã trả về màu màn đích chưa — bật ở lúc splash BẮT ĐẦU rời. */
+  const [bgHandedOver, setBgHandedOver] = useState(false);
 
   /**
-   * Màn đích tự hiện vào khi splash bắt đầu rời đi.
+   * Màn đích ĐỨNG YÊN ở opacity 1, không hoạt cảnh gì.
    *
-   * Trước đây splash tan ra trong khi màn đăng nhập ĐỨNG YÊN — mắt không có gì
-   * để bám theo nên cú chuyển đọc thành một cái giật. Cho màn đích nhích từ
-   * 0.985 lên 1 và sáng dần từ 0.9: đủ để thành một chuyển động liên tục, chưa
-   * đủ để thành hiệu ứng tự nó gây chú ý.
-   *
-   * KHÔNG hạ opacity thấp hơn 0.9: splash phủ kín nên phần dưới nó không ai
-   * thấy, nhưng lúc splash mờ đi thì màn đích quá nhạt sẽ lộ ra nền trắng của
-   * root và trông bạc màu.
+   * Trước đây nó sáng dần 0.9 -> 1 và nhích 0.985 -> 1 cùng lúc splash mờ ra.
+   * Hai lớp bán trong suốt chồng nhau cho ra đúng cái "cam đục lẫn chữ": trong
+   * khoảng 400ms đó không khung nào là một màn hình rõ ràng cả. Giờ splash tự
+   * zoom xuyên qua rồi tan, còn màn đích nằm sẵn bên dưới đã vẽ xong.
    */
-  const enter = useMemo(() => ({
-    opacity: new Animated.Value(0.9),
-    scale: new Animated.Value(0.985),
-  }), []);
+  const handleSplashFinish = useCallback(() => setSplashGone(true), []);
 
-  const handleSplashFinish = useCallback(() => {
-    // Lưới an toàn: nếu vì lý do nào đó `onExitStart` không chạy (splash bị gỡ
-    // bằng đường khác), ép giá trị về 1 — không thì app ở mãi opacity 0.9 và
-    // scale 0.985, mờ và nhỏ hơn đúng một chút, loại lỗi rất khó nhận ra.
-    enter.opacity.setValue(1);
-    enter.scale.setValue(1);
-    setSplashGone(true);
-  }, [enter]);
-
-  const handleSplashExitStart = useCallback(() => {
-    Animated.parallel([
-      Animated.timing(enter.opacity, {
-        toValue: 1, duration: 420, easing: Easing.out(Easing.cubic), useNativeDriver: true,
-      }),
-      Animated.timing(enter.scale, {
-        toValue: 1, duration: 420, easing: Easing.out(Easing.cubic), useNativeDriver: true,
-      }),
-    ]).start();
-  }, [enter]);
+  /**
+   * Splash bắt đầu rời đi: trả nền về màu của màn đích.
+   *
+   * Trong lúc splash còn phủ, nền root và nền Stack phải là màu splash để mọi
+   * khung RN chưa kịp vẽ đều rơi vào màu đó thay vì trắng. Đổi lúc này, không
+   * sớm hơn.
+   */
+  const handleSplashExitStart = useCallback(() => setBgHandedOver(true), []);
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
   /**
@@ -173,13 +156,13 @@ export default function RootLayout() {
    * React commit lần đầu, trong khi BrandSplash còn chưa có ảnh — vài khung đó
    * lộ nền của root view, và đó chính là cú chớp trắng thấy trong video.
    */
-  const revealApp = useCallback(() => { void SplashScreen.hideAsync(); }, []);
+  const revealApp = useCallback(() => SplashScreen.hideAsync(), []);
 
   return (
     // Nền root CÙNG MÀU splash khi splash còn hiện: mọi khung mà RN chưa kịp vẽ
     // nội dung đều rơi vào màu này thay vì màu trắng mặc định.
     <GestureHandlerRootView
-      style={{ flex: 1, backgroundColor: splashGone ? colors.bg : SPLASH_BG }}
+      style={{ flex: 1, backgroundColor: bgHandedOver ? colors.bg : SPLASH_BG }}
     >
       <SafeAreaProvider>
         <SessionProvider>
@@ -187,13 +170,6 @@ export default function RootLayout() {
             {/* StatusBar của màn đích; khi splash còn hiện, BrandSplash tự khai
                 đè thành chữ trắng. */}
             <StatusBar style="dark" />
-            <Animated.View
-              style={{
-                flex: 1,
-                opacity: enter.opacity,
-                transform: [{ scale: enter.scale }],
-              }}
-            >
             <Stack
               screenOptions={{
                 headerShadowVisible: false,
@@ -202,7 +178,7 @@ export default function RootLayout() {
                 headerTintColor: colors.brand[500],
                 // Cùng lý do: trong lúc splash còn phủ, nền của Stack phải là màu
                 // splash — không thì lúc splash mờ đi sẽ thấy một lớp sáng lọt qua.
-                contentStyle: { backgroundColor: splashGone ? colors.bg : SPLASH_BG },
+                contentStyle: { backgroundColor: bgHandedOver ? colors.bg : SPLASH_BG },
               }}
             >
               <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -214,7 +190,6 @@ export default function RootLayout() {
               <Stack.Screen name="assistant" options={{ title: "Trợ lý BQ" }} />
               <Stack.Screen name="notifications" options={{ title: "Thông báo" }} />
             </Stack>
-            </Animated.View>
 
             {splashGone ? null : (
               <BrandSplash
