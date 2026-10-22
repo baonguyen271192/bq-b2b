@@ -694,7 +694,7 @@ export function BrandSplash({
           transform: [{ translateY: v.taglineY }],
         }]}
       >
-        <T variant="bodyStrong" weight="medium" tone="white" style={styles.tagline}>
+        <T variant="bodyStrong" weight="semibold" tone="ink" style={styles.tagline}>
           {SPLASH_TAGLINE}
         </T>
       </Animated.View>
@@ -729,7 +729,19 @@ const styles = StyleSheet.create({
   abs: { position: "absolute" },
   centerRow: { position: "absolute", left: 0, right: 0, alignItems: "center" },
   logoFill: { backgroundColor: color.white },
-  tagline: { textAlign: "center", opacity: 0.9, letterSpacing: 0.2, maxWidth: 280 },
+  /**
+   * Chữ INK, KHÔNG phải trắng, và KHÔNG hạ opacity.
+   *
+   * Đo nền thật ngay sau tagline trên video bản Release: (241,117,25) — sáng
+   * hơn `bq` vì quầng sáng nằm đúng chỗ đó. Tương phản đo được:
+   *   trắng opacity 0.9 (bản cũ)  2.60:1   trượt cả AA lẫn AA chữ lớn
+   *   trắng opacity 1.0           2.88:1   vẫn trượt
+   *   ink   opacity 0.9           5.33:1   đạt
+   *   ink   opacity 1.0           6.09:1   đạt
+   * Tagline là bodyStrong 15px/600 nên KHÔNG tính là "chữ lớn" theo WCAG (cần
+   * >= 18.66px bold hoặc >= 24px), ngưỡng áp dụng là 4.5:1.
+   */
+  tagline: { textAlign: "center", letterSpacing: 0.2, maxWidth: 280 },
   dim: { opacity: 0.8 },
   textCenter: { textAlign: "center" },
   debugWrap: { position: "absolute", left: 0, right: 0, alignItems: "center" },
