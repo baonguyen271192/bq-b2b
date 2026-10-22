@@ -194,6 +194,9 @@ export default function RootLayout() {
               <Stack.Screen name="order/sent" options={{ headerShown: false }} />
               <Stack.Screen name="drafts" options={{ headerShown: false }} />
               <Stack.Screen name="addresses" options={{ headerShown: false }} />
+              <Stack.Screen name="invoices" options={{ headerShown: false }} />
+              <Stack.Screen name="invoice/[id]" options={{ headerShown: false }} />
+              <Stack.Screen name="transfer/[id]" options={{ headerShown: false }} />
               <Stack.Screen name="assistant" options={{ title: "Trợ lý BQ" }} />
               <Stack.Screen name="notifications" options={{ headerShown: false }} />
             </Stack>

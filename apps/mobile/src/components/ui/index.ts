@@ -42,6 +42,9 @@ export { Skeleton } from "./Skeleton";
 // --- Dòng và danh sách ----------------------------------------------------
 export { ListRow, type ListRowProps } from "./ListRow";
 export { DetailRow } from "./DetailRow";
+export {
+  InvoicePreview, type InvoicePreviewProps, type InvoicePreviewLine,
+} from "./InvoicePreview";
 export { StatPair } from "./StatPair";
 export { SplitBar, type SplitBarProps } from "./SplitBar";
 export { Timeline, type TimelineStep, type TimelineState } from "./Timeline";

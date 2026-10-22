@@ -1,117 +1,131 @@
+import { useState } from "react";
 import { useRouter } from "expo-router";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { Alert, Linking, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import Constants from "expo-constants";
 import { useSession } from "@/lib/session";
 import { color, space } from "@/theme";
 import {
-  Avatar, Card, CardDivider, Chip, ListRow, Price, SectionHead, StatPair, T, TAB_BAR_CLEARANCE,
+  Avatar, Card, IconButton, ListRow, ScreenHeader, StatusTag, Switch, T, TAB_BAR_CLEARANCE,
+  TextButton,
 } from "@/components/ui";
 
-/** `href` rỗng = màn chưa dựng; dựng xong ở Phase 5–6 thì điền vào đây. */
-const MENU = [
-  { icon: "location-outline", label: "Sổ địa chỉ", hint: "Kho nhận hàng & địa chỉ giao", href: "/addresses" },
-  { icon: "document-text-outline", label: "Đơn nháp", hint: "Đơn đang chọn dở", href: "/drafts" },
-  { icon: "receipt-outline", label: "Hoá đơn VAT", hint: "Thông tin xuất hoá đơn", href: "" },
-  { icon: "card-outline", label: "Hướng dẫn chuyển khoản", hint: "Nội dung chuyển khoản để BQ đối soát", href: "" },
-  { icon: "notifications-outline", label: "Thông báo", hint: "Đơn hàng, công nợ, khuyến mãi", href: "/notifications" },
-  { icon: "help-circle-outline", label: "Hỗ trợ", hint: "Liên hệ Sale phụ trách", href: "" },
-] as const;
+/** TODO(api): chưa có Sale phụ trách theo từng đại lý — tổng đài chung. */
+const SUPPORT = { name: "Tổng đài BQ", phone: "0236 374 5745" };
 
+/** Màn Hồ sơ (SPEC §3.11, ảnh `11-Profile.png`). */
 export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { dealer, signOut } = useSession();
+  /** TODO(api): bật/tắt thông báo đẩy chưa có nơi lưu. */
+  const [push, setPush] = useState(true);
 
   if (!dealer) return null;
 
-  const contacts = [
-    dealer.owner ? { icon: "person-outline" as const, value: dealer.owner } : null,
-    dealer.phone ? { icon: "call-outline" as const, value: dealer.phone } : null,
-    dealer.email ? { icon: "mail-outline" as const, value: dealer.email } : null,
-    dealer.invoice_address
-      ? { icon: "business-outline" as const, value: dealer.invoice_address }
-      : null,
-  ].filter((x) => x !== null);
+  const confirmSignOut = () => {
+    Alert.alert("Đăng xuất?", "Giỏ hàng và đơn nháp trên máy này sẽ bị xoá.", [
+      { text: "Ở lại", style: "cancel" },
+      { text: "Đăng xuất", style: "destructive", onPress: () => { signOut(); router.replace("/"); } },
+    ]);
+  };
 
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={[styles.body, { paddingTop: insets.top + space.x3 }]}
+      contentContainerStyle={[
+        styles.body,
+        { paddingTop: insets.top + space.x3, paddingBottom: TAB_BAR_CLEARANCE },
+      ]}
       showsVerticalScrollIndicator={false}
     >
+      <ScreenHeader title="Hồ sơ" />
+
+      <Card style={styles.dealer}>
+        <Avatar name={dealer.name} size={60} />
+        <View style={styles.dealerText}>
+          <T variant="section">{dealer.name}</T>
+          {/* TODO(api): `Dealer` KHÔNG có mã số thuế (thiết kế ghi "MST 0401 234
+              567"). Hiện mã đại lý thôi — gắn nhãn MST cho một trường khác là
+              dựng thông tin sai trên chứng từ. */}
+          <T variant="small" tone="muted">{dealer.code}</T>
+          {/* TODO(api): % chiết khấu theo hạng chưa có trong `Dealer`. */}
+          <StatusTag label={`Hạng ${dealer.tier}`} kind="brand" style={styles.tier} />
+        </View>
+      </Card>
+
       <Card>
-        <View style={styles.head}>
-          <Avatar name={dealer.name} />
-          <View style={styles.headText}>
-            {/* Hai dòng chứ không một: avatar 56 + chip hạng ~110 + hai khe 32
-                chỉ chừa ~123pt cho tên, trong khi "Đại lý Minh Anh" cần ~140pt.
-                Cắt mất tên đại lý là mất thứ quan trọng nhất trên thẻ này. */}
-            <T variant="section" numberOfLines={2}>{dealer.name}</T>
-            <T variant="small" tone="muted">{dealer.code}</T>
-          </View>
-          <Chip label={`★ Hạng ${dealer.tier}`} variant="applied" />
-        </View>
-
-        <View style={styles.rule}><CardDivider /></View>
-
-        <StatPair
-          items={[
-            { label: "Hạn mức", value: <Price value={dealer.credit_limit} variant="bodyStrong" /> },
-            {
-              label: "Khả dụng",
-              value: <Price value={dealer.credit_available} variant="bodyStrong" tone="ok" />,
-            },
-          ]}
-        />
-      </Card>
-
-      {contacts.length > 0 ? (
-        <View>
-          <SectionHead title="Thông tin liên hệ" />
-          <Card>
-            {contacts.map((c) => (
-              <View key={c.value} style={styles.infoRow}>
-                <Ionicons name={c.icon} size={17} color={color.muted} />
-                <T variant="small" style={styles.grow}>{c.value}</T>
-              </View>
-            ))}
-          </Card>
-        </View>
-      ) : null}
-
-      <Card variant="flat">
-        {MENU.map((m, i) => (
-          <View key={m.label}>
-            {i > 0 ? <CardDivider /> : null}
-            <ListRow
-              icon={m.icon}
-              title={m.label}
-              subtitle={m.hint}
-              onPress={m.href ? () => router.push(m.href) : undefined}
-            />
-          </View>
-        ))}
-      </Card>
-
-      <Card variant="flat">
         <ListRow
-          icon="log-out-outline"
-          title="Đăng xuất"
-          danger
-          onPress={() => { signOut(); router.replace("/"); }}
+          icon="person-outline"
+          title="Thông tin đại diện"
+          subtitle={[dealer.owner, dealer.phone].filter(Boolean).join(", ") || "Chưa có"}
+          divider
+        />
+        <ListRow
+          icon="location-outline"
+          title="Sổ địa chỉ giao hàng"
+          subtitle="Kho nhận hàng và địa chỉ giao"
+          onPress={() => router.push("/addresses")}
+          divider
+        />
+        <ListRow
+          icon="document-text-outline"
+          title="Đơn nháp"
+          subtitle="Đơn đang chọn dở"
+          onPress={() => router.push("/drafts")}
+          divider
+        />
+        <ListRow
+          icon="receipt-outline"
+          title="Hoá đơn VAT"
+          subtitle="Tải PDF, chia sẻ cho kế toán"
+          onPress={() => router.push("/invoices")}
+          divider
+        />
+        <ListRow
+          icon="notifications-outline"
+          title="Thông báo đẩy"
+          subtitle="Đơn hàng, công nợ, hoá đơn"
+          trailing={
+            <Switch value={push} onValueChange={setPush} accessibilityLabel="Thông báo đẩy" />
+          }
         />
       </Card>
+
+      <Card style={styles.sale}>
+        <Avatar name={SUPPORT.name} tone="info" />
+        <View style={styles.saleText}>
+          <T variant="chip" tone="muted">Hỗ trợ đại lý</T>
+          <T variant="bodyStrong" weight="semibold">{SUPPORT.name}</T>
+          <T variant="small" tone="muted">{SUPPORT.phone}</T>
+        </View>
+        <IconButton
+          icon="call"
+          tone="brand"
+          accessibilityLabel={`Gọi ${SUPPORT.name}`}
+          onPress={() => void Linking.openURL(`tel:${SUPPORT.phone.replace(/\s/g, "")}`)}
+        />
+      </Card>
+
+      <View style={styles.signOut}>
+        <TextButton label="Đăng xuất" tone="danger" onPress={confirmSignOut} />
+      </View>
+
+      <T variant="chip" tone="muted" style={styles.version}>
+        {`Phiên bản ${Constants.expoConfig?.version ?? "—"}`}
+      </T>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.canvas },
-  body: { padding: space.screen, gap: space.x5, paddingBottom: TAB_BAR_CLEARANCE },
-  head: { flexDirection: "row", gap: space.x4, alignItems: "center" },
-  headText: { flex: 1, gap: space.x1 },
-  rule: { marginVertical: space.x4 },
-  infoRow: { flexDirection: "row", alignItems: "center", gap: space.x3, paddingVertical: space.x2 },
-  grow: { flex: 1 },
+  body: { paddingHorizontal: space.screen, gap: space.x3 },
+  dealer: { flexDirection: "row", alignItems: "center", gap: space.x4 },
+  dealerText: { flex: 1, gap: space.x1 },
+  tier: { marginTop: space.x1 },
+  sale: { flexDirection: "row", alignItems: "center", gap: space.x3 },
+  saleText: { flex: 1, gap: 1 },
+  signOut: { alignItems: "center", paddingVertical: space.x4 },
+  version: { textAlign: "center" },
 });

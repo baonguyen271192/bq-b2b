@@ -10,7 +10,8 @@ import { ProductCard } from "@/components/product/ProductCard";
 import {
   Address, AddressCard, Avatar, Badge, BottomSheet, Card, CardDivider, ChatBubble, Chip,
   CreditCard, DashedButton, DetailRow, Dock, DOCK_CLEARANCE, EmptyState, IconButton, ListRow,
-  Notice, Num, OfflineBanner, Pill, Price, ProductImage, ProductMini, QuickAction, RadioCard,
+  InvoicePreview, Notice, Num, OfflineBanner, Pill, Price, ProductImage, ProductMini,
+  QuickAction, RadioCard,
   ScreenHeader, StockStamp,
   SearchField, SectionHead, SegmentedControl, Select, SizeChip, SizeList, SizeQty, Skeleton,
   StatPair, StatusTag, Stepper, Switch, T, TabBar, TextButton, TextField, Timeline,
@@ -332,6 +333,26 @@ export default function UiShowcase() {
             <Avatar name="Đại lý Minh Phát" />
             <Avatar name="Trần Thu Hà" tone="info" />
           </View>
+        </Group>
+
+        <Group title="InvoicePreview (dữ liệu MẪU, không phải hoá đơn thật)">
+          <InvoicePreview
+            serial="1C26TBQ"
+            number="0001582"
+            issuedAt="15/10/2026"
+            sellerName="Giày BQ"
+            buyerName="Cửa hàng Giày Minh Phát"
+            buyerTaxCode="0401 234 567"
+            buyerAddress="45 Lê Duẩn, P. Thạch Thang, Đà Nẵng"
+            paymentTerm="Công nợ 30 ngày"
+            lines={[{ description: "GV-1916 Trắng", quantity: 40, unitPrice: 462_963, lineTotal: 18_518_519 }]}
+            subtotal={18_518_519}
+            taxRate={8}
+            taxAmount={1_481_481}
+            total={20_000_000}
+            lookupCode="BQ26X7K2M9"
+            onCopyLookup={() => {}}
+          />
         </Group>
 
         <Group title="BottomSheet · sheet nghiệp vụ">
