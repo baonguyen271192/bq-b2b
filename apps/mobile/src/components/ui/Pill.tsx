@@ -3,13 +3,16 @@ import { ActivityIndicator, Pressable, StyleSheet, type ViewStyle } from "react-
 import { color, hitSlopFor, radius, space } from "@/theme";
 import { T } from "./T";
 
-export type PillTone = "brand" | "ink" | "outline" | "paper";
+export type PillTone = "brand" | "ink" | "outline" | "paper" | "onBrand";
 
 export interface PillProps {
   label: string;
   onPress?: () => void;
-  /** `brand` hành động chính · `ink` phụ quan trọng · `outline` phụ thường ·
-   *  `paper` khi nút nằm trên nền TỐI (splash). */
+  /**
+   * `brand` hành động chính · `ink` phụ quan trọng · `outline` phụ thường ·
+   * `paper` khi nút nằm trên nền TỐI (splash) · `onBrand` nút TRẮNG đặt trên
+   * nền cam (nút "Thanh toán" trong thẻ hạn mức) — chữ dùng `textBrand`.
+   */
   tone?: PillTone;
   /**
    * Chiều cao. SPEC dùng 5 cỡ: 54 (nút chính ở dock), 48 (cặp nút trong card),
@@ -51,10 +54,13 @@ export function Pill({
   const bg =
     tone === "brand" ? (down ? color.brandDeep : color.brand)
     : tone === "ink" ? color.ink
-    : tone === "paper" ? color.paper
+    : tone === "paper" || tone === "onBrand" ? color.paper
     : "transparent";
 
-  const textTone = tone === "brand" || tone === "ink" ? "white" : "ink";
+  const textTone =
+    tone === "brand" || tone === "ink" ? "white"
+    : tone === "onBrand" ? "brand"
+    : "ink";
 
   return (
     <Pressable

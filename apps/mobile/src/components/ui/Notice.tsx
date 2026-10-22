@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { color, radius, space } from "@/theme";
 import { T } from "./T";
 
-export type NoticeKind = "info" | "warn" | "danger" | "ok";
+export type NoticeKind = "info" | "warn" | "danger" | "ok" | "plain";
 
 export interface NoticeProps {
   children: string;
@@ -16,6 +16,8 @@ const KIND = {
   warn: { bg: color.warnTint, fg: color.warn, icon: "alert-circle" },
   danger: { bg: color.dangerTint, fg: color.danger, icon: "close-circle" },
   ok: { bg: color.okTint, fg: color.ok, icon: "checkmark-circle" },
+  /** Nền paper, viền line — ghi chú hướng dẫn, không phải trạng thái (SPEC §3.13). */
+  plain: { bg: color.paper, fg: color.muted, icon: "information-circle-outline" },
 } as const;
 
 /**
@@ -28,7 +30,7 @@ const KIND = {
 export function Notice({ children, kind = "info", style }: NoticeProps) {
   const k = KIND[kind];
   return (
-    <View style={[styles.wrap, { backgroundColor: k.bg }, style]}>
+    <View style={[styles.wrap, { backgroundColor: k.bg }, kind === "plain" && styles.plain, style]}>
       <Ionicons name={k.icon} size={20} color={k.fg} />
       <T variant="small" style={styles.text}>{children}</T>
     </View>
@@ -40,5 +42,6 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "flex-start", gap: space.x3,
     padding: space.x4, borderRadius: radius.field,
   },
+  plain: { borderWidth: 1, borderColor: color.line },
   text: { flex: 1 },
 });

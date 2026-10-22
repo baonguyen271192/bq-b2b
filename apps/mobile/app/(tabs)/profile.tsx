@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSession } from "@/lib/session";
 import { color, space } from "@/theme";
 import {
-  Avatar, Card, CardDivider, Chip, ListRow, Price, SectionHead, StatPair, T,
+  Avatar, Card, CardDivider, Chip, ListRow, Price, SectionHead, StatPair, T, TAB_BAR_CLEARANCE,
 } from "@/components/ui";
 
 const MENU = [
@@ -101,7 +101,7 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.canvas },
-  body: { padding: space.screen, gap: space.x5, paddingBottom: space.x12 },
+  body: { padding: space.screen, gap: space.x5, paddingBottom: TAB_BAR_CLEARANCE },
   head: { flexDirection: "row", gap: space.x4, alignItems: "center" },
   headText: { flex: 1, gap: space.x1 },
   rule: { marginVertical: space.x4 },

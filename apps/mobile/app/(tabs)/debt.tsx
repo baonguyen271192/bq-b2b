@@ -8,8 +8,7 @@ import { api } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { color, space } from "@/theme";
 import {
-  Card, CardDivider, CreditCard, EmptyState, ListRow, Price, ScreenHeader, SectionHead,
-  StatusTag, T,
+  Card, CardDivider, CreditCard, EmptyState, ListRow, Price, ScreenHeader, SectionHead, StatusTag, T, TAB_BAR_CLEARANCE,
 } from "@/components/ui";
 
 export default function DebtScreen() {
@@ -109,7 +108,7 @@ export default function DebtScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.canvas },
-  body: { padding: space.screen, gap: space.x5, paddingBottom: space.x12 },
+  body: { padding: space.screen, gap: space.x5, paddingBottom: TAB_BAR_CLEARANCE },
   center: { textAlign: "center" },
   spinner: { marginVertical: space.x8 },
   trailing: { alignItems: "flex-end", gap: space.x1 },

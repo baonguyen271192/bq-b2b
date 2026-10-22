@@ -60,6 +60,10 @@ def wait(t):
         while len(buf) < n: buf += s.recv(n - len(buf))
         m = json.loads(buf)
         if m.get("id") == t: return m
+# Headless không có cửa sổ được hệ điều hành focus, nên `document.hasFocus()` là
+# false và `el.focus()` thành lệnh rỗng — ô nhập không bao giờ nhận được chữ.
+wait(send("Emulation.setFocusEmulationEnabled", {"enabled": True}))
+
 wait(send("Emulation.setDeviceMetricsOverride",
           {"width": W, "height": H, "deviceScaleFactor": 2, "mobile": True}))
 wait(send("Page.navigate", {"url": TARGET}))
@@ -83,27 +87,87 @@ def wait_for(js, what, timeout=40):
 # bước bấm sau đó không thấy nút và cả lượt chụp hỏng mà không rõ vì sao.
 wait_for("document.body.innerText.trim().length > 20", "app vẽ xong")
 
-TYPE_JS = """(() => {
+SET_JS = """(() => {
   const [label, text] = %s;
-  const el = document.querySelector('[aria-label="' + label + '"]');
-  if (!el) return 'KHÔNG thấy ô nhập: ' + label;
-  // React giữ giá trị trong một tracker riêng, nên gán thẳng `el.value` rồi bắn
-  // `input` sẽ bị React coi là "không đổi" và bỏ qua. Phải gọi setter gốc của
-  // prototype để tracker thấy giá trị cũ khác giá trị mới.
-  const proto = Object.getPrototypeOf(el);
-  const setter = Object.getOwnPropertyDescriptor(proto, 'value').set;
-  setter.call(el, text);
+  const all = [...document.querySelectorAll('[aria-label="' + label + '"]')];
+  const el = all.find((e) => e.getBoundingClientRect().width > 0) || all[0];
+  if (!el) return 'không thấy';
+  const proto = el.tagName === 'TEXTAREA'
+    ? window.HTMLTextAreaElement.prototype
+    : window.HTMLInputElement.prototype;
+  Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, text);
   el.dispatchEvent(new Event('input', {bubbles: true}));
-  return 'đã gõ "' + text + '" vào ' + label;
+  return 'ok';
+})()"""
+
+SCROLL_JS = """(() => {
+  const [label] = %s;
+  const all = [...document.querySelectorAll('[aria-label="' + label + '"]')];
+  const el = all.find((e) => e.getBoundingClientRect().width > 0) || all[0];
+  if (!el) return 'không thấy';
+  el.scrollIntoView({block: 'center'});
+  return 'ok';
+})()"""
+
+# Đo toạ độ ở LẦN GỌI KHÁC, sau khi đã cuộn: đo ngay trong cùng một lượt thì
+# rect vẫn là vị trí trước khi cuộn, và cú bấm rơi vào chỗ trống.
+RECT_JS = """(() => {
+  const [label] = %s;
+  const all = [...document.querySelectorAll('[aria-label="' + label + '"]')];
+  if (!all.length) return null;
+  // Nhiều node cùng aria-label: màn trước vẫn còn gắn trong Stack, và node của
+  // nó có kích thước 0. Lấy node THẤY ĐƯỢC chứ không lấy node đầu tiên.
+  const el = all.find((e) => e.getBoundingClientRect().width > 0) || all[0];
+  const r = el.getBoundingClientRect();
+  const mid = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+  return JSON.stringify({
+    x: r.x + r.width / 2, y: r.y + r.height / 2,
+    covered: mid !== el && !el.contains(mid),
+    tag: (mid && mid.tagName) || 'none',
+  });
 })()"""
 
 for CLICK in CLICKS:
     if CLICK.startswith("type:"):
         label, _, text = CLICK[len("type:"):].partition("=")
+        # Gán thẳng `el.value` rồi bắn `input` KHÔNG ăn với react-native-web: DOM
+        # nhận chữ nhưng React vẫn áp lại `value` cũ của prop, nên state không đổi
+        # (đã đo: probe trả về đúng chữ mà màn vẫn hiện placeholder). Phải gõ ở
+        # tầng trình duyệt bằng `Input.insertText`, đúng đường mà bàn phím thật đi.
+        wait(send("Runtime.evaluate",
+                  {"expression": SCROLL_JS % json.dumps([label]), "returnByValue": True}))
+        time.sleep(0.5)
         r = wait(send("Runtime.evaluate",
-                      {"expression": TYPE_JS % json.dumps([label, text]), "returnByValue": True}))
-        print("  ", r["result"]["result"]["value"])
-        time.sleep(3)
+                      {"expression": RECT_JS % json.dumps([label]), "returnByValue": True}))
+        rect = r["result"]["result"].get("value")
+        if not rect:
+            print(f"   KHÔNG thấy ô nhập: {label}")
+            continue
+        # `el.focus()` là lệnh rỗng ở headless; phải BẤM CHUỘT THẬT vào ô thì
+        # trình duyệt mới đặt tiêu điểm, rồi `insertText` mới có đích để đi vào.
+        pt = json.loads(rect)
+        if pt.get("covered"):
+            print(f"      ô bị che bởi <{pt['tag']}> tại ({pt['x']:.0f},{pt['y']:.0f})")
+        for kind in ("mousePressed", "mouseReleased"):
+            wait(send("Input.dispatchMouseEvent", {
+                "type": kind, "x": pt["x"], "y": pt["y"],
+                "button": "left", "clickCount": 1,
+            }))
+        time.sleep(0.4)
+        # Gõ bằng CẢ hai đường: `insertText` (bàn phím thật) rồi setter gốc +
+        # sự kiện `input`. react-native-web 0.21 không nhận đường thứ nhất ở mọi
+        # ô, nên giữ cả hai thay vì đoán xem ô nào ăn đường nào.
+        act = wait(send("Runtime.evaluate", {
+            "expression": "(() => { const a = document.activeElement;"
+                          " return (a && (a.getAttribute('aria-label') || a.tagName)) || 'none'; })()",
+            "returnByValue": True}))["result"]["result"].get("value")
+        wait(send("Input.insertText", {"text": text}))
+        got = wait(send("Runtime.evaluate", {
+            "expression": SET_JS % json.dumps([label, text]), "returnByValue": True,
+        }))["result"]["result"].get("value")
+        print(f"      focus={act} set={got}")
+        print(f'   đã gõ "{text}" vào {label}')
+        time.sleep(1.5)
         continue
     # Bấm theo NHÃN CHỮ, không theo selector: react-native-web sinh class ngẫu
     # nhiên nên selector vỡ ở mỗi lần build. Bắn `click` lên chính node chứa chữ

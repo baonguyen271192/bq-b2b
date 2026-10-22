@@ -142,11 +142,24 @@ export default function UiShowcase() {
           <CreditCard
             label="Hạn mức khả dụng"
             amount={187_600_000}
-            chip={<StatusTag label="✓ Hạng Vàng, CK 20%" kind="brand" />}
+            chip={{ label: "Hạng Vàng, CK 20%" }}
             progress={312.4 / 500}
             stats={[
               { label: "Tổng hạn mức", value: vndShort(500_000_000) },
               { label: "Đã dùng", value: vndShort(312_400_000) },
+            ]}
+          />
+        </Group>
+
+        <Group title="CreditCard · chip cảnh báo">
+          <CreditCard
+            label="Dư nợ hiện tại"
+            amount={312_400_000}
+            chip={{ label: "Quá hạn 48.000.000đ", alert: true }}
+            progress={312.4 / 500}
+            stats={[
+              { label: "Hạn mức", value: vndShort(500_000_000) },
+              { label: "Khả dụng", value: vndShort(187_600_000) },
             ]}
           />
         </Group>

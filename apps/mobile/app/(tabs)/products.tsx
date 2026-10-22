@@ -7,7 +7,9 @@ import { api } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { color, space } from "@/theme";
 import { ProductCard } from "@/components/product/ProductCard";
-import { Chip, EmptyState, SearchField, T } from "@/components/ui";
+import {
+  Chip, EmptyState, SearchField, T, TAB_BAR_CLEARANCE,
+} from "@/components/ui";
 
 const ALL = "Tất cả";
 
@@ -108,7 +110,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: color.canvas,
     paddingHorizontal: space.screen,
-    paddingBottom: space.x3,
+    paddingBottom: TAB_BAR_CLEARANCE,
     gap: space.x3,
   },
   chips: { gap: space.x2, paddingRight: space.screen },

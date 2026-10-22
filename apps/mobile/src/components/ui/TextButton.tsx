@@ -10,6 +10,7 @@ export interface TextButtonProps {
   tone?: "ink" | "brand" | "danger";
   /** Gạch chân — dùng cho link trong luồng ("Sửa size", "+1 mỗi size"). */
   underline?: boolean;
+  disabled?: boolean;
   style?: ViewStyle;
 }
 
@@ -19,19 +20,23 @@ export interface TextButtonProps {
  * Vùng chạm nới lên 44 bằng `hitSlop` chứ không bằng padding: thêm padding sẽ
  * đẩy chữ lệch khỏi hàng nó đang căn theo.
  */
-export function TextButton({ label, onPress, tone = "ink", underline, style }: TextButtonProps) {
+export function TextButton({
+  label, onPress, tone = "ink", underline, disabled, style,
+}: TextButtonProps) {
   const [down, setDown] = useState(false);
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
       onPressIn={() => setDown(true)}
       onPressOut={() => setDown(false)}
       hitSlop={hitSlopFor(20)}
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={[down && styles.down, style]}
+      accessibilityState={{ disabled: !!disabled }}
+      style={[down && styles.down, disabled && styles.disabled, style]}
     >
-      <T variant="label" weight="semibold" tone={tone} style={underline ? styles.underline : undefined}>
+      <T variant="label" weight="semibold" tone={disabled ? "muted" : tone} style={underline ? styles.underline : undefined}>
         {label}
       </T>
     </Pressable>
@@ -40,5 +45,6 @@ export function TextButton({ label, onPress, tone = "ink", underline, style }: T
 
 const styles = StyleSheet.create({
   down: { opacity: 0.6 },
+  disabled: { opacity: 0.5 },
   underline: { textDecorationLine: "underline" },
 });

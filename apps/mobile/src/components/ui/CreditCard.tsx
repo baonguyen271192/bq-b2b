@@ -1,4 +1,5 @@
 import { StyleSheet, View, type ViewStyle } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { color, radius, space } from "@/theme";
 import { Num } from "./Num";
 import { Price } from "./Price";
@@ -8,8 +9,13 @@ export interface CreditCardProps {
   /** "Hạn mức khả dụng" (Trang chủ) hoặc "Dư nợ hiện tại" (Công nợ). */
   label: string;
   amount: number;
-  /** Chip trắng mờ góc phải: "✓ Hạng Vàng, CK 20%", "✓ Quá hạn 0đ". */
-  chip?: React.ReactNode;
+  /**
+   * Chip góc phải: "Hạng Vàng, CK 20%" (Trang chủ) hoặc "Quá hạn 0đ" (Công nợ).
+   *
+   * `alert` cho trường hợp xấu (quá hạn > 0): nền TRẮNG chữ danger, theo SPEC
+   * §3.9 — đảo nền để nó nhảy ra khỏi mảng cam thay vì chìm vào.
+   */
+  chip?: { label: string; alert?: boolean };
   /** Phần đã dùng, 0…1. Bỏ trống thì không vẽ thanh. */
   progress?: number;
   /** Hai số dưới thanh: "Tổng hạn mức 500 tr" / "Đã dùng 312,4 tr". */
@@ -38,7 +44,18 @@ export function CreditCard({
 
       <View style={styles.head}>
         <T variant="label" weight="medium" tone="white" style={styles.label}>{label}</T>
-        {chip}
+        {chip ? (
+          <View style={[styles.chip, chip.alert ? styles.chipAlert : styles.chipNormal]}>
+            <Ionicons
+              name={chip.alert ? "alert-circle" : "checkmark"}
+              size={14}
+              color={chip.alert ? color.danger : color.white}
+            />
+            <T variant="chip" weight="semibold" tone={chip.alert ? "danger" : "white"}>
+              {chip.label}
+            </T>
+          </View>
+        ) : null}
       </View>
 
       <Price value={amount} variant="amountHero" tone="white" />
@@ -76,6 +93,13 @@ const styles = StyleSheet.create({
     borderColor: color.whiteA(0.32),
   },
   head: { flexDirection: "row", alignItems: "center", gap: space.x2 },
+  chip: {
+    flexDirection: "row", alignItems: "center", gap: space.x1,
+    height: 26, paddingHorizontal: 10, borderRadius: radius.pill,
+  },
+  /** `blackA(0.18)` trên `brand` ra đúng #9F4000 — đo từ ảnh thiết kế. */
+  chipNormal: { backgroundColor: color.blackA(0.18) },
+  chipAlert: { backgroundColor: color.white },
   label: { flex: 1 },
   track: { height: 6, borderRadius: radius.pill, backgroundColor: color.whiteA(0.28) },
   fill: { height: 6, borderRadius: radius.pill, backgroundColor: color.white },

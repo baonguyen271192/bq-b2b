@@ -2,44 +2,66 @@ import { useCallback, useState } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
-import { vndShort } from "@bq/core";
-import type { Order } from "@bq/types";
+import { Ionicons } from "@expo/vector-icons";
+import { dayMonth, dueDateOf, orderIsOpen, vndShort } from "@bq/core";
+import type { Order, Product } from "@bq/types";
 import { api } from "@/lib/api";
 import { useCart } from "@/lib/cart";
 import { useSession } from "@/lib/session";
 import { color, space } from "@/theme";
+import { DeliveryCard } from "@/components/home/DeliveryCard";
 import {
-  Chip, CreditCard, EmptyState, IconButton, OrderCard, Pill, ScreenHeader, TAB_BAR_CLEARANCE,
-  SectionHead,
+  Avatar, CreditCard, IconButton, Pill, Price, ProductMini, QuickAction, SectionHead,
+  Skeleton, T, TAB_BAR_CLEARANCE,
 } from "@/components/ui";
 
+/** Số mẫu trong băng "Bán chạy tuần này". */
+const SPOTLIGHT_LIMIT = 8;
+/** Số đơn chưa xong hiện trên Trang chủ; còn lại xem ở tab Đơn hàng. */
+const OPEN_LIMIT = 2;
+
+/** "Chào buổi sáng," đổi theo giờ máy (SPEC §3.2 mục 1). */
+function greeting(now = new Date()): string {
+  const h = now.getHours();
+  if (h < 11) return "Chào buổi sáng,";
+  if (h < 14) return "Chào buổi trưa,";
+  if (h < 18) return "Chào buổi chiều,";
+  return "Chào buổi tối,";
+}
+
 /**
- * Chiều cao dải cam sau tiêu đề, CHƯA tính vùng an toàn.
+ * Hoá đơn gần đến hạn nhất trong số chưa thanh toán.
  *
- * Đủ phủ hàng tiêu đề và hàng hạng đại lý, rồi kết thúc sau lưng thẻ hạn mức —
- * nên mép dưới của dải không bao giờ lộ ra thành một đường ngang.
+ * Hạn SUY RA từ `created_at` + số ngày trong chuỗi `payment` (xem
+ * `@bq/core/credit`); đơn nào không suy ra được thì bỏ qua chứ không đoán.
  */
-const HERO_H = space.x12 * 3 + space.x6;
+function nextDue(orders: Order[]): { label: string; amount: number } | null {
+  const rows = orders
+    .map((o) => ({ due: dueDateOf(o.created_at, o.payment), amount: o.subtotal }))
+    .filter((x): x is { due: Date; amount: number } => x.due !== null)
+    .sort((a, b) => a.due.getTime() - b.due.getTime());
+  return rows[0] ? { label: dayMonth(rows[0].due), amount: rows[0].amount } : null;
+}
 
-/** Số đơn gần đây hiện trên trang chủ. Xem hết thì sang tab Đơn hàng. */
-const RECENT_LIMIT = 4;
-
+/** Trang chủ (SPEC §3.2, ảnh `02-Home.png`). */
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { dealer, refresh } = useSession();
   const { lines } = useCart();
   const [orders, setOrders] = useState<Order[] | null>(null);
+  const [spotlight, setSpotlight] = useState<Product[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     if (!dealer) return;
-    try {
-      setOrders(await api.orders(dealer.code));
-    } catch {
-      setOrders([]);
-    }
+    // `allSettled`: băng sản phẩm hỏng thì vẫn phải thấy đơn và ngược lại.
+    const [o, p] = await Promise.allSettled([
+      api.orders(dealer.code),
+      api.products(dealer.code),
+    ]);
+    setOrders(o.status === "fulfilled" ? o.value : []);
+    setSpotlight(p.status === "fulfilled" ? p.value.slice(0, SPOTLIGHT_LIMIT) : []);
   }, [dealer]);
 
   // Tải lại mỗi lần quay về tab: công nợ và trạng thái đơn đổi khi đang ở màn khác.
@@ -53,116 +75,153 @@ export default function HomeScreen() {
 
   if (!dealer) return null;
 
-  return (
-    <View style={styles.screen}>
-      {/* Dải cam là LỚP NỀN tuyệt đối, không phải một khối trong luồng.
-          Trước đây dùng lề âm để kéo thẻ đè lên dải cam, nhưng phần nhô lên bị
-          chính khung cuộn cắt mất. Tách nền ra thì không còn gì để cắt.
+  const open = (orders ?? []).filter((o) => orderIsOpen(o.status)).slice(0, OPEN_LIMIT);
+  const due = nextDue(orders ?? []);
+  const usedRatio = dealer.credit_limit ? dealer.credit_used / dealer.credit_limit : 0;
 
-          Gradient dừng ở `bq` -> `bqDeep`, KHÔNG dùng `bqBright`: chữ trắng
-          trên `bqBright` chỉ đạt 2.61:1 — không hợp lệ kể cả với chữ lớn. */}
-      <LinearGradient
-        colors={[color.brand, color.brandDeep]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[styles.hero, { height: insets.top + HERO_H }]}
-        pointerEvents="none"
+  return (
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={[
+        styles.body,
+        { paddingTop: insets.top + space.x3, paddingBottom: TAB_BAR_CLEARANCE },
+      ]}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.brand} />
+      }
+    >
+      <View style={styles.header}>
+        <Avatar name={dealer.name} />
+        <View style={styles.hello}>
+          <T variant="small" tone="muted">{greeting()}</T>
+          <T variant="title" numberOfLines={1}>{dealer.name}</T>
+        </View>
+        {/* TODO(api): chưa có số thông báo chưa đọc, nên badge để trống. */}
+        <IconButton
+          icon="notifications-outline"
+          accessibilityLabel="Thông báo"
+          onPress={() => router.push("/notifications")}
+        />
+        <IconButton
+          icon="bag-outline"
+          badge={lines.length}
+          accessibilityLabel="Giỏ hàng"
+          onPress={() => router.push("/cart")}
+        />
+      </View>
+
+      <CreditCard
+        label="Hạn mức khả dụng"
+        amount={dealer.credit_available}
+        // TODO(api): % chiết khấu theo hạng chưa có trong `Dealer` (thiết kế ghi
+        // "Hạng Vàng, CK 20%"), nên chỉ hiện hạng.
+        chip={{ label: `Hạng ${dealer.tier}` }}
+        progress={usedRatio}
+        stats={[
+          { label: "Tổng hạn mức", value: vndShort(dealer.credit_limit) },
+          { label: "Đã dùng", value: vndShort(dealer.credit_used) },
+        ]}
+        extra={due ? (
+          <View style={styles.due}>
+            <Ionicons name="calendar-outline" size={18} color={color.white} />
+            <View style={styles.dueText}>
+              <T variant="chip" tone="white">{`Hạn thanh toán ${due.label}`}</T>
+              <Price value={due.amount} variant="bodyStrong" weight="bold" tone="white" />
+            </View>
+            <Pill
+              label="Thanh toán"
+              tone="onBrand"
+              size={36}
+              onPress={() => router.push("/(tabs)/debt")}
+            />
+          </View>
+        ) : null}
       />
 
-      <ScrollView
-        contentContainerStyle={[styles.body, { paddingTop: insets.top + space.x4 }]}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.white} />
-        }
-      >
-        <ScreenHeader
-          title={dealer.name}
-          caption="Xin chào,"
-          trailing={
-            <>
-              <IconButton
-                icon="notifications-outline"
-                tone="glass"
-                badge={2}
-                accessibilityLabel="Thông báo"
-                onPress={() => router.push("/notifications")}
-              />
-              <IconButton
-                icon="cart-outline"
-                tone="glass"
-                badge={lines.length}
-                accessibilityLabel="Giỏ hàng"
-                onPress={() => router.push("/cart")}
-              />
-            </>
-          }
+      <View style={styles.actions}>
+        <QuickAction
+          icon="add"
+          label="Tạo đơn"
+          tone="ink"
+          onPress={() => router.push("/(tabs)/products")}
         />
-
-        <View style={styles.meta}>
-          <Chip label={dealer.code} variant="applied" />
-          <Chip label={`★ Hạng ${dealer.tier}`} variant="applied" />
-        </View>
-
-        <CreditCard
-          label="Hạn mức khả dụng"
-          amount={dealer.credit_available}
-          progress={dealer.credit_limit ? dealer.credit_used / dealer.credit_limit : 0}
-          stats={[
-            { label: "Tổng hạn mức", value: vndShort(dealer.credit_limit) },
-            { label: "Đã dùng", value: vndShort(dealer.credit_used) },
-          ]}
+        <QuickAction icon="refresh" label="Đặt lại" onPress={() => router.push("/(tabs)/orders")} />
+        {/* TODO(api): chưa có kho đơn nháp; màn Đơn nháp dựng ở Phase 4. */}
+        <QuickAction
+          icon="document-text-outline"
+          label="Đơn nháp"
+          onPress={() => router.push("/(tabs)/orders")}
         />
+        <QuickAction
+          icon="sparkles-outline"
+          label="Trợ lý AI"
+          onPress={() => router.push("/assistant")}
+        />
+      </View>
 
-        <View style={styles.actions}>
-          <Pill
-            label="Tạo đơn hàng mới"
-            tone="brand"
-            style={styles.grow}
-            onPress={() => router.push("/(tabs)/products")}
-          />
-          <Pill
-            label="Giỏ hàng"
-            tone="paper"
-            onPress={() => router.push("/cart")}
-          />
-        </View>
-
-        <View>
-          <SectionHead
-            title="Đơn hàng gần đây"
-            actionLabel="Xem tất cả"
-            onActionPress={() => router.push("/(tabs)/orders")}
-          />
-          {orders && orders.length === 0 ? (
-            <EmptyState
-              icon="receipt-outline"
-              title="Chưa có đơn nào"
-              hint="Chọn mẫu ở tab Sản phẩm, nhập số lượng theo bảng size rồi gửi đơn."
-              actionLabel="Đặt đơn đầu tiên"
-              onActionPress={() => router.push("/(tabs)/products")}
+      {orders === null ? (
+        <Skeleton height={124} shape="card" />
+      ) : open.length > 0 ? (
+        <View style={styles.deliveries}>
+          {open.map((o) => (
+            <DeliveryCard
+              key={o.id}
+              order={o}
+              // TODO(api): `Order` chưa có ngày dự kiến nhận lẫn hãng vận chuyển,
+              // nên thẻ hiện TRẠNG THÁI THẬT thay vì bịa một ngày giao.
+              eta={null}
+              onPress={() => router.push(`/order/${o.id}`)}
             />
-          ) : (
-            <View style={styles.list}>
-              {(orders ?? []).slice(0, RECENT_LIMIT).map((o) => (
-                <OrderCard key={o.id} order={o} onPress={() => router.push(`/order/${o.id}`)} />
-              ))}
-            </View>
-          )}
+          ))}
         </View>
-      </ScrollView>
+      ) : null}
 
-    </View>
+      <View style={styles.section}>
+        <SectionHead
+          title="Bán chạy tuần này"
+          actionLabel="Xem tất cả ›"
+          onActionPress={() => router.push("/(tabs)/products")}
+        />
+        {spotlight === null ? (
+          <View style={styles.rail}>
+            <Skeleton width={150} height={206} shape="card" />
+            <Skeleton width={150} height={206} shape="card" />
+          </View>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.rail}
+          >
+            {/* TODO(api): chưa có xếp hạng bán chạy — tạm lấy đầu danh mục. */}
+            {spotlight.map((p) => (
+              <ProductMini
+                key={p.code}
+                name={p.name}
+                price={p.price}
+                image={p.image}
+                onPress={() => router.push(`/product/${p.code}`)}
+              />
+            ))}
+          </ScrollView>
+        )}
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.canvas },
-  hero: { position: "absolute", top: 0, left: 0, right: 0 },
-  body: { padding: space.screen, gap: space.x5, paddingBottom: TAB_BAR_CLEARANCE },
-  meta: { flexDirection: "row", alignItems: "center", gap: space.x2 },
-  actions: { flexDirection: "row", gap: space.x2, alignItems: "center" },
-  grow: { flex: 1 },
-  list: { gap: space.x3 },
-  fab: { position: "absolute", right: space.screen, bottom: space.x6 },
+  body: { paddingHorizontal: space.screen, gap: space.x4 },
+  header: { flexDirection: "row", alignItems: "center", gap: space.x3 },
+  hello: { flex: 1, gap: 1 },
+  due: { flexDirection: "row", alignItems: "center", gap: space.x3 },
+  dueText: { flex: 1, gap: 1 },
+  actions: { flexDirection: "row", gap: space.x3 },
+  deliveries: { gap: space.x3 },
+  section: { gap: space.x3 },
+  // Băng ngang tràn ra mép phải màn hình (SPEC §2 ProductMini), nên bù lại lề
+  // phải bằng padding của chính nội dung cuộn.
+  rail: { gap: space.x3, paddingRight: space.screen },
 });

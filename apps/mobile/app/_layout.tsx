@@ -181,6 +181,10 @@ export default function RootLayout() {
             >
               <Stack.Screen name="index" options={{ headerShown: false }} />
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              {/* Các màn dưới đây tự dựng tiêu đề bằng `ScreenHeader` kiểu back,
+                  nên tắt header của Stack để không có hai tiêu đề chồng nhau. */}
+              <Stack.Screen name="otp" options={{ headerShown: false }} />
+              <Stack.Screen name="register" options={{ headerShown: false }} />
               <Stack.Screen name="product/[code]" options={{ title: "Chi tiết sản phẩm" }} />
               <Stack.Screen name="order/[id]" options={{ title: "Chi tiết đơn hàng" }} />
               <Stack.Screen name="cart" options={{ title: "Giỏ hàng" }} />

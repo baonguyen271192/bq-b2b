@@ -30,3 +30,28 @@ export const nextActionLabel = (status: string): string | null =>
 /** Nhãn nút "bước tiếp theo" cho đơn LẺ, `null` nếu đã ở trạng thái cuối. */
 export const retailNextActionLabel = (status: string): string | null =>
   RETAIL_NEXT_ACTION[status] ?? null;
+
+/**
+ * Bốn bước hiển thị trên thẻ "đơn đang giao" ở Trang chủ (SPEC §3.2 mục 4).
+ *
+ * KHÔNG phải nguồn sự thật: backend có 5 trạng thái, thiết kế chỉ vẽ 4 chấm, nên
+ * ba trạng thái giữa ("Đã xác nhận", "Đang đóng gói", "Đang bàn giao vận chuyển")
+ * gộp chung vào một chấm. Chữ trạng thái đầy đủ vẫn hiện ở `StatusTag` của màn
+ * Đơn hàng — chấm chỉ để liếc qua là biết đang ở khúc nào.
+ */
+export const ORDER_STEPS = ["Đặt", "Duyệt", "Đang giao", "Nhận"] as const;
+
+/** Chỉ số bước HIỆN TẠI trong {@link ORDER_STEPS}; -1 nếu đơn đã huỷ/bị từ chối. */
+export const orderStep = (status: string): number => {
+  const s = status.toLowerCase();
+  if (s.includes("huỷ") || s.includes("hủy") || s.includes("từ chối")) return -1;
+  if (s.includes("đã nhận")) return 3;
+  if (s.includes("chờ xác nhận") || s.includes("chờ duyệt")) return 1;
+  return 2;
+};
+
+/** Đơn đã khép lại thì không cần hiện trên Trang chủ nữa. */
+export const orderIsOpen = (status: string): boolean => {
+  const step = orderStep(status);
+  return step >= 0 && step < 3;
+};

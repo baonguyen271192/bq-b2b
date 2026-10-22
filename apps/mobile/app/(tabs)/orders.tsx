@@ -6,7 +6,9 @@ import type { Order } from "@bq/types";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { color, space } from "@/theme";
-import { Chip, EmptyState, OrderCard, ScreenHeader } from "@/components/ui";
+import {
+  Chip, EmptyState, OrderCard, ScreenHeader, TAB_BAR_CLEARANCE,
+} from "@/components/ui";
 
 const FILTERS = [
   { key: "all", label: "Tất cả", match: () => true },
@@ -95,7 +97,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: color.canvas,
     paddingHorizontal: space.screen,
-    paddingBottom: space.x3,
+    paddingBottom: TAB_BAR_CLEARANCE,
     gap: space.x3,
   },
   chips: { gap: space.x2, paddingRight: space.screen },
