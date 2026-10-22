@@ -189,13 +189,13 @@ export default function RootLayout() {
               {/* Chi tiết sản phẩm có ảnh tràn viền và nút glass nổi trên ảnh (SPEC
                   §3.5), nên không dùng header của Stack. */}
               <Stack.Screen name="product/[code]" options={{ headerShown: false }} />
-              <Stack.Screen name="order/[id]" options={{ title: "Chi tiết đơn hàng" }} />
+              <Stack.Screen name="order/[id]" options={{ headerShown: false }} />
               <Stack.Screen name="cart" options={{ headerShown: false }} />
               <Stack.Screen name="order/sent" options={{ headerShown: false }} />
               <Stack.Screen name="drafts" options={{ headerShown: false }} />
               <Stack.Screen name="addresses" options={{ headerShown: false }} />
               <Stack.Screen name="assistant" options={{ title: "Trợ lý BQ" }} />
-              <Stack.Screen name="notifications" options={{ title: "Thông báo" }} />
+              <Stack.Screen name="notifications" options={{ headerShown: false }} />
             </Stack>
 
             {splashGone ? null : (

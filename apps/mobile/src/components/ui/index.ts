@@ -33,6 +33,9 @@ export { BottomSheet, type BottomSheetProps } from "./BottomSheet";
 export { Toast } from "./Toast";
 export { EmptyState } from "./EmptyState";
 export { Notice, type NoticeKind } from "./Notice";
+export {
+  NotificationRow, type NotificationRowProps, type NotificationTone,
+} from "./NotificationRow";
 export { OfflineBanner, type OfflineBannerProps } from "./OfflineBanner";
 export { Skeleton } from "./Skeleton";
 
@@ -41,7 +44,7 @@ export { ListRow, type ListRowProps } from "./ListRow";
 export { DetailRow } from "./DetailRow";
 export { StatPair } from "./StatPair";
 export { SplitBar, type SplitBarProps } from "./SplitBar";
-export { Timeline } from "./Timeline";
+export { Timeline, type TimelineStep, type TimelineState } from "./Timeline";
 export { SegmentedControl, type SegmentedControlProps } from "./SegmentedControl";
 
 // --- Nhập liệu ------------------------------------------------------------
