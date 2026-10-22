@@ -56,9 +56,15 @@ const styles = StyleSheet.create({
    * `flexBasis: "auto"` chứ KHÔNG `flex: 1`: chia đều bốn phần thì "Chờ duyệt (1)"
    * ở khổ 390 bị cắt thành "Chờ duy…". Để mục tự rộng theo chữ rồi mới chia phần
    * dư — đúng như bộ ảnh thiết kế, nơi "Tất cả" hẹp hơn hẳn ba mục kia.
+   *
+   * `flexShrink: 1` + `minWidth: 0` chỉ có tác dụng khi hàng KHÔNG đủ chỗ, nên ở
+   * cỡ chữ mặc định không đổi một pixel nào. Ở cỡ chữ lớn hơn một bậc thì bốn mục
+   * rộng hơn bề ngang máy: thiếu hai dòng này, mục cuối ("Đã nhận") tràn ra ngoài
+   * rãnh và bị mép màn hình cắt cụt — đo trên iPhone 17 Pro ở cỡ `extra-large`.
    */
   item: {
-    flexGrow: 1, flexBasis: "auto", height: 40, borderRadius: radius.pill,
+    flexGrow: 1, flexShrink: 1, flexBasis: "auto", minWidth: 0,
+    height: 40, borderRadius: radius.pill,
     alignItems: "center", justifyContent: "center", paddingHorizontal: space.x3,
   },
   itemActive: { backgroundColor: color.paper, ...shadow.segment },

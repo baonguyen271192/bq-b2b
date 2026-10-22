@@ -164,42 +164,62 @@ export default function RootLayout() {
             {/* StatusBar của màn đích; khi splash còn hiện, BrandSplash tự khai
                 đè thành chữ trắng. */}
             <StatusBar style="dark" />
-            <Stack
-              screenOptions={{
-                headerShadowVisible: false,
-                headerStyle: { backgroundColor: color.paper },
-                headerTitleStyle: {
-                  fontFamily: fontFamily.bold,
-                  fontSize: textStyle.section.fontSize,
-                  color: color.ink,
-                },
-                headerTintColor: color.brand,
-                // Cùng lý do: trong lúc splash còn phủ, nền của Stack phải là màu
-                // splash — không thì lúc splash mờ đi sẽ thấy một lớp sáng lọt qua.
-                contentStyle: { backgroundColor: bgHandedOver ? color.canvas : SPLASH_BG },
-              }}
-            >
-              <Stack.Screen name="index" options={{ headerShown: false }} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              {/* Các màn dưới đây tự dựng tiêu đề bằng `ScreenHeader` kiểu back,
-                  nên tắt header của Stack để không có hai tiêu đề chồng nhau. */}
-              <Stack.Screen name="otp" options={{ headerShown: false }} />
-              <Stack.Screen name="register" options={{ headerShown: false }} />
-              <Stack.Screen name="search" options={{ headerShown: false }} />
-              {/* Chi tiết sản phẩm có ảnh tràn viền và nút glass nổi trên ảnh (SPEC
-                  §3.5), nên không dùng header của Stack. */}
-              <Stack.Screen name="product/[code]" options={{ headerShown: false }} />
-              <Stack.Screen name="order/[id]" options={{ headerShown: false }} />
-              <Stack.Screen name="cart" options={{ headerShown: false }} />
-              <Stack.Screen name="order/sent" options={{ headerShown: false }} />
-              <Stack.Screen name="drafts" options={{ headerShown: false }} />
-              <Stack.Screen name="addresses" options={{ headerShown: false }} />
-              <Stack.Screen name="invoices" options={{ headerShown: false }} />
-              <Stack.Screen name="invoice/[id]" options={{ headerShown: false }} />
-              <Stack.Screen name="transfer/[id]" options={{ headerShown: false }} />
-              <Stack.Screen name="assistant" options={{ headerShown: false }} />
-              <Stack.Screen name="notifications" options={{ headerShown: false }} />
-            </Stack>
+            {/*
+              Chỉ dựng cây màn hình KHI font đã ngã ngũ.
+
+              iOS đo chữ MỘT LẦN lúc node Text được tạo. Màn hình mount trước khi
+              `useFonts` xong thì mọi dòng chữ đo và vẽ bằng font hệ thống; props
+              sau đó không đổi nên RN không đo lại khi font về, và app chạy hết
+              phiên bằng San Francisco. Chữ đậm ra chữ thường, chữ rộng hơn Be
+              Vietnam Pro nên nhãn dài bị cắt ("Kích hoạt từ lời mời của…").
+
+              Bản web KHÔNG dính: font nạp qua `@font-face`, trình duyệt tự vẽ
+              lại khi font về. Vì vậy bảy vòng ảnh so sánh trên web đều sạch mà
+              máy thật vẫn sai — chỉ lộ ra khi chụp trên máy ảo.
+
+              `key` lo nhánh timeout: nếu đã bỏ cuộc chờ font rồi font mới về thì
+              dựng lại cây đúng một lần, thay vì giữ chữ sai cả phiên. Lúc đó
+              splash vẫn đang phủ nên người dùng không thấy cú dựng lại.
+            */}
+            {fontsSettled ? (
+              <Stack
+                key={fontsLoaded ? "fonts-ready" : "system-font"}
+                screenOptions={{
+                  headerShadowVisible: false,
+                  headerStyle: { backgroundColor: color.paper },
+                  headerTitleStyle: {
+                    fontFamily: fontFamily.bold,
+                    fontSize: textStyle.section.fontSize,
+                    color: color.ink,
+                  },
+                  headerTintColor: color.brand,
+                  // Cùng lý do: trong lúc splash còn phủ, nền của Stack phải là màu
+                  // splash — không thì lúc splash mờ đi sẽ thấy một lớp sáng lọt qua.
+                  contentStyle: { backgroundColor: bgHandedOver ? color.canvas : SPLASH_BG },
+                }}
+              >
+                <Stack.Screen name="index" options={{ headerShown: false }} />
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                {/* Các màn dưới đây tự dựng tiêu đề bằng `ScreenHeader` kiểu back,
+                    nên tắt header của Stack để không có hai tiêu đề chồng nhau. */}
+                <Stack.Screen name="otp" options={{ headerShown: false }} />
+                <Stack.Screen name="register" options={{ headerShown: false }} />
+                <Stack.Screen name="search" options={{ headerShown: false }} />
+                {/* Chi tiết sản phẩm có ảnh tràn viền và nút glass nổi trên ảnh (SPEC
+                    §3.5), nên không dùng header của Stack. */}
+                <Stack.Screen name="product/[code]" options={{ headerShown: false }} />
+                <Stack.Screen name="order/[id]" options={{ headerShown: false }} />
+                <Stack.Screen name="cart" options={{ headerShown: false }} />
+                <Stack.Screen name="order/sent" options={{ headerShown: false }} />
+                <Stack.Screen name="drafts" options={{ headerShown: false }} />
+                <Stack.Screen name="addresses" options={{ headerShown: false }} />
+                <Stack.Screen name="invoices" options={{ headerShown: false }} />
+                <Stack.Screen name="invoice/[id]" options={{ headerShown: false }} />
+                <Stack.Screen name="transfer/[id]" options={{ headerShown: false }} />
+                <Stack.Screen name="assistant" options={{ headerShown: false }} />
+                <Stack.Screen name="notifications" options={{ headerShown: false }} />
+              </Stack>
+            ) : null}
 
             {splashGone ? null : (
               <BrandSplash
