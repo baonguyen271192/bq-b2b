@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import type { Order } from "@bq/types";
-import { nextActionLabel, vnd } from "@bq/core";
-import { Badge, toneForStatus } from "@/components/Badge";
-import { Card } from "@/components/Card";
-import { Screen } from "@/components/Screen";
+import { nextActionLabel } from "@bq/core";
 import { api } from "@/lib/api";
-import { Text, colors, radius, space } from "@/legacy-theme";
+import { color, space } from "@/theme";
+import {
+  Card, CardDivider, DetailRow, Num, Price, SectionHead, StatusTag, statusKindFor, T, Timeline,
+} from "@/components/ui";
 
 /** Các mốc của vòng đời đơn sỉ — dùng để vẽ dòng thời gian. */
 const STEPS = [
@@ -29,121 +28,95 @@ export default function OrderScreen() {
   }, [id]);
 
   if (!order) {
-    return <View style={styles.center}><ActivityIndicator color={colors.brand[500]} /></View>;
+    return <View style={styles.center}><ActivityIndicator color={color.bq} /></View>;
   }
 
-  const current = STEPS.indexOf(order.status);
-  const cancelled = toneForStatus(order.status) === "danger";
+  const kind = statusKindFor(order.status);
+  const cancelled = kind === "danger";
+  const next = nextActionLabel(order.status);
 
   return (
-    <Screen>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.body}
+      showsVerticalScrollIndicator={false}
+    >
       <Card>
         <View style={styles.head}>
-          <View style={{ gap: 2 }}>
-            <Text variant="caption" color={colors.textMuted}>Mã đơn</Text>
-            <Text variant="h2">{order.id}</Text>
+          <View style={styles.headText}>
+            <T variant="micro" tone="muted">Mã đơn</T>
+            <Num variant="title">{order.id}</Num>
           </View>
-          <Badge label={order.status} tone={toneForStatus(order.status)} />
+          <StatusTag label={order.status} kind={kind} />
         </View>
-        <Text variant="caption" color={colors.textMuted} style={{ marginTop: space.sm }}>
+        <T variant="micro" tone="muted" style={styles.meta}>
           Đặt lúc {order.created_at} · qua {order.channel}
-        </Text>
+        </T>
       </Card>
 
       {!cancelled ? (
-        <Card>
-          <Text variant="h3" style={{ marginBottom: space.md }}>Tiến trình</Text>
-          {STEPS.map((step, i) => {
-            const done = current >= 0 && i <= current;
-            const active = i === current;
-            return (
-              <View key={step} style={styles.step}>
-                <View style={styles.rail}>
-                  <View style={[styles.dot, done ? styles.dotDone : null, active ? styles.dotActive : null]}>
-                    {done ? <Ionicons name="checkmark" size={12} color={colors.textOnBrand} /> : null}
-                  </View>
-                  {i < STEPS.length - 1 ? (
-                    <View style={[styles.spine, i < current ? styles.spineDone : null]} />
-                  ) : null}
-                </View>
-                <Text
-                  variant="bodySm"
-                  weight={active ? "700" : "500"}
-                  color={done ? colors.text : colors.textFaint}
-                  style={{ paddingBottom: space.lg }}
-                >
-                  {step}
-                </Text>
-              </View>
-            );
-          })}
-          {nextActionLabel(order.status) ? (
-            <Text variant="caption" color={colors.textMuted}>
-              Bước kế tiếp do BQ thực hiện: {nextActionLabel(order.status)}
-            </Text>
-          ) : null}
-        </Card>
+        <View>
+          <SectionHead title="Tiến trình" />
+          <Card>
+            <Timeline steps={STEPS} current={STEPS.indexOf(order.status)} />
+            {next ? (
+              <T variant="micro" tone="muted">Bước kế tiếp do BQ thực hiện: {next}</T>
+            ) : null}
+          </Card>
+        </View>
       ) : null}
 
-      <Card>
-        <Text variant="h3" style={{ marginBottom: space.md }}>Hàng hoá</Text>
-        {order.items.map((item) => (
-          <View key={item.code} style={styles.item}>
-            <View style={{ flex: 1, gap: 4 }}>
-              <Text variant="bodySm" weight="600" numberOfLines={2}>{item.name}</Text>
-              <Text variant="caption" color={colors.textMuted}>
-                {Object.entries(item.sizes).map(([s, q]) => `${s}×${q}`).join("  ")}
-              </Text>
+      <View>
+        <SectionHead title="Hàng hoá" />
+        <Card>
+          {order.items.map((item, i) => (
+            <View key={item.code}>
+              {i > 0 ? <View style={styles.rule}><CardDivider /></View> : null}
+              <View style={styles.item}>
+                <View style={styles.itemMain}>
+                  <T variant="bodyStrong" numberOfLines={2}>{item.name}</T>
+                  <T variant="micro" tone="muted">
+                    {Object.entries(item.sizes).map(([s, q]) => `${s}×${q}`).join("  ")}
+                  </T>
+                </View>
+                <View style={styles.itemRight}>
+                  <Price value={item.line_total} variant="bodyStrong" />
+                  <T variant="micro" tone="muted">{item.qty_total} đôi</T>
+                </View>
+              </View>
             </View>
-            <View style={{ alignItems: "flex-end", gap: 2 }}>
-              <Text variant="bodySm" weight="700">{vnd(item.line_total)}</Text>
-              <Text variant="caption" color={colors.textMuted}>{item.qty_total} đôi</Text>
-            </View>
-          </View>
-        ))}
-        <View style={styles.divider} />
-        <View style={styles.totalRow}>
-          <Text variant="body" weight="700">Tổng cộng</Text>
-          <Text variant="h3" color={colors.brand[500]}>{vnd(order.subtotal)}</Text>
-        </View>
-      </Card>
+          ))}
+          <View style={styles.rule}><CardDivider /></View>
+          <DetailRow
+            label="Tổng cộng"
+            strong
+            value={<Price value={order.subtotal} variant="heading" tone="bq" />}
+          />
+        </Card>
+      </View>
 
-      <Card>
-        <Text variant="h3" style={{ marginBottom: space.md }}>Giao & thanh toán</Text>
-        <Row label="Giao tới" value={order.delivery} />
-        <Row label="Thanh toán" value={order.payment} />
-        {order.approver ? <Row label="Người duyệt" value={order.approver} /> : null}
-        {order.approve_note ? <Row label="Ghi chú" value={order.approve_note} /> : null}
-      </Card>
-    </Screen>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.row}>
-      <Text variant="bodySm" color={colors.textMuted}>{label}</Text>
-      <Text variant="bodySm" weight="600" style={{ flex: 1, textAlign: "right" }}>{value}</Text>
-    </View>
+      <View>
+        <SectionHead title="Giao & thanh toán" />
+        <Card>
+          <DetailRow label="Giao tới" value={order.delivery} />
+          <DetailRow label="Thanh toán" value={order.payment} />
+          {order.approver ? <DetailRow label="Người duyệt" value={order.approver} /> : null}
+          {order.approve_note ? <DetailRow label="Ghi chú" value={order.approve_note} /> : null}
+        </Card>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.bg },
-  head: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: space.md },
-  step: { flexDirection: "row", gap: space.md },
-  rail: { alignItems: "center", width: 22 },
-  dot: {
-    width: 22, height: 22, borderRadius: radius.pill,
-    borderWidth: 2, borderColor: colors.border, backgroundColor: colors.surface,
-    alignItems: "center", justifyContent: "center",
-  },
-  dotDone: { backgroundColor: colors.brand[500], borderColor: colors.brand[500] },
-  dotActive: { borderColor: colors.brand[500] },
-  spine: { flex: 1, width: 2, backgroundColor: colors.border },
-  spineDone: { backgroundColor: colors.brand[500] },
-  item: { flexDirection: "row", gap: space.md, paddingVertical: space.sm, alignItems: "flex-start" },
-  divider: { height: 1, backgroundColor: colors.border, marginVertical: space.md },
-  totalRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  row: { flexDirection: "row", gap: space.lg, paddingVertical: 5 },
+  screen: { flex: 1, backgroundColor: color.canvas },
+  body: { padding: space.screen, gap: space.x5, paddingBottom: space.x12 },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: color.canvas },
+  head: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: space.x3 },
+  headText: { gap: space.x1 },
+  meta: { marginTop: space.x2 },
+  rule: { marginVertical: space.x3 },
+  item: { flexDirection: "row", gap: space.x3, alignItems: "flex-start" },
+  itemMain: { flex: 1, gap: space.x1 },
+  itemRight: { alignItems: "flex-end", gap: space.x1 },
 });

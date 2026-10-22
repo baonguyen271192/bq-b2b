@@ -67,9 +67,13 @@ for CLICK in CLICKS:
     # rồi lên các node cha — RNW gắn handler ở lớp Pressable bọc ngoài.
     JS = """(() => {
       const want = %s;
-      const hit = [...document.querySelectorAll('div,span,a')]
+      // Khớp theo CHỮ trước, rồi mới tới aria-label: nút chỉ có icon (FAB trợ
+      // lý, nút gửi) không có textContent nào để khớp, nhưng
+      // react-native-web dựng `accessibilityLabel` thành `aria-label`.
+      let hit = [...document.querySelectorAll('div,span,a')]
         .filter(e => (e.textContent || '').trim() === want)
         .pop();
+      if (!hit) hit = document.querySelector('[aria-label="' + want + '"]');
       if (!hit) return 'KHÔNG thấy nút: ' + want;
       let n = hit;
       for (let i = 0; i < 5 && n; i++) {

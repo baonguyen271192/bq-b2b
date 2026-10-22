@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useFonts } from "expo-font";
 import {
-  Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold,
-} from "@expo-google-fonts/inter";
-import {
   BeVietnamPro_400Regular, BeVietnamPro_500Medium, BeVietnamPro_600SemiBold,
   BeVietnamPro_700Bold, BeVietnamPro_800ExtraBold,
 } from "@expo-google-fonts/be-vietnam-pro";
@@ -16,8 +13,7 @@ import { api } from "@/lib/api";
 import { CartProvider } from "@/lib/cart";
 import { SessionProvider } from "@/lib/session";
 import { BrandSplash } from "@/components/brand/BrandSplash";
-import { colors } from "@/legacy-theme";
-import { color } from "@/theme";
+import { color, fontFamily, textStyle } from "@/theme";
 
 // Giữ native splash cho tới khi BrandSplash đã vẽ xong khung đầu tiên. Thiếu dòng
 // này thì giữa native splash và JS có một nháy trắng.
@@ -73,12 +69,10 @@ function readableError(e: unknown): string {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    // Be Vietnam Pro: font của bộ giao diện mới (src/components/ui).
+    // Chỉ còn Be Vietnam Pro. Inter đã gỡ cùng bộ giao diện cũ ở Phase 5 —
+    // gói @expo-google-fonts/inter cũng đã xoá khỏi package.json.
     BeVietnamPro_400Regular, BeVietnamPro_500Medium, BeVietnamPro_600SemiBold,
     BeVietnamPro_700Bold, BeVietnamPro_800ExtraBold,
-    // Inter: các màn CHƯA di trú vẫn dùng. Gỡ ở Phase 5 khi không còn chỗ nào
-    // import `@/legacy-theme` — kiểm bằng: grep -rn "@/legacy-theme" app src
-    Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold,
   });
 
   const [fontTimedOut, setFontTimedOut] = useState(false);
@@ -162,7 +156,7 @@ export default function RootLayout() {
     // Nền root CÙNG MÀU splash khi splash còn hiện: mọi khung mà RN chưa kịp vẽ
     // nội dung đều rơi vào màu này thay vì màu trắng mặc định.
     <GestureHandlerRootView
-      style={{ flex: 1, backgroundColor: bgHandedOver ? colors.bg : SPLASH_BG }}
+      style={{ flex: 1, backgroundColor: bgHandedOver ? color.canvas : SPLASH_BG }}
     >
       <SafeAreaProvider>
         <SessionProvider>
@@ -173,12 +167,16 @@ export default function RootLayout() {
             <Stack
               screenOptions={{
                 headerShadowVisible: false,
-                headerStyle: { backgroundColor: colors.surface },
-                headerTitleStyle: { fontFamily: "Inter_700Bold", fontSize: 17, color: colors.text },
-                headerTintColor: colors.brand[500],
+                headerStyle: { backgroundColor: color.paper },
+                headerTitleStyle: {
+                  fontFamily: fontFamily.bold,
+                  fontSize: textStyle.heading.fontSize,
+                  color: color.ink,
+                },
+                headerTintColor: color.bq,
                 // Cùng lý do: trong lúc splash còn phủ, nền của Stack phải là màu
                 // splash — không thì lúc splash mờ đi sẽ thấy một lớp sáng lọt qua.
-                contentStyle: { backgroundColor: bgHandedOver ? colors.bg : SPLASH_BG },
+                contentStyle: { backgroundColor: bgHandedOver ? color.canvas : SPLASH_BG },
               }}
             >
               <Stack.Screen name="index" options={{ headerShown: false }} />

@@ -2,13 +2,11 @@ import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Dealer, Product } from "@bq/types";
-import { CreditCard } from "@/components/credit/CreditCard";
-import { TabBar, TABBAR_CLEARANCE } from "@/components/nav/TabBar";
 import { ProductCard } from "@/components/product/ProductCard";
 import {
-  Badge, Card, CardDivider, Chip, Dock, DOCK_CLEARANCE, EmptyState, IconButton, ListRow, Num, Pill,
-  Price, ProductImage, ScreenHeader, SearchField, SectionHead, SegmentedControl,
-  StatusTag, Stepper, T,
+  Avatar, Badge, Card, CardDivider, ChatBubble, Chip, CreditCard, DetailRow, Dock, DOCK_CLEARANCE,
+  EmptyState, IconButton, ListRow, Notice, Num, OptionRow, Pill, Price, ProductImage, ScreenHeader,
+  SearchField, SectionHead, SegmentedControl, StatPair, StatusTag, Stepper, T, TextField, Timeline,
 } from "@/components/ui";
 import { color, radius, space } from "@/theme";
 
@@ -43,7 +41,6 @@ export default function UiShowcase() {
   const [qty, setQty] = useState(0);
   const [query, setQuery] = useState("");
   const [seg, setSeg] = useState<"all" | "wait" | "done">("all");
-  const [tab, setTab] = useState("index");
 
   return (
     <View style={styles.screen}>
@@ -54,7 +51,7 @@ export default function UiShowcase() {
             paddingTop: insets.top + space.x4,
             // Chừa chỗ cho CẢ hai thanh nổi. Thiếu padding thì mục cuối bị che —
             // đã gặp đúng lỗi đó ở lần chụp đầu: Dock đè lên mục "Pill".
-            paddingBottom: TABBAR_CLEARANCE + DOCK_CLEARANCE + space.x6,
+            paddingBottom: DOCK_CLEARANCE + space.x12 * 2,
           },
         ]}
       >
@@ -156,9 +153,11 @@ export default function UiShowcase() {
 
         <SectionHead title="CreditCard" />
         <CreditCard
-          dealer={DEMO_DEALER}
-          pendingAmount={4_000_000}
-          nextDue={{ label: "BQ1017 · còn 12 ngày", amount: 1_197_000 }}
+          limit={DEMO_DEALER.credit_limit}
+          used={DEMO_DEALER.credit_used}
+          pending={4_000_000}
+          detailLabel="Xem chi tiết công nợ"
+          onPressDetail={() => {}}
         />
 
         <SectionHead title="EmptyState" />
@@ -171,6 +170,59 @@ export default function UiShowcase() {
             onActionPress={() => {}}
           />
         </Card>
+
+        <SectionHead title="TextField · OptionRow" />
+        <View style={styles.stack}>
+          <TextField label="Số điện thoại" prefix="+84" value="912 345 468" onChangeText={() => {}} />
+          <TextField
+            label="Mã sai"
+            value="0000"
+            onChangeText={() => {}}
+            error="Mã không đúng, thử lại."
+          />
+          <OptionRow label="Kho HCM" selected onPress={() => {}} />
+          <OptionRow label="Kho Hà Nội" selected={false} onPress={() => {}} />
+        </View>
+
+        <SectionHead title="Notice — 4 loại" />
+        <View style={styles.stack}>
+          <Notice kind="info">Đơn sẽ được xác nhận trong giờ hành chính.</Notice>
+          <Notice kind="warn">Đơn vượt hạn mức, Sale sẽ duyệt trước khi xử lý.</Notice>
+          <Notice kind="danger">Không gửi được đơn. Kiểm tra mạng rồi thử lại.</Notice>
+          <Notice kind="ok">Đã nhận đơn, BQ đang đóng gói.</Notice>
+        </View>
+
+        <SectionHead title="Avatar · StatPair · DetailRow" />
+        <Card>
+          <View style={styles.row}>
+            <Avatar name="Đại lý Minh Anh" />
+            <T variant="heading">Đại lý Minh Anh</T>
+          </View>
+          <View style={styles.rule}><CardDivider /></View>
+          <StatPair
+            items={[
+              { label: "Hạn mức", value: <Price value={50_000_000} variant="bodyStrong" /> },
+              { label: "Khả dụng", value: <Price value={38_803_000} variant="bodyStrong" tone="ok" /> },
+            ]}
+          />
+          <View style={styles.rule}><CardDivider /></View>
+          <DetailRow label="Giao tới" value="Kho HCM" />
+          <DetailRow label="Tổng cộng" strong value={<Price value={2_553_600} variant="bodyStrong" />} />
+        </Card>
+
+        <SectionHead title="Timeline" />
+        <Card>
+          <Timeline
+            current={2}
+            steps={["Chờ xác nhận", "Đã xác nhận", "Đang đóng gói", "Đang giao", "Đại lý đã nhận"]}
+          />
+        </Card>
+
+        <SectionHead title="ChatBubble" />
+        <View style={styles.stack}>
+          <ChatBubble from="bot">Em tra được tồn kho, công nợ hoặc lên đơn nhanh.</ChatBubble>
+          <ChatBubble from="me">Đặt 20 đôi size 40-42 giao kho HCM</ChatBubble>
+        </View>
 
         <SectionHead title="Dock (ví dụ nội dung)" />
         <Card>
@@ -190,17 +242,6 @@ export default function UiShowcase() {
         </View>
       </Dock>
 
-      <TabBar
-        activeKey={tab}
-        onSelect={setTab}
-        items={[
-          { key: "index", label: "Trang chủ", icon: "home-outline", iconActive: "home" },
-          { key: "products", label: "Sản phẩm", icon: "pricetags-outline", iconActive: "pricetags" },
-          { key: "orders", label: "Đơn hàng", icon: "receipt-outline", iconActive: "receipt", badge: 2 },
-          { key: "debt", label: "Công nợ", icon: "card-outline", iconActive: "card" },
-          { key: "profile", label: "Hồ sơ", icon: "person-outline", iconActive: "person" },
-        ]}
-      />
     </View>
   );
 }
@@ -210,10 +251,13 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: space.screen, gap: space.x3 },
   row: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.x2 },
   stack: { gap: space.x2 },
+  rule: { marginVertical: space.x3 },
   half: { flexBasis: "47%", flexGrow: 0 },
   hscroll: { gap: space.x3, paddingVertical: space.x1 },
   glassBed: { backgroundColor: color.plate, padding: space.x2, borderRadius: radius.pill },
-  dockDemo: { bottom: TABBAR_CLEARANCE },
+  // Thanh tab giờ do expo-router dựng (app/(tabs)/_layout.tsx), không còn
+  // component riêng để trưng ở đây. Chừa một khoảng cố định cho Dock demo.
+  dockDemo: { bottom: space.x12 * 2 },
   dockRow: { flexDirection: "row", alignItems: "center", gap: space.x4 },
   flex: { flex: 1 },
 });

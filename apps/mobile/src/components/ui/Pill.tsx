@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, StyleSheet, View, type ViewStyle } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, View, type ViewStyle } from "react-native";
 import { color, radius, space } from "@/theme";
 import { T } from "./T";
 
@@ -11,6 +11,8 @@ export interface PillProps {
   /** `brand` cam cho hành động chính · `ink` cho phụ quan trọng · `outline`/`paper` cho phụ thường. */
   tone?: PillTone;
   disabled?: boolean;
+  /** Đang xử lý — hiện vòng xoay thay nhãn và chặn bấm tiếp. */
+  loading?: boolean;
   /** Icon đặt trước nhãn. */
   leading?: React.ReactNode;
   accessibilityLabel?: string;
@@ -23,9 +25,10 @@ export interface PillProps {
  * Khác {@link IconButton}: Pill luôn có nhãn chữ; IconButton chỉ có icon.
  */
 export function Pill({
-  label, onPress, tone = "brand", disabled, leading, accessibilityLabel, style,
+  label, onPress, tone = "brand", disabled, loading, leading, accessibilityLabel, style,
 }: PillProps) {
   const [down, setDown] = useState(false);
+  const blocked = !!disabled || !!loading;
 
   const bg =
     tone === "brand" ? (down ? color.bqDeep : color.bq)
@@ -38,12 +41,12 @@ export function Pill({
   return (
     <Pressable
       onPress={onPress}
-      disabled={disabled}
+      disabled={blocked}
       onPressIn={() => setDown(true)}
       onPressOut={() => setDown(false)}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
-      accessibilityState={{ disabled: !!disabled }}
+      accessibilityState={{ disabled: blocked, busy: !!loading }}
       style={[
         styles.base,
         { backgroundColor: bg },
@@ -54,10 +57,18 @@ export function Pill({
         style,
       ]}
     >
-      {leading ? <View style={styles.leading}>{leading}</View> : null}
-      {/* weight 600 + 15px là NGƯỠNG TỐI THIỂU để chữ trắng trên nền cam còn đọc
-          được (3.56:1). Hạ xuống là vi phạm tương phản. */}
-      <T variant="bodyStrong" weight="semibold" tone={textTone}>{label}</T>
+      {loading ? (
+        // Giữ nguyên nhãn trong accessibilityLabel ở trên: vòng xoay không có
+        // chữ, trình đọc màn hình vẫn phải biết nút này là nút gì.
+        <ActivityIndicator color={textTone === "white" ? color.white : color.ink} />
+      ) : (
+        <>
+          {leading ? <View style={styles.leading}>{leading}</View> : null}
+          {/* weight 600 + 15px là NGƯỠNG TỐI THIỂU để chữ trắng trên nền cam còn
+              đọc được (3.56:1). Hạ xuống là vi phạm tương phản. */}
+          <T variant="bodyStrong" weight="semibold" tone={textTone}>{label}</T>
+        </>
+      )}
     </Pressable>
   );
 }

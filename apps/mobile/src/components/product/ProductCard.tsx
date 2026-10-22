@@ -22,14 +22,18 @@ function sizeSummary(sizes: Record<string, number>) {
 }
 
 /**
- * Thẻ sản phẩm: ảnh trên plate, rồi mã → tên → giá sỉ → tình trạng size.
- * Ghép từ `ProductImage` + `T`/`Price`; không tự vẽ ảnh hay chữ.
+ * Thẻ sản phẩm: ảnh trên plate, rồi mã → tên → giá sỉ → lợi nhuận → tình trạng
+ * size. Ghép từ `ProductImage` + `T`/`Price`; không tự vẽ ảnh hay chữ.
+ *
+ * Dòng lợi nhuận/đôi nằm NGAY dưới giá, không giấu trong trang chi tiết: đó là
+ * con số đại lý dựa vào để quyết định nhập hay không, quan trọng hơn giá nhập.
  */
 export function ProductCard({
   product, onPress, variant = "grid", isNew, style,
 }: ProductCardProps) {
   const [down, setDown] = useState(false);
   const spotlight = variant === "spotlight";
+  const margin = product.retail - product.price;
 
   return (
     <Pressable
@@ -56,6 +60,7 @@ export function ProductCard({
           {product.name}
         </T>
         <Price value={product.price} suffix=" /đôi" variant={spotlight ? "heading" : "bodyStrong"} />
+        {margin > 0 ? <Price value={margin} variant="micro" tone="ok" suffix=" lãi/đôi" /> : null}
         <T variant="micro" tone={Object.values(product.sizes).some((n) => n > 0) ? "muted" : "danger"}>
           {sizeSummary(product.sizes)}
         </T>

@@ -6,7 +6,8 @@ import type { Product } from "@bq/types";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { color, space } from "@/theme";
-import { Chip, EmptyState, ProductTile, SearchField, T } from "@/components/ui";
+import { ProductCard } from "@/components/product/ProductCard";
+import { Chip, EmptyState, SearchField, T } from "@/components/ui";
 
 const ALL = "Tất cả";
 
@@ -88,9 +89,10 @@ export default function ProductsScreen() {
           <T variant="micro" tone="muted">{visible.length} mẫu</T>
           <View style={styles.grid}>
             {visible.map((p) => (
-              <ProductTile
+              <ProductCard
                 key={p.code}
                 product={p}
+                style={styles.tile}
                 onPress={() => router.push(`/product/${p.code}`)}
               />
             ))}
@@ -112,5 +114,9 @@ const styles = StyleSheet.create({
   chips: { gap: space.x2, paddingRight: space.screen },
   body: { padding: space.screen, paddingTop: space.x2, gap: space.x3 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: space.x3 },
+  // `flexGrow` + `flexBasis` chứ không phải phần trăm: số cột tự suy ra từ bề
+  // rộng màn. ProductCard mặc định `flex: 1`, trong hàng wrap sẽ chiếm trọn
+  // dòng — phải khai flexBasis ở nơi dùng.
+  tile: { flexGrow: 1, flexBasis: 150 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
 });
