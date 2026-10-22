@@ -98,6 +98,193 @@ Xin **một** đại lý bất kỳ là đủ; che thông tin nhạy cảm cũng
 
 ---
 
+### A4. Sổ địa chỉ giao hàng của đại lý ⚠️ hiện CHƯA có đường về B1
+
+**Hiện trạng trong mã — đây là lỗ hổng, không phải đề xuất.**
+
+`SapB1Orders.create()` (`apps/api-java/.../adapters/sapb1/SapB1Orders.java:52`) làm hai
+việc tách rời:
+
+| | Giá trị | Vào đâu trong B1 |
+|---|---|---|
+| Kho xuất | `bq.sapb1.warehouse` — **một giá trị cố định trong cấu hình** | `DocumentLine.WarehouseCode` |
+| Nơi đại lý nhận hàng | chuỗi đại lý chọn trên app | **chỉ nối vào `Comments`**: `"BQ app · Kho HCM · Công nợ 30 ngày"` |
+
+Tức địa chỉ giao hàng đang là **ghi chú tự do** (`Comments` của B1 cắt ở 254 ký tự),
+không phải dữ liệu có cấu trúc. Không có `ShipToCode` hay `AddressExtension` ở bất kỳ
+đâu trong `apps/api-java`. Kho xuất của BQ và nơi đại lý nhận hàng là hai khái niệm
+khác nhau nhưng đang bị trộn vào một trường.
+
+Giao diện v2 (`docs/design/v2/SPEC.md` §3.23–3.25, quyết định H) yêu cầu đại lý có
+**sổ địa chỉ riêng**, mỗi địa chỉ có người nhận và số điện thoại, và đơn gửi lên phải
+mang **mã địa chỉ có cấu trúc**.
+
+#### A4.1 Ánh xạ đề xuất
+
+Đề xuất dựa trên mô hình chuẩn của B1: địa chỉ giao hàng nằm trong
+`BusinessPartners.BPAddresses` với `AddressType = bo_ShipTo`, và đơn chọn một địa chỉ
+bằng `ShipToCode`.
+
+| Trường BQ cần | Trường B1 đề xuất |
+|---|---|
+| Mã địa chỉ (khoá) | `BPAddresses.AddressName` — duy nhất trong phạm vi một đại lý |
+| Tên gợi nhớ ("Kho Hội An") | `BPAddresses.AddressName` |
+| Tỉnh / Thành phố | `BPAddresses.State` (hoặc `City` — xin BQ chốt, xem A4.3) |
+| Phường / Xã | `BPAddresses.County` |
+| Số nhà, tên đường | `BPAddresses.Street` + `StreetNo` |
+| Quốc gia | `BPAddresses.Country = "VN"` |
+| Địa chỉ đã chọn cho đơn | `Orders.ShipToCode` = `AddressName` tương ứng |
+
+> ⚠️ Tên trường trong bảng trên lấy theo mô hình Service Layer chuẩn, **chúng tôi chưa
+> đối chiếu với bản B1 thật của BQ**. Xin IT xác nhận bằng một lần gọi thật (A4.4).
+
+| | |
+|---|---|
+| ✅ / ❌ / ❓ | |
+| Nếu sai, BQ đang lưu địa chỉ giao hàng của đại lý ở đâu? | |
+
+#### A4.2 Người nhận và số điện thoại — chưa có chỗ chuẩn
+
+`BPAddresses` của B1 **không có trường số điện thoại**. Nhưng giao diện v2 bắt buộc mỗi
+địa chỉ có người nhận + SĐT (tài xế gọi trước khi giao). Ba cách, xin BQ chọn **một**:
+
+| | Cách làm | Đánh đổi |
+|---|---|---|
+| 1 | UDF trên địa chỉ: `U_BQ_Recipient`, `U_BQ_Phone` | Sạch nhất, nhưng BQ phải tạo 2 UDF trên `BPAddresses` |
+| 2 | Dùng `ContactEmployees` của đại lý, đơn gửi kèm `ContactPersonCode` | Không cần UDF, nhưng người liên hệ và địa chỉ là hai danh sách rời nhau — đại lý phải ghép đúng cặp |
+| 3 | Sổ địa chỉ nằm trong CSDL của BQ, chỉ đẩy sang B1 phần `AddressExtension` của từng đơn | Không đụng dữ liệu gốc B1, nhưng B1 không có sổ địa chỉ để dùng cho kênh khác |
+
+| | |
+|---|---|
+| Chọn cách nào (1 / 2 / 3)? | |
+
+#### A4.3 Đơn vị hành chính 2 cấp
+
+Từ 2025 Việt Nam bỏ cấp huyện, địa chỉ còn **Tỉnh/Thành phố → Phường/Xã**. B1 có bốn ô
+`State`, `City`, `County`, `Street`. Cần chốt ô nào giữ cấp nào, vì chọn sai thì **phiếu
+giao hàng và hoá đơn in ra sai địa chỉ**.
+
+| | |
+|---|---|
+| Tỉnh/TP nằm ở trường nào? | |
+| Phường/Xã nằm ở trường nào? | |
+| B1 của BQ đã khai bảng `States` cho Việt Nam chưa? | |
+
+#### A4.4 Ai được tạo địa chỉ mới — câu hỏi quan trọng nhất phần này
+
+Giao diện v2 cho **đại lý tự thêm địa chỉ** ngay trong lúc đặt hàng (§3.25). Nếu ánh xạ
+thẳng vào `BPAddresses` thì **đại lý đang ghi vào dữ liệu gốc của ERP**. Nhiều nơi
+không cho phép điều đó.
+
+| | |
+|---|---|
+| Đại lý được tự thêm địa chỉ vào B1 không? (Có / Không / Phải qua Sale duyệt) | |
+| Nếu không: lưu ở CSDL BQ rồi chỉ đẩy `AddressExtension` theo từng đơn — chấp nhận được không? | |
+
+Xin một lần gọi thật để chúng tôi đối chiếu tên trường:
+
+```
+GET /b1s/v1/BusinessPartners('DL001')?$select=CardCode,BPAddresses
+```
+
+---
+
+### A5. Làm tròn trên hoá đơn VAT
+
+Giao diện v2 (quyết định C) chốt: **app hiển thị đúng số hệ thống trả về, không tự
+tính, không hardcode thuế suất**. Nhưng số trong bộ ảnh thiết kế đang không khớp nhau:
+
+| Dòng | Số |
+|---|---|
+| Đơn giá chưa thuế | `462.963` |
+| Số lượng | `40` |
+| `462.963 × 40` | `18.518.520` |
+| Thành tiền ghi trên hoá đơn | `18.518.519`  ← lệch 1 đồng |
+| Tiền thuế | `1.481.481` |
+| Tổng thanh toán | `20.000.000` |
+
+Lệch 1 đồng vì thành tiền đang **tính ngược từ tổng đã gồm thuế** (`20.000.000 / 1,08`)
+chứ không nhân lên từ đơn giá. Kế toán sẽ hỏi.
+
+| | |
+|---|---|
+| Quy tắc làm tròn chính thức là gì? (nhân lên từ đơn giá / chia ngược từ tổng) | |
+| Thuế suất do hệ thống HĐĐT quyết hay do B1 quyết? | |
+| Trường nào trả về thuế suất? | |
+
+App sẽ hiển thị nguyên số nhận được. Xin backend trả về **bộ số đã nhất quán** để app
+không phải chọn hộ.
+
+---
+
+### A6. Hợp đồng API đề xuất cho `createOrder`
+
+Hệ quả của A4 và của quyết định I (hình thức thanh toán read-only theo hợp đồng).
+
+**Hiện tại** (`CreateOrderRequest.java`):
+
+```jsonc
+POST /api/orders
+{
+  "dealer_code": "DL001",
+  "lines": [{ "code": "OX-001", "sizes": { "40": 8, "41": 12 } }],
+  "delivery": "Kho HCM",          // chuỗi tự do -> rơi vào Comments
+  "payment":  "Công nợ 30 ngày",  // app tự chọn
+  "channel":  "app"
+}
+```
+
+**Đề xuất:**
+
+```jsonc
+POST /api/orders
+{
+  "dealer_code": "DL001",
+  "lines": [{ "code": "OX-001", "sizes": { "40": 8, "41": 12 } }],
+  "address_id": "KHO-HOI-AN",     // MỚI, bắt buộc với channel=app
+  "channel":    "app"
+}
+```
+
+| Thay đổi | Lý do |
+|---|---|
+| Thêm `address_id` | Quyết định H. Server tự tra ra `ShipToCode` + `AddressExtension`. `address_id` không thuộc đại lý đó → **422**, không im lặng rơi về mặc định |
+| Bỏ `payment` khỏi request | Quyết định I. Điều khoản công nợ là thuộc tính hợp đồng của đại lý, không phải lựa chọn từng đơn. Server đọc từ hồ sơ đại lý |
+| `delivery` thành **deprecated** | Giữ lại để Web Admin và dữ liệu cũ không vỡ. App bỏ hẳn. Bỏ luôn `deliveryOrDefault()` trả `"Kho HCM"` — mặc định ngầm kiểu này là nguồn gốc của chính sự lẫn lộn ở A4 |
+| Thêm idempotency key | Quyết định D: chống gửi trùng khi mạng chập chờn |
+
+**Endpoint mới cần có:**
+
+```
+GET    /api/dealers/{code}/addresses              danh sách sổ địa chỉ
+POST   /api/dealers/{code}/addresses              thêm (phụ thuộc A4.4)
+PATCH  /api/dealers/{code}/addresses/{id}         sửa
+DELETE /api/dealers/{code}/addresses/{id}         xoá
+PUT    /api/dealers/{code}/addresses/{id}/default đặt mặc định
+GET    /api/geo/provinces                         Tỉnh/TP, nguồn chính thức
+GET    /api/geo/provinces/{code}/wards            Phường/Xã theo tỉnh
+```
+
+Dạng một địa chỉ:
+
+```jsonc
+{
+  "id": "KHO-HOI-AN",
+  "label": "Kho Hội An",
+  "recipient": "Trần Văn Bình",
+  "phone": "0905 662 731",
+  "province_code": "49", "province": "Quảng Nam",
+  "ward_code": "20350",  "ward": "Phường Cẩm Châu",
+  "street": "210 Cửa Đại",
+  "is_default": false
+}
+```
+
+> Dữ liệu demo hiện tại (`demo/dealers.json`) chỉ có `invoice_address` — **chưa có sổ
+> địa chỉ nào**. Màn §3.23 sẽ chạy bằng mock gắn `// TODO(api)` cho tới khi có endpoint.
+
+---
+
 ## PHẦN B — dành cho bộ phận nghiệp vụ (không cần biết kỹ thuật)
 
 Ba câu dưới đây **không có trong dữ liệu** — chúng là chính sách của BQ, phải người
@@ -202,6 +389,9 @@ Khi đại lý trả tiền, SAP đối trừ vào đâu?
 | B1 trạng thái | nối vào Pick List + Delivery | cần BQ tạo UDF, hoặc đổi thiết kế |
 | B2 tồn kho | đổi công thức (1 dòng) | — |
 | B3 thanh toán | nối IncomingPayments | đổi cách đối trừ |
+| A4 sổ địa chỉ | thêm `ShipToCode` vào payload + 5 endpoint mới | tuỳ cách chọn ở A4.2/A4.4, có thể phải dựng sổ địa chỉ trong CSDL BQ |
+| A5 làm tròn VAT | app không sửa gì — chỉ hiển thị | backend chỉnh nguồn số |
+| A6 hợp đồng API | thêm `address_id`, bỏ `payment`, `delivery` deprecated | — |
 
 Phần đã xong và **không phụ thuộc** các câu trên: đăng nhập, giữ phiên, phân trang,
 đọc danh mục, đọc hồ sơ đại lý, tạo đơn bán, cache, xử lý lỗi.
