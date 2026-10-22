@@ -27,3 +27,5 @@ export { EmptyState, type EmptyStateProps } from "./EmptyState";
 export { Dock, DOCK_CLEARANCE, type DockProps } from "./Dock";
 export { ScreenHeader, type ScreenHeaderProps } from "./ScreenHeader";
 export { ProductImage, type ProductImageProps } from "./ProductImage";
+export { ProductTile, type ProductTileProps } from "./ProductTile";
+export { SizeGrid, type SizeGridProps, type SizeQty } from "./SizeGrid";

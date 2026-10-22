@@ -1,8 +1,12 @@
 """Chụp một route ở đúng khổ điện thoại, tại 3 vị trí cuộn.
 
-Tham số thứ 5 (tuỳ chọn): nhãn một nút cần BẤM trước khi chụp. Dùng để qua màn
-đăng nhập — phiên làm việc chỉ nằm trong bộ nhớ nên không seed sẵn được, mà
-`simctl` thì không chạm được nút nào.
+Tham số thứ 5 (tuỳ chọn): các nhãn cần BẤM trước khi chụp, ngăn bằng "|" và bấm
+theo thứ tự. Dùng để qua màn đăng nhập rồi đi sâu vào tab/màn con — phiên làm
+việc chỉ nằm trong bộ nhớ nên không seed sẵn được, mà `simctl` thì không chạm
+được nút nào.
+
+  "Nhận mã OTP"                      -> chỉ đăng nhập
+  "Nhận mã OTP|Sản phẩm"             -> đăng nhập rồi sang tab Sản phẩm
 
 Nói chuyện với Chrome qua DevTools Protocol để: (1) ép đúng viewport —
 `--window-size` bị bỏ qua ở chế độ headless có debug port; (2) cuộn được
@@ -14,7 +18,7 @@ Gọi qua scripts/preview-web.sh, không chạy trực tiếp.
 import sys, json, socket, base64, struct, os, time, urllib.request
 TARGET, W, H = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
 OUTDIR = sys.argv[4]
-CLICK = sys.argv[5] if len(sys.argv) > 5 else None
+CLICKS = sys.argv[5].split("|") if len(sys.argv) > 5 and sys.argv[5] else []
 for _ in range(30):
     try:
         tabs = json.load(urllib.request.urlopen("http://127.0.0.1:9222/json"))
@@ -49,7 +53,7 @@ wait(send("Emulation.setDeviceMetricsOverride",
           {"width": W, "height": H, "deviceScaleFactor": 2, "mobile": True}))
 wait(send("Page.navigate", {"url": TARGET})); time.sleep(9)
 
-if CLICK:
+for CLICK in CLICKS:
     # Bấm theo NHÃN CHỮ, không theo selector: react-native-web sinh class ngẫu
     # nhiên nên selector vỡ ở mỗi lần build. Bắn `click` lên chính node chứa chữ
     # rồi lên các node cha — RNW gắn handler ở lớp Pressable bọc ngoài.
@@ -58,7 +62,7 @@ if CLICK:
       const hit = [...document.querySelectorAll('div,span,a')]
         .filter(e => (e.textContent || '').trim() === want)
         .pop();
-      if (!hit) return 'không thấy nút: ' + want;
+      if (!hit) return 'KHÔNG thấy nút: ' + want;
       let n = hit;
       for (let i = 0; i < 5 && n; i++) {
         n.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
@@ -68,13 +72,17 @@ if CLICK:
     })()""" % json.dumps(CLICK)
     r = wait(send("Runtime.evaluate", {"expression": JS, "returnByValue": True}))
     print("  ", r["result"]["result"]["value"])
-    time.sleep(6)
+    time.sleep(5)
 
+# Chọn vùng cuộn CAO NHẤT, không phải cái đầu tiên tìm thấy: react-native-web
+# lồng nhiều div cuộn được, và cái đầu tiên theo thứ tự DOM thường là khung
+# ngoài chỉ cuộn được vài chục pixel. Lấy nhầm nó thì ảnh "cuối trang" giống hệt
+# ảnh "đầu trang" — đã gặp đúng vậy với danh sách 258 sản phẩm.
 SCROLLER = """(() => {
   const all = [...document.querySelectorAll('div')]
     .filter(e => e.scrollHeight > e.clientHeight + 50 && e.clientHeight > 300);
   if (!all.length) return 'none';
-  window.__sc = all[0];
+  window.__sc = all.sort((a, b) => b.scrollHeight - a.scrollHeight)[0];
   return JSON.stringify({h: window.__sc.scrollHeight, c: window.__sc.clientHeight});
 })()"""
 r = wait(send("Runtime.evaluate", {"expression": SCROLLER, "returnByValue": True}))
