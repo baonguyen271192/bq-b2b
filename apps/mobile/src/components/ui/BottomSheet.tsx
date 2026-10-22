@@ -42,9 +42,12 @@ export function BottomSheet({
       <View style={[styles.sheet, { paddingBottom: insets.bottom }, style]}>
         <View style={styles.grabber} />
         <View style={[styles.head, header ? styles.headCustom : null]}>
-          {header ?? (
-            <T variant="title" style={styles.title} numberOfLines={1}>{title}</T>
-          )}
+          {/* Không tiêu đề và không header tự dựng (sheet Vượt hạn mức) thì chỉ
+              còn nút đóng — chừa một dòng chữ rỗng sẽ tạo khoảng trống lớn ở
+              đầu sheet. */}
+          {header ?? (title?.trim()
+            ? <T variant="title" style={styles.title} numberOfLines={1}>{title}</T>
+            : <View style={styles.title} />)}
           <IconButton icon="close" tone="subtle" accessibilityLabel="Đóng" onPress={onClose} />
         </View>
         <View style={styles.body}>{children}</View>

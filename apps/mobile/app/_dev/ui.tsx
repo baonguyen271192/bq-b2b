@@ -3,6 +3,8 @@ import { ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Product } from "@bq/types";
 import { vndShort } from "@bq/core";
+import { OverLimitSheet } from "@/components/cart/OverLimitSheet";
+import { StockChangedSheet } from "@/components/cart/StockChangedSheet";
 import { ColorPicker } from "@/components/product/ColorPicker";
 import { ProductCard } from "@/components/product/ProductCard";
 import {
@@ -59,6 +61,8 @@ export default function UiShowcase() {
   const [province, setProvince] = useState<string>();
   const [sheet, setSheet] = useState(false);
   const [colour, setColour] = useState("Đen");
+  const [overLimit, setOverLimit] = useState(false);
+  const [stock, setStock] = useState(false);
 
   return (
     <View style={styles.screen}>
@@ -330,8 +334,10 @@ export default function UiShowcase() {
           </View>
         </Group>
 
-        <Group title="BottomSheet">
-          <Pill label="Mở sheet" tone="outline" onPress={() => setSheet(true)} />
+        <Group title="BottomSheet · sheet nghiệp vụ">
+          <Pill label="Mở sheet Đặt nhanh" tone="outline" onPress={() => setSheet(true)} />
+          <Pill label="Mở sheet Vượt hạn mức" tone="outline" onPress={() => setOverLimit(true)} />
+          <Pill label="Mở sheet Tồn kho đã thay đổi" tone="outline" onPress={() => setStock(true)} />
         </Group>
 
         <Group title="TabBar">
@@ -361,6 +367,25 @@ export default function UiShowcase() {
       <BottomSheet visible={sheet} onClose={() => setSheet(false)} title="Đặt nhanh">
         <SizeList stock={DEMO_PRODUCT.sizes} value={sizes} onChange={setSizes} />
       </BottomSheet>
+
+      <OverLimitSheet
+        visible={overLimit}
+        onClose={() => setOverLimit(false)}
+        cartTotal={200_040_000}
+        available={187_600_000}
+        nextInvoice={{ id: "HD-0921", amount: 48_000_000 }}
+        onConfirm={() => setOverLimit(false)}
+      />
+
+      <StockChangedSheet
+        visible={stock}
+        onClose={() => setStock(false)}
+        shortages={[
+          { code: "OX-001", name: "Giày cỏ nam", size: "40", wanted: 6, left: 4 },
+          { code: "OX-005", name: "Giày lười", size: "41", wanted: 12, left: 0 },
+        ]}
+        onConfirm={() => setStock(false)}
+      />
     </View>
   );
 }

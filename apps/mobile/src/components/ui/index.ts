@@ -40,6 +40,7 @@ export { Skeleton } from "./Skeleton";
 export { ListRow, type ListRowProps } from "./ListRow";
 export { DetailRow } from "./DetailRow";
 export { StatPair } from "./StatPair";
+export { SplitBar, type SplitBarProps } from "./SplitBar";
 export { Timeline } from "./Timeline";
 export { SegmentedControl, type SegmentedControlProps } from "./SegmentedControl";
 
@@ -63,6 +64,6 @@ export { Avatar } from "./Avatar";
 export { CreditCard, type CreditCardProps } from "./CreditCard";
 export { QuickAction, type QuickActionProps } from "./QuickAction";
 export { AddressCard, AddressPin, formatAddress, type Address, type AddressCardProps } from "./AddressCard";
-export { CartLineCard } from "./CartLineCard";
+export { CartLineCard, type CartLineCardProps } from "./CartLineCard";
 export { OrderCard } from "./OrderCard";
 export { ChatBubble } from "./ChatBubble";

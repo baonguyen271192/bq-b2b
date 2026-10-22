@@ -28,6 +28,12 @@ export interface Address {
   ward?: string;
   /** Tỉnh/Thành phố. */
   province: string;
+  /**
+   * Mã đơn vị hành chính. Giữ cùng TÊN chứ không thay thế: tên để hiện, mã để
+   * điền lại form và để gửi lên API (`docs/sap-b1-mapping-proposal.md` A6).
+   */
+  provinceCode?: string;
+  wardCode?: string;
   isDefault?: boolean;
 }
 

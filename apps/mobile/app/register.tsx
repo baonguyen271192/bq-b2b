@@ -104,6 +104,7 @@ export default function RegisterScreen() {
         <View style={styles.center}>
           <EmptyState
             icon="checkmark-circle-outline"
+            tone="ok"
             title="Đã gửi đăng ký"
             hint="Sale BQ sẽ liên hệ để xác minh thông tin trong 1–2 ngày làm việc."
             actionLabel="Về màn đăng nhập"

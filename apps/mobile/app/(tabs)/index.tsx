@@ -158,11 +158,10 @@ export default function HomeScreen() {
           onPress={() => router.push("/(tabs)/products")}
         />
         <QuickAction icon="refresh" label="Đặt lại" onPress={() => router.push("/(tabs)/orders")} />
-        {/* TODO(api): chưa có kho đơn nháp; màn Đơn nháp dựng ở Phase 4. */}
         <QuickAction
           icon="document-text-outline"
           label="Đơn nháp"
-          onPress={() => router.push("/(tabs)/orders")}
+          onPress={() => router.push("/drafts")}
         />
         <QuickAction
           icon="sparkles-outline"

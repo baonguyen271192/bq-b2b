@@ -8,12 +8,14 @@ import {
   Avatar, Card, CardDivider, Chip, ListRow, Price, SectionHead, StatPair, T, TAB_BAR_CLEARANCE,
 } from "@/components/ui";
 
+/** `href` rỗng = màn chưa dựng; dựng xong ở Phase 5–6 thì điền vào đây. */
 const MENU = [
-  { icon: "location-outline", label: "Sổ địa chỉ", hint: "Kho nhận hàng & địa chỉ giao" },
-  { icon: "document-text-outline", label: "Hoá đơn VAT", hint: "Thông tin xuất hoá đơn" },
-  { icon: "card-outline", label: "Hướng dẫn chuyển khoản", hint: "Nội dung chuyển khoản để BQ đối soát" },
-  { icon: "notifications-outline", label: "Thông báo", hint: "Đơn hàng, công nợ, khuyến mãi" },
-  { icon: "help-circle-outline", label: "Hỗ trợ", hint: "Liên hệ Sale phụ trách" },
+  { icon: "location-outline", label: "Sổ địa chỉ", hint: "Kho nhận hàng & địa chỉ giao", href: "/addresses" },
+  { icon: "document-text-outline", label: "Đơn nháp", hint: "Đơn đang chọn dở", href: "/drafts" },
+  { icon: "receipt-outline", label: "Hoá đơn VAT", hint: "Thông tin xuất hoá đơn", href: "" },
+  { icon: "card-outline", label: "Hướng dẫn chuyển khoản", hint: "Nội dung chuyển khoản để BQ đối soát", href: "" },
+  { icon: "notifications-outline", label: "Thông báo", hint: "Đơn hàng, công nợ, khuyến mãi", href: "/notifications" },
+  { icon: "help-circle-outline", label: "Hỗ trợ", hint: "Liên hệ Sale phụ trách", href: "" },
 ] as const;
 
 export default function ProfileScreen() {
@@ -82,7 +84,12 @@ export default function ProfileScreen() {
         {MENU.map((m, i) => (
           <View key={m.label}>
             {i > 0 ? <CardDivider /> : null}
-            <ListRow icon={m.icon} title={m.label} subtitle={m.hint} onPress={() => {}} />
+            <ListRow
+              icon={m.icon}
+              title={m.label}
+              subtitle={m.hint}
+              onPress={m.href ? () => router.push(m.href) : undefined}
+            />
           </View>
         ))}
       </Card>
