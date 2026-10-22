@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Redirect } from "expo-router";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Product } from "@bq/types";
@@ -50,7 +51,19 @@ const PROVINCES = [
   { value: "01", label: "Hà Nội" },
 ];
 
-export default function UiShowcase() {
+/**
+ * Chặn ở BẢN PHÁT HÀNH.
+ *
+ * Chú thích "chỉ truy cập trong bản dev" ở trên không tự nó chặn được gì: app có
+ * scheme `bqdealer://`, nên bất kỳ ai cũng mở được `bqdealer:///_dev/ui` trên
+ * bản Release. Không có link trỏ tới KHÁC với không vào được.
+ */
+export default function UiShowcaseRoute() {
+  if (!__DEV__) return <Redirect href="/" />;
+  return <UiShowcase />;
+}
+
+function UiShowcase() {
   const insets = useSafeAreaInsets();
   const [qty, setQty] = useState(2);
   const [sizes, setSizes] = useState<SizeQty>({ "39": 8, "41": 12 });
