@@ -285,6 +285,61 @@ Dạng một địa chỉ:
 
 ---
 
+### A7. Ba lỗ hổng phát hiện khi dựng giao diện v2 ⚠️
+
+Ba việc dưới đây **không phải chuyện giao diện**. Chúng phát hiện được vì màn hình
+cần số liệu mà API không có, hoặc có nhưng sai cách.
+
+#### A7.1 Backend LỌC IM LẶNG size vượt tồn kho
+
+`OrderService.create` duyệt từng size với điều kiện `qty <= stock`; size nào không
+thoả thì **bỏ hẳn khỏi đơn**, rồi vẫn tạo đơn thành công. Comment trong mã ghi:
+*"Lọc im lặng thay vì báo lỗi là hành vi của bản Python — giữ nguyên để FE không
+phải đổi."*
+
+Hệ quả thật: đại lý đặt 6 đôi size 40, đơn tạo xong **không có size 40 nào**, và
+không màn nào báo gì. Họ chỉ phát hiện khi hàng về thiếu.
+
+App v2 đang vá bằng cách gọi thêm `GET /api/products` **trước mỗi lần đặt** để tự
+so sánh (`checkStock`). Cách này tốn một vòng gọi và vẫn còn khe hở đua giữa hai
+lần gọi.
+
+| | |
+|---|---|
+| Đề xuất: trả **lỗi có cấu trúc** (mã lỗi + danh sách `{code, size, wanted, left}`) thay vì lọc im lặng. ✅ / ❌ | |
+| Nếu giữ hành vi cũ, ai chịu trách nhiệm báo cho đại lý? | |
+
+#### A7.2 Màu sản phẩm không đi được vào đơn
+
+`Product.colors` đã có và app đã cho đại lý chọn màu (SPEC §3.4, §3.5). Nhưng
+`OrderItem` và giỏ hàng chỉ có `code` + `sizes` — **không có trường màu**. Đại lý
+chọn "Nâu" rồi đặt thì BQ nhận đơn không biết màu nào.
+
+Giao diện hiện để lựa chọn màu ở mức **chỉ đổi thứ đang xem**, kèm cảnh báo trong
+mã, chứ không âm thầm bỏ đi.
+
+| | |
+|---|---|
+| Thêm `color` vào `OrderItem` và payload tạo đơn? ✅ / ❌ | |
+| Một mã + nhiều màu là **một dòng nhiều màu** hay **nhiều dòng**? | |
+| Trong B1, màu là `ItemCode` riêng hay thuộc tính của dòng? | |
+
+#### A7.3 Thiếu endpoint "đại lý báo đã chuyển khoản"
+
+`POST /api/orders/{id}/pay` ghi nhận thanh toán và **giảm công nợ ngay**
+(`OrderController.pay`). Đó là thao tác **đối soát của BQ**. App đại lý **không
+gọi** nó — gọi nghĩa là đại lý tự xoá nợ của mình.
+
+Nút "Tôi đã chuyển khoản" (SPEC §3.10) vì vậy hiện chỉ ghi nhận trong phiên, và
+hoá đơn đổi sang nhãn "Chờ BQ ghi nhận".
+
+| | |
+|---|---|
+| Thêm `POST /api/orders/{id}/payment-declared` (không đổi công nợ, chỉ báo cho BQ)? ✅ / ❌ | |
+| BQ muốn nhận thông báo đó qua đâu: màn admin, email, Zalo? | |
+
+---
+
 ## PHẦN B — dành cho bộ phận nghiệp vụ (không cần biết kỹ thuật)
 
 Ba câu dưới đây **không có trong dữ liệu** — chúng là chính sách của BQ, phải người
@@ -392,6 +447,9 @@ Khi đại lý trả tiền, SAP đối trừ vào đâu?
 | A4 sổ địa chỉ | thêm `ShipToCode` vào payload + 5 endpoint mới | tuỳ cách chọn ở A4.2/A4.4, có thể phải dựng sổ địa chỉ trong CSDL BQ |
 | A5 làm tròn VAT | app không sửa gì — chỉ hiển thị | backend chỉnh nguồn số |
 | A6 hợp đồng API | thêm `address_id`, bỏ `payment`, `delivery` deprecated | — |
+| A7.1 lọc tồn kho | app bỏ được vòng gọi `checkStock` phụ | giữ nguyên, app tiếp tục tự so sánh |
+| A7.2 màu vào đơn | thêm một trường, app đã sẵn sàng gửi | bỏ hẳn chức năng chọn màu khỏi giao diện |
+| A7.3 báo đã chuyển khoản | nối một endpoint | giữ nguyên, BQ đối soát thủ công như hiện nay |
 
 Phần đã xong và **không phụ thuộc** các câu trên: đăng nhập, giữ phiên, phân trang,
 đọc danh mục, đọc hồ sơ đại lý, tạo đơn bán, cache, xử lý lỗi.

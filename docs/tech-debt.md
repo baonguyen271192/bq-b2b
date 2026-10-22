@@ -105,3 +105,31 @@ nhưng **cố ý không làm** trong đợt dựng lại theo `docs/design/v2/SP
 | **Hiện trạng** | Đăng nhập xong vào thẳng Trang chủ. Không có màn giới thiệu hạn mức, size matrix hay công nợ. |
 | **Vì sao hoãn** | Chưa có thiết kế trong bộ 23 màn. Chưa rõ sản phẩm có muốn onboarding hay không — đại lý thường được Sale hướng dẫn trực tiếp lúc kích hoạt tài khoản. |
 | **Điều kiện để làm** | Quyết định sản phẩm trước, rồi mới thiết kế. Nếu làm thì nên gắn vào lần đầu mở từng màn (coach mark) hơn là một chuỗi màn riêng. |
+
+## BQ-scope-3 — Dữ liệu sống trong bộ nhớ phiên
+
+| | |
+|---|---|
+| **Phạm vi** | `apps/mobile/src/lib/repo/{addresses,drafts,notifications,payments}.ts` |
+| **Hiện trạng** | Bốn repository dùng mock trong RAM vì chưa có API: sổ địa chỉ, đơn nháp, trạng thái đã đọc thông báo, việc đại lý báo đã chuyển khoản. Tắt app là mất. |
+| **Vì sao hoãn** | Đây là dữ liệu của MÁY CHỦ, không phải thiết lập cục bộ. Lưu xuống `AsyncStorage` cho "đỡ mất" sẽ tạo nguồn sự thật thứ hai, và tới lúc nối API thật phải viết thêm lớp hoà giải xung đột — tốn hơn là chờ. |
+| **Rủi ro đang mang** | Màn Đơn nháp ghi "nháp lưu trên tài khoản, mở được trên mọi thiết bị". Câu đó **chỉ đúng khi có API**; chạy demo trước mặt đại lý mà tắt app thì lời hứa vỡ. |
+| **Điều kiện để sửa** | Có `GET/POST /api/dealers/{code}/addresses` và `.../drafts` (xem `docs/sap-b1-mapping-proposal.md` A6). Đổi đúng hàm `create*Repository`, giao diện không phải sửa. |
+
+## BQ-scope-4 — Màu sản phẩm chọn được nhưng không vào đơn
+
+| | |
+|---|---|
+| **Phạm vi** | `src/components/product/ColorPicker.tsx`, `lib/cart.tsx`, `packages/types/src/order.ts` |
+| **Hiện trạng** | SPEC §3.4 và §3.5 có hàng chọn màu, backend đã trả `Product.colors`, nhưng `CartLine`/`OrderItem` chỉ có `code` + `sizes`. Lựa chọn màu chỉ đổi thứ đang xem. |
+| **Rủi ro khi sửa vội** | Thêm màu vào giỏ là đổi KHOÁ của dòng giỏ hàng (`code` -> `code+màu`), kéo theo gộp dòng, sửa size, "mua lại", đơn nháp. Làm nửa vời sẽ mất hàng trong giỏ. |
+| **Điều kiện để sửa** | Chờ BQ trả lời A7.2: một mã nhiều màu là một dòng hay nhiều dòng, và trong B1 màu là `ItemCode` riêng hay thuộc tính dòng. |
+
+## BQ-scope-5 — Hoá đơn VAT chưa có nguồn số
+
+| | |
+|---|---|
+| **Phạm vi** | `app/invoice/[id].tsx`, `src/lib/repo/invoices.ts` |
+| **Hiện trạng** | Bố cục hoá đơn đã dựng (`ui/InvoicePreview`, duyệt được ở `/_dev/ui`), nhưng `invoiceRepository.find()` luôn trả `null` nên màn hiện "Hoá đơn chưa sẵn sàng". |
+| **Vì sao hoãn** | Quyết định C của SPEC cấm app tự tính thuế suất / tiền thuế / đơn giá chưa thuế, mà backend chỉ có tổng đã gồm thuế. Đây là chứng từ kế toán — dựng bằng số tự nghĩ ra là việc không được phép làm. |
+| **Điều kiện để sửa** | Có `GET /api/orders/{id}/invoice` trả đủ: ký hiệu, số, ngày, thuế suất, đơn giá chưa thuế, tiền thuế, mã tra cứu, link PDF. Kèm quy tắc làm tròn đã thống nhất (A5). |
