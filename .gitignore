@@ -49,6 +49,10 @@ docs/**/*.pdf
 docs/**/*.mp4
 docs/**/*.mov
 
+# Ngoại lệ: bản PDF tổng hợp của đặc tả giao diện v2 là tài liệu nguồn, phải đi
+# cùng SPEC.md và 23 ảnh chuẩn. Chỉ mở cho đúng thư mục này.
+!docs/design/v2/*.pdf
+
 # Java / Maven
 target/
 !.mvn/wrapper/maven-wrapper.jar
