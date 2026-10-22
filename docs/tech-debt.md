@@ -80,3 +80,28 @@ và **#7** (tính trước mảng góc bằng `reduce`).
 | **Rủi ro khi sửa** | Giống BQ-debt-2, **nhưng nặng hơn**: đây là provider gốc, mọi màn trong `(shop)` phụ thuộc. Sửa sai gây hydration mismatch toàn khu vực, hoặc tệ hơn — ghi đè giỏ hàng đã lưu bằng giỏ rỗng nếu cờ `ready` bị bỏ sót. |
 | **Hướng sửa đề xuất** | `useSyncExternalStore` với `getServerSnapshot` trả rỗng, đọc trực tiếp từ `localStorage` ở `getSnapshot`. Khi đó cờ `ready` không còn cần. |
 | **Điều kiện để sửa** | Kiểm bằng `next build && next start`, không chỉ `next dev`. Kịch bản bắt buộc test: thêm hàng vào giỏ → tải lại trang → giỏ phải còn nguyên. |
+
+---
+
+# Hoãn phạm vi — không phải lint finding
+
+Mục dưới đây không gắn với `eslint-disable` nào. Đây là phần giao diện đã bàn
+nhưng **cố ý không làm** trong đợt dựng lại theo `docs/design/v2/SPEC.md`.
+
+## BQ-scope-1 — Dark mode
+
+| | |
+|---|---|
+| **Phạm vi** | Toàn bộ `apps/mobile` |
+| **Hiện trạng** | `SPEC.md` v2 chỉ định nghĩa một bảng màu sáng. Token màu trong `packages/tokens/src/colors.ts` là hằng số phẳng, không có lớp theme. |
+| **Vì sao hoãn** | Chưa có bảng màu tối được duyệt. Tự nghĩ ra bảng tối đồng nghĩa với việc phát minh thêm một design system thứ hai, trái với nguyên tắc "SPEC là nguồn chuẩn duy nhất". |
+| **Điều kiện để làm** | Cần SPEC bổ sung bảng màu tối kèm tỉ lệ tương phản đo được cho từng cặp — nhất là cam trên nền tối, vốn là chỗ khó nhất. Trước khi đó, chuyển token sang dạng hàm theo scheme là làm thừa. |
+
+## BQ-scope-2 — Onboarding lần đầu
+
+| | |
+|---|---|
+| **Phạm vi** | Sau `01-Main` / `13-OTP`, trước `02-Home` |
+| **Hiện trạng** | Đăng nhập xong vào thẳng Trang chủ. Không có màn giới thiệu hạn mức, size matrix hay công nợ. |
+| **Vì sao hoãn** | Chưa có thiết kế trong bộ 23 màn. Chưa rõ sản phẩm có muốn onboarding hay không — đại lý thường được Sale hướng dẫn trực tiếp lúc kích hoạt tài khoản. |
+| **Điều kiện để làm** | Quyết định sản phẩm trước, rồi mới thiết kế. Nếu làm thì nên gắn vào lần đầu mở từng màn (coach mark) hơn là một chuỗi màn riêng. |

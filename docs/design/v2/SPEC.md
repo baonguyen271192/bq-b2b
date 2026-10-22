@@ -260,3 +260,54 @@ Thứ tự từ trên xuống, khoảng cách 16:
 - Nội dung cuộn phải có padding dưới đủ để không bị TabBar/Dock che (TabBar: ≥ 120; Dock: bằng chiều cao dock + 16). Lưu ý: trong ảnh 06-Cart và 10-Transfer, phần cuối nội dung bị dock đè là giới hạn của khung mock cố định, app thật phải cuộn được tới hết
 - Phản hồi nhấn: scale 0.98 cho Pill/card, 0.94 cho IconButton; không có animation tự chạy
 - Hỗ trợ Dynamic Type tới cỡ lớn hơn 1 bậc mà không vỡ bố cục: tên sản phẩm cắt 2 dòng, số tiền dùng `adjustsFontSizeToFit` khi cần
+
+---
+
+## 5. Sửa đổi sau review
+
+Mục này được chốt **sau** khi review bộ ảnh v2 và **ưu tiên cao hơn** phần còn lại của tài liệu. Chỗ nào mục 1–4 nói khác thì theo mục này.
+
+### A. Cam làm chữ
+Cam làm **NỀN** có chữ trắng = `brand #C24E00`. Cam làm **CHỮ** trên nền sáng (`canvas`, `paper`, `tint`) = `brandDeep #9E3F00`.
+
+Áp cho: link "Đăng ký ngay", chip "Size 41 ×", tag "Giá hạng Vàng", tag "Mặc định", chữ "Thanh toán" trên nút trắng — và mọi chữ cam khác trên nền sáng.
+
+Thêm token ngữ nghĩa `textBrand = brandDeep`. Ghi tỉ lệ tương phản đo được vào comment của từng token:
+
+| Cặp màu | Tỉ lệ | Kết luận |
+|---|---|---|
+| `brand` trên `canvas` | 4.40:1 | **Không đạt** AA chữ thường → không dùng làm chữ |
+| `brand` trên `tint` | 4.19:1 | **Không đạt** → không dùng làm chữ |
+| `textBrand`/`brandDeep` trên `canvas` | 6.09:1 | Đạt |
+| `textBrand`/`brandDeep` trên `tint` | 5.81:1 | Đạt |
+| `textBrand`/`brandDeep` trên `paper` | 6.64:1 | Đạt |
+| trắng trên `brand` | 4.79:1 | Đạt |
+
+### B. Bảng hoá đơn VAT
+Đầu cột bảng ("Hàng hoá / SL / Đơn giá / Thành tiền") đổi từ 12px sang **13px**.
+
+Quy tắc chung, không ngoại lệ: **chữ mang thông tin ≥ 13px**. Chỉ chip/tag trạng thái được 12px, chỉ badge số trên icon được 11px.
+
+### C. VAT
+- Thêm dòng "Giá đã gồm VAT" (13 `muted`) dưới giá ở **Chi tiết sản phẩm**, **Đặt nhanh**, và trong **card tổng kết Giỏ hàng**.
+- Thuế suất, đơn giá chưa thuế, thành tiền, tiền thuế trên **Hoá đơn VAT**: hiển thị **đúng số** backend / hệ thống hoá đơn điện tử trả về. App **không tự tính, không tự làm tròn**. **Không hardcode 8%.**
+- Việc cho team backend: thành tiền hiện đang tính ngược từ tổng — `40 × 462.963 = 18.518.520` nhưng dòng thành tiền ghi `18.518.519`. Cần thống nhất quy tắc làm tròn (làm tròn từ đơn giá lên, hay chia ngược từ tổng đã gồm thuế) và trả về số đã thống nhất.
+
+### D. Tồn kho thay đổi khi gửi đơn
+Bổ sung cho §3.6 (Giỏ hàng), trước đây thiếu.
+
+1. **Đang gửi:** bấm "Đặt hàng" → Pill vào trạng thái đang gửi (spinner trong Pill, chữ "Đang gửi đơn…"), khoá mọi thao tác trên màn. Chống bấm hai lần bằng **idempotency key** nếu API hỗ trợ.
+2. **API báo thiếu hàng** → bottom sheet "Tồn kho đã thay đổi", dùng **đúng khuôn của `14-OverLimit`**: icon warn trong tròn 48 nền `warnTint`; tiêu đề 20/700; mô tả 14 `muted`; danh sách dòng bị ảnh hưởng ("OX-001 size 40: còn 4, bạn đặt 6"); 2 radio card — "Đặt theo số còn lại" (mặc định, tự hạ số lượng) / "Bỏ size này"; CTA `brand` "Cập nhật và đặt hàng"; nút phụ "Quay lại giỏ".
+3. **Gửi thất bại do mạng/lỗi server** → giữ nguyên giỏ, toast lỗi có nút "Thử lại". Không tạo đơn trùng.
+4. **Thành công** → màn xác nhận dùng khuôn `EmptyState`: icon check nền `okTint`, "Đã gửi đơn DH-…", trạng thái (chờ duyệt / đã xác nhận), 2 nút "Xem đơn" / "Về trang chủ".
+
+Dựng **từ component có sẵn**, không thiết kế kiểu mới.
+
+### E. Màu cam logo — CHƯA chốt
+`flame #E65C00` so với cam logo chính thức (`#F04F23`?) **chưa chốt**. Giữ `flame` là **một token duy nhất** dùng chung cho splash + header màn Đăng nhập + chấm tiến trình hiện tại, để khi có brand guideline thì đổi một chỗ là xong. **Không tự đổi.**
+
+### F. Sau "Tôi đã chuyển khoản"
+Quay về màn **Công nợ**. Hoá đơn vừa chuyển hiện `StatusTag` kiểu `info` "Đang chờ BQ ghi nhận" **thay cho** nút "Trả ngay", cho tới khi API xác nhận. **Không làm màn riêng.**
+
+### Ngoài phạm vi đợt này
+**Dark mode** và **onboarding lần đầu** không làm trong đợt này. Đã ghi vào `docs/tech-debt.md`.
