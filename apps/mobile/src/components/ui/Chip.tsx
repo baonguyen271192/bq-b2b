@@ -44,6 +44,9 @@ export function Chip({
       disabled={!onPress}
       onPressIn={() => setDown(true)}
       onPressOut={() => setDown(false)}
+      // SPEC cho chip lọc cao 36 nhưng cũng đòi vùng chạm tối thiểu 44 —
+      // hai yêu cầu đó chỉ sống chung được bằng hitSlop.
+      hitSlop={variant === "category" ? undefined : hitSlopFor(36)}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ selected: !!selected }}

@@ -2,7 +2,7 @@ import { useEffect, useMemo } from "react";
 import { Animated, Easing, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { color, radius, shadow, space } from "@/theme";
+import { color, hitSlopFor, radius, shadow, space } from "@/theme";
 import { T } from "./T";
 
 export interface ToastProps {
@@ -57,7 +57,12 @@ export function Toast({
         <Ionicons name="checkmark-circle" size={18} color={color.ok} />
         <T variant="small" tone="white" style={styles.text}>{message}</T>
         {actionLabel ? (
-          <Pressable onPress={onActionPress} hitSlop={10} accessibilityRole="button">
+          <Pressable
+            onPress={onActionPress}
+            hitSlop={hitSlopFor(20)}
+            accessibilityRole="button"
+            accessibilityLabel={actionLabel}
+          >
             <T variant="small" weight="bold" tone="white">{actionLabel}</T>
           </Pressable>
         ) : null}

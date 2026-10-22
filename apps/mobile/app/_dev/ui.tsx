@@ -80,9 +80,9 @@ export default function UiShowcase() {
 
         <Group title="Màu — nền cam có chữ trắng vs cam làm chữ">
           <View style={styles.row}>
-            <Swatch bg={color.brand} label="brand" fg={color.white} note="4.79:1" />
-            <Swatch bg={color.brandDeep} label="brandDeep" fg={color.white} note="6.64:1" />
-            <Swatch bg={color.flame} label="flame" fg={color.white} note="3.56:1 — chữ lớn" />
+            <Swatch bg={color.brand} label="brand" note="trắng 4.79:1" />
+            <Swatch bg={color.brandDeep} label="brandDeep" note="trắng 6.64:1" />
+            <Swatch bg={color.flame} label="flame" note="trắng 3.56:1 — chỉ chữ lớn" />
           </View>
           <Card>
             <T variant="bodyStrong" tone="brand">Chữ cam trên nền sáng dùng textBrand (6.64:1)</T>
@@ -99,6 +99,12 @@ export default function UiShowcase() {
           <Pill label="Lưu nháp" tone="outline" />
           <Pill label="Đang gửi đơn…" loading loadingLabel="Đang gửi đơn…" />
           <Pill label="Xác nhận" disabled />
+          <View style={styles.row}>
+            <Pill label="Chuyển vào giỏ" size={48} />
+            <Pill label="Thêm vào giỏ" size={44} />
+            <Pill label="Sửa" tone="outline" size={40} />
+            <Pill label="Trả ngay" size={36} />
+          </View>
         </Group>
 
         <Group title="IconButton · TextButton · DashedButton">
@@ -329,11 +335,18 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-function Swatch({ bg, label, fg, note }: { bg: string; label: string; fg: string; note: string }) {
+/**
+ * Ô màu: nhãn nằm DƯỚI ô, màu ink.
+ *
+ * Đặt nhãn trắng đè lên ô thì chính trang trưng bày vi phạm cái nó đang mô tả —
+ * chữ 11px trắng trên `flame` là 3.56:1.
+ */
+function Swatch({ bg, label, note }: { bg: string; label: string; note: string }) {
   return (
-    <View style={[styles.swatch, { backgroundColor: bg }]}>
-      <Num variant="chip" weight="bold" style={{ color: fg }}>{label}</Num>
-      <Num variant="badge" style={{ color: fg }}>{note}</Num>
+    <View style={styles.swatchWrap}>
+      <View style={[styles.swatch, { backgroundColor: bg }]} />
+      <T variant="chip" weight="bold">{label}</T>
+      <T variant="badge" tone="muted">{note}</T>
     </View>
   );
 }
@@ -348,7 +361,8 @@ const styles = StyleSheet.create({
   thumb: { width: 96 },
   rule: { marginVertical: space.x3 },
   flex: { flex: 1 },
-  swatch: { flex: 1, minWidth: 96, height: 72, borderRadius: radius.chip, padding: space.x2, justifyContent: "flex-end" },
+  swatchWrap: { flex: 1, minWidth: 96, gap: space.x1 },
+  swatch: { height: 56, borderRadius: radius.chip },
   // TabBar tự neo xuống đáy màn; bọc trong khối cao 96 để xem được trong trang này.
   tabDemo: { height: 96 },
 });

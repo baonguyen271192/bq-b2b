@@ -78,7 +78,7 @@ export function AddressCard({
       {body}
       <View style={styles.actions}>
         {onEdit ? (
-          <Pill label="Sửa" tone="outline" onPress={onEdit} style={styles.editBtn} />
+          <Pill label="Sửa" tone="outline" size={40} onPress={onEdit} />
         ) : null}
         {!address.isDefault && onSetDefault ? (
           <TextButton label="Đặt mặc định" onPress={onSetDefault} />
@@ -108,8 +108,6 @@ const styles = StyleSheet.create({
   head: { flexDirection: "row", alignItems: "center", gap: space.x2 },
   name: { flex: 1 },
   actions: { flexDirection: "row", alignItems: "center", gap: space.x4, marginTop: space.x2 },
-  // Nút "Sửa" cao 40 theo SPEC §3.23, thấp hơn Pill mặc định (54).
-  editBtn: { height: 40, paddingHorizontal: space.x4 },
   pin: {
     width: 40, height: 40, borderRadius: radius.pill, backgroundColor: color.subtle,
     alignItems: "center", justifyContent: "center",

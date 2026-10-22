@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, type ViewStyle } from "react-native";
-import { color, radius, space } from "@/theme";
+import { color, hitSlopFor, radius, space } from "@/theme";
 import { T } from "./T";
 
 export type PillTone = "brand" | "ink" | "outline" | "paper";
@@ -11,6 +11,15 @@ export interface PillProps {
   /** `brand` hành động chính · `ink` phụ quan trọng · `outline` phụ thường ·
    *  `paper` khi nút nằm trên nền TỐI (splash). */
   tone?: PillTone;
+  /**
+   * Chiều cao. SPEC dùng 5 cỡ: 54 (nút chính ở dock), 48 (cặp nút trong card),
+   * 44 (cặp nút trong bong bóng AI), 40 ("Sửa" ở Sổ địa chỉ), 36 ("Trả ngay",
+   * "Thanh toán").
+   *
+   * Khai ở đây chứ KHÔNG ghi đè `height` qua `style`: cỡ dưới 44 phải được nới
+   * vùng chạm bằng hitSlop, mà `style` thì component không đọc được để làm việc đó.
+   */
+  size?: 54 | 48 | 44 | 40 | 36;
   disabled?: boolean;
   /** Đang xử lý — hiện vòng xoay thay nhãn và chặn bấm tiếp. */
   loading?: boolean;
@@ -33,7 +42,7 @@ export interface PillProps {
  * Khác {@link IconButton}: Pill luôn có nhãn chữ; IconButton chỉ có icon.
  */
 export function Pill({
-  label, onPress, tone = "brand", disabled, loading, loadingLabel, leading,
+  label, onPress, tone = "brand", size = 54, disabled, loading, loadingLabel, leading,
   accessibilityLabel, style,
 }: PillProps) {
   const [down, setDown] = useState(false);
@@ -56,8 +65,10 @@ export function Pill({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled: blocked, busy: !!loading }}
+      hitSlop={size < 44 ? hitSlopFor(size) : undefined}
       style={[
         styles.base,
+        { height: size, paddingHorizontal: size <= 40 ? space.x4 : 22 },
         { backgroundColor: bg },
         tone === "outline" && styles.outline,
         tone === "paper" && styles.paperBorder,
@@ -72,13 +83,20 @@ export function Pill({
         <>
           <ActivityIndicator color={textTone === "white" ? color.white : color.ink} />
           {loadingLabel ? (
-            <T variant="cardTitle" weight="semibold" tone={textTone}>{loadingLabel}</T>
+            <T variant={size <= 40 ? "small" : "cardTitle"} weight="bold" tone={textTone}>{loadingLabel}</T>
           ) : null}
         </>
       ) : (
         <>
           {leading}
-          <T variant="cardTitle" weight="semibold" tone={textTone}>{label}</T>
+          <T
+            variant={size <= 40 ? "small" : "cardTitle"}
+            weight={size <= 40 ? "bold" : "semibold"}
+            tone={textTone}
+            numberOfLines={1}
+          >
+            {label}
+          </T>
         </>
       )}
     </Pressable>
@@ -87,11 +105,10 @@ export function Pill({
 
 const styles = StyleSheet.create({
   base: {
-    height: 54, borderRadius: radius.pill, flexDirection: "row",
+    borderRadius: radius.pill, flexDirection: "row",
     alignItems: "center", justifyContent: "center",
     // SPEC: icon 20 cách chữ 8.
     gap: space.x2,
-    paddingHorizontal: 22,
   },
   /** SPEC: viền 1.5 INK (không phải `line`) — đây là nút, không phải ô nhập. */
   outline: { borderWidth: 1.5, borderColor: color.ink },

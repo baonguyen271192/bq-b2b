@@ -54,5 +54,7 @@ const styles = StyleSheet.create({
     fontSize: textStyle.body.fontSize,
     color: color.ink,
   },
+  // Thu còn 36 cho vừa ô cao 48; `IconButton` đã nới vùng chạm về 44 bằng
+  // hitSlop nên phần hụt 8px vẫn bấm được.
   clear: { width: 36, height: 36 },
 });
