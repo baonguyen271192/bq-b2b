@@ -287,4 +287,5 @@ Thứ tự từ trên xuống, khoảng cách 16:
 - **G. Không có màn "Xác nhận đơn" riêng.** Gửi đơn thẳng từ Giỏ hàng. Route checkout cũ bị xoá sau khi chuyển hết logic và xử lý lỗi sang Giỏ hàng
 - **H. Địa chỉ giao hàng = sổ địa chỉ của đại lý** (3.24, 3.25). Kho xuất của BQ do backend cấu hình, KHÔNG hiển thị trên app. Danh sách cứng "Kho HCM / Hà Nội / Đà Nẵng" trong code cũ bị bỏ. Đơn gửi lên phải mang `addressId` có cấu trúc, không ghép vào ghi chú
 - **I. Hình thức thanh toán:** hiển thị read-only theo điều khoản hợp đồng của đại lý (ví dụ "Công nợ 30 ngày"), KHÔNG có bộ chọn theo từng đơn, chờ BQ xác nhận. Danh sách 3 lựa chọn trong code cũ bị bỏ
+- **J. `plate` giữ `#F0F0F0`**, KHÔNG dùng `#EAECF0` như mục 1 ghi. Đo lại chính ảnh v2: `05-Detail.png` và thẻ sản phẩm thứ nhất của `03-Products.png` cho `#F0F0F0`–`#EFEFEF`, chỉ thẻ thứ hai cho `#EAECF0` — bộ ảnh trộn hai nguồn ảnh sản phẩm. `#F0F0F0` đã đo từ 5 ảnh catalog thật (GBW0295, SDW0155, GIW0208, SDW0136, SA003, cả bốn góc). Lấy `#EAECF0` sẽ thấy viền quanh phần lớn giày thật. Đổi nhà cung cấp ảnh thì đo lại
 - **Ngoài phạm vi đợt này:** dark mode, onboarding lần đầu
