@@ -311,3 +311,24 @@ Quay về màn **Công nợ**. Hoá đơn vừa chuyển hiện `StatusTag` ki�
 
 ### Ngoài phạm vi đợt này
 **Dark mode** và **onboarding lần đầu** không làm trong đợt này. Đã ghi vào `docs/tech-debt.md`.
+
+### G. Bỏ màn "Xác nhận đơn"
+Route `app/checkout.tsx` **xoá**. v2 gửi đơn thẳng từ dock Giỏ hàng, không có bước trung gian.
+
+Chuyển sang màn Giỏ hàng (`§3.6` + mục D), làm ở Phase 4:
+- `api.createOrder()` và xử lý lỗi — hiện là chỗ **duy nhất** trong app tạo đơn
+- Chọn kho nhận hàng → card "Giao đến" + Sổ địa chỉ (`23-Addresses`)
+- Hình thức thanh toán → dòng "Thanh toán · Công nợ 30 ngày" trong card tổng kết
+- Bảng giá trị → card tổng kết + dock
+- Cảnh báo vượt hạn mức → khối `warnTint` + sheet `14-OverLimit`
+
+Phase 4 chạy trước Phase 6 nên card "Giao đến" tạm chưa bấm được; nối vào Sổ địa chỉ ở Phase 6.
+
+### H. `plate` giữ `#F0F0F0`
+Mục 1 ghi `plate #EAECF0` — **sai, không áp dụng**.
+
+Đo lại chính ảnh v2: `05-Detail.png` và thẻ sản phẩm thứ nhất của `03-Products.png` cho `#F0F0F0`–`#EFEFEF`, chỉ thẻ thứ hai cho `#EAECF0`. Bộ ảnh thiết kế trộn hai nguồn ảnh sản phẩm.
+
+Giữ `plate: "#F0F0F0"` — giá trị này đã đo từ 5 ảnh catalog thật (GBW0295, SDW0155, GIW0208, SDW0136, SA003, cả bốn góc) và ghi trong comment token. Lấy `#EAECF0` sẽ thấy viền quanh phần lớn giày thật.
+
+Đổi nhà cung cấp ảnh thì đo lại, không chọn theo cảm tính.
