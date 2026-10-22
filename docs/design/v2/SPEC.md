@@ -88,6 +88,10 @@ Nét (stroke) 2, đầu tròn, khung 24, hiển thị 16–22. Dùng `lucide-rea
 | `SegmentedControl` | Nền `#ECEAE6`, padding 4, viên thuốc; item cao 40, chữ 13/600; item đang chọn nền paper + bóng nhẹ, chưa chọn chữ muted; đếm số trong ngoặc |
 | `ListRow` | Icon trong vòng tròn 40 nền subtle, tiêu đề 15/600 + phụ 13 muted, chevron 18 muted, padding dọc 14, divider |
 | `Switch` | 44×26, nền ink khi bật, núm 20 trắng |
+| `RadioCard` | Bo 18, padding 14, gap 12. Vòng radio 22: đang chọn viền 6 ink, chưa chọn viền 2 line. Tiêu đề 15/600 (riêng địa chỉ 15/700) + mô tả 13/18 muted. Card đang chọn viền 1.5 ink, chưa chọn viền 1 line. Hai biến thể hành vi: **chạm là chọn rồi đóng sheet** (3.24) / **chạm chỉ chọn**, cần CTA để xác nhận (3.14, sheet mục D). `accessibilityRole="radio"` |
+| `AddressCard` | Nội dung theo 3.23/3.24: tên 15–16/700 + tag "Mặc định" (nền tint, chữ brandDeep), người nhận + SĐT 14, địa chỉ 13–14 muted. Hai biến thể: `manage` — nút "Sửa" + link "Đặt mặc định", card mặc định viền 1.5 ink (dùng ở 3.23); `select` — bọc trong `RadioCard` (dùng ở 3.24) |
+| `Select` | Cùng khung với ô nhập của `Field`: cao 52, bo 16, viền 1 line. Placeholder muted, chevron xuống 18 ink. Chạm → bottom sheet danh sách **có ô tìm kiếm** (danh sách phường/xã tới hàng nghìn mục, không cuộn tay được). Vô hiệu khi chưa chọn cấp trên (Phường/Xã chờ Tỉnh/TP) |
+| `DashedButton` | Cao 56, bo 18, viền 1.5 **nét đứt** ink, icon 20 + chữ 15/600 ink |
 
 ---
 
