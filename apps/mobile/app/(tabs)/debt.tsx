@@ -8,20 +8,31 @@ import { api } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { color, space } from "@/theme";
 import {
-  Card, CardDivider, CreditCard, EmptyState, ListRow, Price, ScreenHeader, SectionHead, StatusTag, T, TAB_BAR_CLEARANCE,
+  Card, CardDivider, CreditCard, EmptyState, ListRow, OfflineBanner, Price, ScreenHeader,
+  SectionHead, StatusTag, T, TAB_BAR_CLEARANCE, hhmm,
 } from "@/components/ui";
 
 export default function DebtScreen() {
   const insets = useSafeAreaInsets();
   const { dealer } = useSession();
   const [detail, setDetail] = useState<CreditDetail | null>(null);
+  const [fetchedAt, setFetchedAt] = useState(new Date());
+  const [offline, setOffline] = useState(false);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (!dealer) return;
-      void api.credit(dealer.code).then(setDetail).catch(() => setDetail(null));
-    }, [dealer]),
-  );
+  const load = useCallback(async () => {
+    if (!dealer) return;
+    try {
+      setDetail(await api.credit(dealer.code));
+      setFetchedAt(new Date());
+      setOffline(false);
+    } catch {
+      // Giữ số cũ và nói rõ nó cũ từ lúc nào — xoá đi thì đại lý mất luôn bảng
+      // công nợ đang xem dở (SPEC §3.15).
+      setOffline(true);
+    }
+  }, [dealer]);
+
+  useFocusEffect(useCallback(() => { void load(); }, [load]));
 
   if (!dealer) return null;
 
@@ -35,6 +46,8 @@ export default function DebtScreen() {
       showsVerticalScrollIndicator={false}
     >
       <ScreenHeader title="Công nợ" />
+
+      {offline ? <OfflineBanner at={hhmm(fetchedAt)} onRetry={load} /> : null}
 
       <CreditCard
         label="Dư nợ hiện tại"

@@ -13,3 +13,4 @@ export {
   type FontWeightToken,
   type TextStyleToken,
 } from "./typography";
+export { productSwatch } from "./product-swatch";

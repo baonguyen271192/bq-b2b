@@ -11,6 +11,10 @@ việc chỉ nằm trong bộ nhớ nên không seed sẵn được, mà `simctl
 Bước bắt đầu bằng `type:` thì GÕ chữ thay vì bấm, dạng `type:<aria-label>=<chữ>`:
   "Nhận mã OTP|Sản phẩm|type:Tìm sản phẩm=xyzzy"
 
+Hai bước đặc biệt khác:
+  "go:/search?q=OX-099"   -> điều hướng trong app (giữ nguyên phiên đăng nhập)
+  "offline" / "online"    -> cắt/nối mạng ở tầng trình duyệt
+
 Nói chuyện với Chrome qua DevTools Protocol để: (1) ép đúng viewport —
 `--window-size` bị bỏ qua ở chế độ headless có debug port; (2) cuộn được
 ScrollView của React Native, vốn cuộn BÊN TRONG một div nên `document`
@@ -128,6 +132,28 @@ RECT_JS = """(() => {
 })()"""
 
 for CLICK in CLICKS:
+    # `go:<đường dẫn>` — điều hướng trong app sau khi đã đăng nhập. Mở thẳng URL
+    # từ đầu thì chưa có phiên, màn nào cần dealer sẽ rỗng.
+    if CLICK.startswith("go:"):
+        path = CLICK[len("go:"):]
+        wait(send("Runtime.evaluate", {
+            "expression": f"history.pushState(null, '', {json.dumps(path)});"
+                          " window.dispatchEvent(new PopStateEvent('popstate')); 1",
+            "returnByValue": True}))
+        print(f"   đã sang {path}")
+        time.sleep(2.5)
+        continue
+    # `offline` / `online` — cắt mạng THẬT ở tầng trình duyệt, để chụp đúng
+    # trạng thái mất kết nối thay vì bịa một cờ trong app.
+    if CLICK in ("offline", "online"):
+        off = CLICK == "offline"
+        wait(send("Network.enable", {}))
+        wait(send("Network.emulateNetworkConditions", {
+            "offline": off, "latency": 0, "downloadThroughput": -1, "uploadThroughput": -1,
+        }))
+        print(f"   mạng: {'TẮT' if off else 'bật'}")
+        time.sleep(0.5)
+        continue
     if CLICK.startswith("type:"):
         label, _, text = CLICK[len("type:"):].partition("=")
         # Gán thẳng `el.value` rồi bắn `input` KHÔNG ăn với react-native-web: DOM

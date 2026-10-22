@@ -3,11 +3,13 @@ import { ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Product } from "@bq/types";
 import { vndShort } from "@bq/core";
+import { ColorPicker } from "@/components/product/ColorPicker";
 import { ProductCard } from "@/components/product/ProductCard";
 import {
   Address, AddressCard, Avatar, Badge, BottomSheet, Card, CardDivider, ChatBubble, Chip,
   CreditCard, DashedButton, DetailRow, Dock, DOCK_CLEARANCE, EmptyState, IconButton, ListRow,
-  Notice, Num, Pill, Price, ProductImage, ProductMini, QuickAction, RadioCard, ScreenHeader,
+  Notice, Num, OfflineBanner, Pill, Price, ProductImage, ProductMini, QuickAction, RadioCard,
+  ScreenHeader, StockStamp,
   SearchField, SectionHead, SegmentedControl, Select, SizeChip, SizeList, SizeQty, Skeleton,
   StatPair, StatusTag, Stepper, Switch, T, TabBar, TextButton, TextField, Timeline,
 } from "@/components/ui";
@@ -34,6 +36,10 @@ const DEMO_ADDRESS: Address = {
   street: "210 Cửa Đại", ward: "Phường Cẩm Châu", province: "Quảng Nam",
 };
 
+/** Hai mốc thời gian cố định cho trang trưng bày: một mới, một đã quá 15 phút. */
+const STOCK_FRESH = new Date();
+const STOCK_STALE = new Date(STOCK_FRESH.getTime() - 20 * 60_000);
+
 const PROVINCES = [
   { value: "48", label: "Đà Nẵng" },
   { value: "49", label: "Quảng Nam" },
@@ -52,6 +58,7 @@ export default function UiShowcase() {
   const [picked, setPicked] = useState("a");
   const [province, setProvince] = useState<string>();
   const [sheet, setSheet] = useState(false);
+  const [colour, setColour] = useState("Đen");
 
   return (
     <View style={styles.screen}>
@@ -203,6 +210,25 @@ export default function UiShowcase() {
             <ProductMini name={DEMO_PRODUCT.name} price={DEMO_PRODUCT.price} image={DEMO_PRODUCT.image} />
             <ProductImage uri={DEMO_PRODUCT.image} style={styles.thumb} />
           </View>
+        </Group>
+
+        <Group title="OfflineBanner · StockStamp · ColorPicker">
+          <OfflineBanner at="09:12" onRetry={() => {}} />
+          <Card>
+            <StockStamp fetchedAt={STOCK_FRESH} />
+            <StockStamp fetchedAt={STOCK_STALE} onRefresh={() => {}} />
+          </Card>
+          <Card>
+            <T variant="label" weight="semibold" style={styles.swatchGap}>chip (sheet Đặt nhanh)</T>
+            <ColorPicker colors={["Nâu bò", "Đen"]} value={colour} onChange={setColour} />
+            <T variant="label" weight="semibold" style={styles.swatchGap}>pill (màn Chi tiết)</T>
+            <ColorPicker
+              colors={["Đen", "Nâu", "Trắng"]}
+              value={colour}
+              onChange={setColour}
+              variant="pill"
+            />
+          </Card>
         </Group>
 
         <Group title="RadioCard · Switch · Select">
@@ -374,6 +400,7 @@ const styles = StyleSheet.create({
   thumb: { width: 96 },
   rule: { marginVertical: space.x3 },
   flex: { flex: 1 },
+  swatchGap: { marginTop: space.x2, marginBottom: space.x2 },
   swatchWrap: { flex: 1, minWidth: 96, gap: space.x1 },
   swatch: { height: 56, borderRadius: radius.chip },
   // TabBar tự neo xuống đáy màn; bọc trong khối cao 96 để xem được trong trang này.

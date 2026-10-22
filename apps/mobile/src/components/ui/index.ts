@@ -32,7 +32,8 @@ export { TabBar, TAB_BAR_CLEARANCE, type TabBarProps, type TabItem } from "./Tab
 export { BottomSheet, type BottomSheetProps } from "./BottomSheet";
 export { Toast } from "./Toast";
 export { EmptyState } from "./EmptyState";
-export { Notice } from "./Notice";
+export { Notice, type NoticeKind } from "./Notice";
+export { OfflineBanner, type OfflineBannerProps } from "./OfflineBanner";
 export { Skeleton } from "./Skeleton";
 
 // --- Dòng và danh sách ----------------------------------------------------
@@ -55,6 +56,7 @@ export { ProductMini, type ProductMiniProps } from "./ProductMini";
 export { Stepper, type StepperProps } from "./Stepper";
 export { SizeRow, stockLabel, stockLevel, type SizeRowProps } from "./SizeRow";
 export { SizeList, type SizeListProps, type SizeQty } from "./SizeList";
+export { StockStamp, hhmm, STOCK_STALE_MS, type StockStampProps } from "./StockStamp";
 
 // --- Nghiệp vụ dùng lại nhiều màn -----------------------------------------
 export { Avatar } from "./Avatar";

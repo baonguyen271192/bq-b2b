@@ -7,7 +7,14 @@ import { T } from "./T";
 export interface BottomSheetProps {
   visible: boolean;
   onClose: () => void;
-  title: string;
+  /** Tiêu đề đơn giản. Bỏ qua khi truyền `header`. */
+  title?: string;
+  /**
+   * Phần đầu tự dựng, thay cho hàng tiêu đề — sheet Đặt nhanh cần thumbnail +
+   * mã + tên + giá chứ không phải một dòng chữ (SPEC §3.4). Nút đóng vẫn do
+   * sheet vẽ, người gọi không phải lặp lại.
+   */
+  header?: React.ReactNode;
   children: React.ReactNode;
   /** Thanh hành động dán đáy sheet, vd nút "Thêm vào giỏ". */
   footer?: React.ReactNode;
@@ -25,16 +32,20 @@ export interface BottomSheetProps {
  * Nền mờ bấm được để đóng, VÀ có nút ✕: nền mờ là lối tắt cho người quen dùng,
  * nút là lối đi cho mọi người còn lại.
  */
-export function BottomSheet({ visible, onClose, title, children, footer, style }: BottomSheetProps) {
+export function BottomSheet({
+  visible, onClose, title, header, children, footer, style,
+}: BottomSheetProps) {
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel="Đóng" />
       <View style={[styles.sheet, { paddingBottom: insets.bottom }, style]}>
         <View style={styles.grabber} />
-        <View style={styles.head}>
-          <T variant="title" style={styles.title} numberOfLines={1}>{title}</T>
-          <IconButton icon="close" tone="light" accessibilityLabel="Đóng" onPress={onClose} />
+        <View style={[styles.head, header ? styles.headCustom : null]}>
+          {header ?? (
+            <T variant="title" style={styles.title} numberOfLines={1}>{title}</T>
+          )}
+          <IconButton icon="close" tone="subtle" accessibilityLabel="Đóng" onPress={onClose} />
         </View>
         <View style={styles.body}>{children}</View>
         {footer ? <View style={styles.footer}>{footer}</View> : null}
@@ -59,6 +70,7 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", gap: space.x3,
     paddingHorizontal: space.screen, paddingVertical: space.x3,
   },
+  headCustom: { alignItems: "flex-start" },
   title: { flex: 1 },
   body: { paddingHorizontal: space.screen },
   footer: {

@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { color, hitSlopFor, radius, space } from "@/theme";
 import { Num } from "./Num";
 
-export type IconButtonTone = "light" | "glass" | "dark" | "brand";
+export type IconButtonTone = "light" | "subtle" | "glass" | "dark" | "brand";
 
 export interface IconButtonProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -29,6 +29,7 @@ export function IconButton({
   const [down, setDown] = useState(false);
   const bg =
     tone === "glass" ? color.whiteA(0.9)
+    : tone === "subtle" ? color.subtle
     : tone === "dark" ? color.ink
     : tone === "brand" ? color.brand
     : color.paper;

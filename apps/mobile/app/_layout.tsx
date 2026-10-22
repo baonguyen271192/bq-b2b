@@ -185,7 +185,10 @@ export default function RootLayout() {
                   nên tắt header của Stack để không có hai tiêu đề chồng nhau. */}
               <Stack.Screen name="otp" options={{ headerShown: false }} />
               <Stack.Screen name="register" options={{ headerShown: false }} />
-              <Stack.Screen name="product/[code]" options={{ title: "Chi tiết sản phẩm" }} />
+              <Stack.Screen name="search" options={{ headerShown: false }} />
+              {/* Chi tiết sản phẩm có ảnh tràn viền và nút glass nổi trên ảnh (SPEC
+                  §3.5), nên không dùng header của Stack. */}
+              <Stack.Screen name="product/[code]" options={{ headerShown: false }} />
               <Stack.Screen name="order/[id]" options={{ title: "Chi tiết đơn hàng" }} />
               <Stack.Screen name="cart" options={{ title: "Giỏ hàng" }} />
               <Stack.Screen name="checkout" options={{ title: "Xác nhận đơn" }} />

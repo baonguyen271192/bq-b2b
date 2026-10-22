@@ -7,17 +7,21 @@ export interface SearchFieldProps {
   value: string;
   onChangeText: (v: string) => void;
   placeholder?: string;
+  /** Viền 1.5 ink thay vì 1 line — ô tìm kiếm đang là tâm điểm của màn (SPEC §3.16). */
+  focused?: boolean;
+  autoFocus?: boolean;
+  onSubmitEditing?: () => void;
   accessibilityLabel?: string;
   style?: ViewStyle;
 }
 
 /** Ô tìm kiếm dạng viên thuốc, có nút xoá khi đã gõ. */
 export function SearchField({
-  value, onChangeText, placeholder = "Tìm mẫu giày hoặc mã sản phẩm",
-  accessibilityLabel = "Tìm sản phẩm", style,
+  value, onChangeText, placeholder = "Tìm tên hoặc mã mẫu", focused, autoFocus,
+  onSubmitEditing, accessibilityLabel = "Tìm sản phẩm", style,
 }: SearchFieldProps) {
   return (
-    <View style={[styles.wrap, style]}>
+    <View style={[styles.wrap, focused && styles.focused, style]}>
       <Ionicons name="search" size={18} color={color.muted} />
       <TextInput
         value={value}
@@ -25,6 +29,8 @@ export function SearchField({
         placeholder={placeholder}
         placeholderTextColor={color.muted}
         accessibilityLabel={accessibilityLabel}
+        autoFocus={autoFocus}
+        onSubmitEditing={onSubmitEditing}
         returnKeyType="search"
         style={styles.input}
       />
@@ -44,10 +50,11 @@ export function SearchField({
 const styles = StyleSheet.create({
   wrap: {
     flexDirection: "row", alignItems: "center", gap: space.x3,
-    height: 52, paddingLeft: space.x5, paddingRight: space.x1,
+    height: 48, paddingLeft: space.x4, paddingRight: space.x1,
     borderRadius: radius.pill, backgroundColor: color.paper,
     borderWidth: 1, borderColor: color.line,
   },
+  focused: { borderWidth: 1.5, borderColor: color.ink },
   input: {
     flex: 1,
     fontFamily: fontFamily.regular,

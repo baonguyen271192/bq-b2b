@@ -12,7 +12,7 @@ import { color, space } from "@/theme";
 import { DeliveryCard } from "@/components/home/DeliveryCard";
 import {
   Avatar, CreditCard, IconButton, Pill, Price, ProductMini, QuickAction, SectionHead,
-  Skeleton, T, TAB_BAR_CLEARANCE,
+  OfflineBanner, Skeleton, T, TAB_BAR_CLEARANCE, hhmm,
 } from "@/components/ui";
 
 /** Số mẫu trong băng "Bán chạy tuần này". */
@@ -52,6 +52,8 @@ export default function HomeScreen() {
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [spotlight, setSpotlight] = useState<Product[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [fetchedAt, setFetchedAt] = useState(new Date());
+  const [offline, setOffline] = useState(false);
 
   const load = useCallback(async () => {
     if (!dealer) return;
@@ -60,8 +62,15 @@ export default function HomeScreen() {
       api.orders(dealer.code),
       api.products(dealer.code),
     ]);
-    setOrders(o.status === "fulfilled" ? o.value : []);
-    setSpotlight(p.status === "fulfilled" ? p.value.slice(0, SPOTLIGHT_LIMIT) : []);
+    const failed = o.status === "rejected" && p.status === "rejected";
+    // setState DẠNG HÀM, không đọc `orders`/`spotlight` hiện tại: đọc chúng thì
+    // `load` phải khai vào deps, mà `useFocusEffect` chạy lại theo `load` -> tải
+    // lại -> đổi state -> tải lại, thành vòng lặp vô hạn.
+    setOrders((prev) => (o.status === "fulfilled" ? o.value : (prev ?? [])));
+    setSpotlight((prev) =>
+      p.status === "fulfilled" ? p.value.slice(0, SPOTLIGHT_LIMIT) : (prev ?? []));
+    setOffline(failed);
+    if (!failed) setFetchedAt(new Date());
   }, [dealer]);
 
   // Tải lại mỗi lần quay về tab: công nợ và trạng thái đơn đổi khi đang ở màn khác.
@@ -91,6 +100,8 @@ export default function HomeScreen() {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.brand} />
       }
     >
+      {offline ? <OfflineBanner at={hhmm(fetchedAt)} onRetry={onRefresh} /> : null}
+
       <View style={styles.header}>
         <Avatar name={dealer.name} />
         <View style={styles.hello}>
