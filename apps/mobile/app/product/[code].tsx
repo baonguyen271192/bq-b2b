@@ -8,7 +8,8 @@ import { useCart } from "@/lib/cart";
 import { useSession } from "@/lib/session";
 import { color, space } from "@/theme";
 import {
-  Card, Chip, Dock, DOCK_CLEARANCE, Pill, Price, ProductImage, SizeGrid, T, type SizeQty,
+  Card, Chip, Dock, DOCK_CLEARANCE, Pill, Price, ProductImage, SizeGrid, StatPair, T,
+  type SizeQty,
 } from "@/components/ui";
 
 /**
@@ -89,16 +90,13 @@ export default function ProductScreen() {
           </View>
         </View>
 
-        <Card style={styles.marginCard}>
-          <View style={styles.stat}>
-            <T variant="micro" tone="muted">Giá lẻ đề xuất</T>
-            <Price value={product.retail} variant="bodyStrong" />
-          </View>
-          <View style={styles.vline} />
-          <View style={styles.stat}>
-            <T variant="micro" tone="muted">Lợi nhuận / đôi</T>
-            <Price value={margin} variant="bodyStrong" tone="ok" />
-          </View>
+        <Card>
+          <StatPair
+            items={[
+              { label: "Giá lẻ đề xuất", value: <Price value={product.retail} variant="bodyStrong" /> },
+              { label: "Lợi nhuận / đôi", value: <Price value={margin} variant="bodyStrong" tone="ok" /> },
+            ]}
+          />
         </Card>
 
         <SizeGrid stock={product.sizes} value={sizes} onChange={setSizes} />
@@ -131,8 +129,5 @@ const styles = StyleSheet.create({
   head: { gap: space.x1 },
   codeRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   priceRow: { flexDirection: "row", alignItems: "baseline", gap: space.x2 },
-  marginCard: { flexDirection: "row", alignItems: "center" },
-  stat: { flex: 1, gap: space.x1 },
-  vline: { width: 1, alignSelf: "stretch", backgroundColor: color.line, marginHorizontal: space.x4 },
   dockRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
 });

@@ -1,13 +1,12 @@
 import { useCallback, useMemo, useState } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Order } from "@bq/types";
-import { EmptyState } from "@/components/EmptyState";
-import { OrderRow } from "@/components/OrderRow";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/session";
-import { Text, colors, radius, space } from "@/legacy-theme";
+import { color, space } from "@/theme";
+import { Chip, EmptyState, OrderCard, ScreenHeader } from "@/components/ui";
 
 const FILTERS = [
   { key: "all", label: "Tất cả", match: () => true },
@@ -41,47 +40,49 @@ export default function OrdersScreen() {
   }, [orders, filter]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <View style={[styles.header, { paddingTop: insets.top + space.md }]}>
-        <Text variant="h2">Đơn hàng</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+    <View style={styles.screen}>
+      <View style={[styles.header, { paddingTop: insets.top + space.x3 }]}>
+        <ScreenHeader title="Đơn hàng" size="title" />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chips}
+        >
           {FILTERS.map((f) => (
-            <Pressable
+            <Chip
               key={f.key}
+              label={f.label}
+              active={filter === f.key}
               onPress={() => setFilter(f.key)}
-              style={[styles.chip, filter === f.key ? styles.chipActive : null]}
-            >
-              <Text variant="label" color={filter === f.key ? colors.textOnBrand : colors.slate[600]}>
-                {f.label}
-              </Text>
-            </Pressable>
+            />
           ))}
         </ScrollView>
       </View>
 
       {orders === null ? (
-        <View style={styles.center}><ActivityIndicator color={colors.brand[500]} /></View>
+        <View style={styles.center}><ActivityIndicator color={color.bq} /></View>
       ) : visible.length === 0 ? (
         <EmptyState
           icon="receipt-outline"
           title="Không có đơn hàng"
-          hint="Chưa có đơn nào ở trạng thái này."
-          action={{ label: "Đặt hàng", onPress: () => router.push("/(tabs)/products") }}
+          hint="Chưa có đơn nào ở trạng thái này. Chọn mẫu ở tab Sản phẩm để tạo đơn."
+          actionLabel="Đặt hàng"
+          onActionPress={() => router.push("/(tabs)/products")}
         />
       ) : (
         <ScrollView
-          contentContainerStyle={{ padding: space.lg, gap: space.sm }}
+          contentContainerStyle={styles.body}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
-              tintColor={colors.brand[500]}
+              tintColor={color.bq}
               onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }}
             />
           }
         >
           {visible.map((o) => (
-            <OrderRow key={o.id} order={o} onPress={() => router.push(`/order/${o.id}`)} />
+            <OrderCard key={o.id} order={o} onPress={() => router.push(`/order/${o.id}`)} />
           ))}
         </ScrollView>
       )}
@@ -90,12 +91,14 @@ export default function OrdersScreen() {
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: color.canvas },
   header: {
-    backgroundColor: colors.surface, paddingHorizontal: space.lg, paddingBottom: space.md,
-    gap: space.md, borderBottomWidth: 1, borderBottomColor: colors.border,
+    backgroundColor: color.canvas,
+    paddingHorizontal: space.screen,
+    paddingBottom: space.x3,
+    gap: space.x3,
   },
-  chips: { gap: space.sm, paddingRight: space.lg },
-  chip: { paddingHorizontal: space.lg, paddingVertical: 8, borderRadius: radius.pill, backgroundColor: colors.surfaceSunken },
-  chipActive: { backgroundColor: colors.brand[500] },
+  chips: { gap: space.x2, paddingRight: space.screen },
+  body: { padding: space.screen, paddingTop: space.x2, gap: space.x3 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
 });

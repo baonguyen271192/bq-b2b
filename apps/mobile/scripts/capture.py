@@ -19,6 +19,7 @@ import sys, json, socket, base64, struct, os, time, urllib.request
 TARGET, W, H = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
 OUTDIR = sys.argv[4]
 CLICKS = sys.argv[5].split("|") if len(sys.argv) > 5 and sys.argv[5] else []
+ws = None
 for _ in range(30):
     try:
         tabs = json.load(urllib.request.urlopen("http://127.0.0.1:9222/json"))
@@ -26,6 +27,12 @@ for _ in range(30):
         if ws: break
     except Exception: pass
     time.sleep(1)
+# Báo lỗi tường minh thay vì để `ws` không tồn tại rồi ném NameError ở dòng sau —
+# thông báo đó không nói được gì về nguyên nhân thật (Chrome chưa chiếm được
+# cổng gỡ rối vì tiến trình cũ chưa nhả).
+if not ws:
+    sys.exit("capture: không thấy trang nào ở 127.0.0.1:9222 sau 30s — "
+             "Chrome chưa khởi động xong, hoặc cổng còn bị tiến trình cũ giữ.")
 hp, path = ws.split("ws://")[1].split("/", 1); host, port = hp.split(":")
 s = socket.create_connection((host, int(port))); s.settimeout(60)
 k = base64.b64encode(os.urandom(16)).decode()
@@ -41,6 +48,7 @@ def send(m, p=None):
     else: h.append(0x80 | 127); h += struct.pack(">Q", n)
     h += mk + bytes(b ^ mk[i % 4] for i, b in enumerate(d)); s.send(bytes(h)); return _id
 def wait(t):
+    """Đọc khung tới khi gặp đúng phản hồi của lệnh `t`; bỏ qua sự kiện CDP."""
     while True:
         b = s.recv(2); n = b[1] & 127
         if n == 126: n = struct.unpack(">H", s.recv(2))[0]

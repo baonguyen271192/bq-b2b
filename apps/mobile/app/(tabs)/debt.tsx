@@ -3,14 +3,13 @@ import { useFocusEffect } from "expo-router";
 import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { CreditDetail } from "@bq/types";
-import { vnd } from "@bq/core";
-import { Badge } from "@/components/Badge";
-import { Card } from "@/components/Card";
-import { CreditMeter } from "@/components/CreditMeter";
-import { EmptyState } from "@/components/EmptyState";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/session";
-import { Text, colors, space } from "@/legacy-theme";
+import { color, space } from "@/theme";
+import {
+  Card, CardDivider, CreditCard, EmptyState, ListRow, Price, ScreenHeader, SectionHead,
+  StatusTag, T,
+} from "@/components/ui";
 
 export default function DebtScreen() {
   const insets = useSafeAreaInsets();
@@ -26,66 +25,73 @@ export default function DebtScreen() {
 
   if (!dealer) return null;
 
+  const unpaid = detail?.invoices.filter((i) => !i.paid) ?? [];
+  const transactions = detail?.transactions ?? [];
+
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{ padding: space.lg, paddingTop: insets.top + space.md, gap: space.lg }}
+      style={styles.screen}
+      contentContainerStyle={[styles.body, { paddingTop: insets.top + space.x3 }]}
       showsVerticalScrollIndicator={false}
     >
-      <Text variant="h2">Công nợ</Text>
+      <ScreenHeader title="Công nợ" size="title" />
 
-      <CreditMeter limit={dealer.credit_limit} used={dealer.credit_used} />
+      <CreditCard limit={dealer.credit_limit} used={dealer.credit_used} />
 
-      <View style={{ gap: space.sm }}>
-        <Text variant="h3">Hoá đơn chưa thanh toán</Text>
+      <View>
+        <SectionHead title="Hoá đơn chưa thanh toán" />
         {detail === null ? (
-          <ActivityIndicator color={colors.brand[500]} style={{ marginVertical: space.xl }} />
-        ) : detail.invoices.filter((i) => !i.paid).length === 0 ? (
-          <Card flat>
-            <Text variant="bodySm" color={colors.textMuted} center>
+          <ActivityIndicator color={color.bq} style={styles.spinner} />
+        ) : unpaid.length === 0 ? (
+          <Card>
+            <T variant="small" tone="muted" style={styles.center}>
               Không có hoá đơn nào đang chờ thanh toán.
-            </Text>
+            </T>
           </Card>
         ) : (
-          detail.invoices.filter((i) => !i.paid).map((inv) => (
-            <Card key={inv.id} flat>
-              <View style={styles.row}>
-                <View style={{ flex: 1, gap: 3 }}>
-                  <Text variant="bodySm" weight="700">{inv.id}</Text>
-                  <Text variant="caption" color={colors.textMuted}>
-                    {inv.created_at} · {inv.payment}
-                  </Text>
-                </View>
-                <View style={{ alignItems: "flex-end", gap: 4 }}>
-                  <Text variant="bodySm" weight="700" color={colors.brand[500]}>{vnd(inv.subtotal)}</Text>
-                  <Badge label="Chưa trả" tone="warning" />
-                </View>
+          <Card variant="flat">
+            {unpaid.map((inv, i) => (
+              <View key={inv.id}>
+                {i > 0 ? <CardDivider /> : null}
+                <ListRow
+                  title={inv.id}
+                  subtitle={`${inv.created_at} · ${inv.payment}`}
+                  trailing={
+                    <View style={styles.trailing}>
+                      <Price value={inv.subtotal} variant="bodyStrong" tone="bq" />
+                      <StatusTag label="Chưa trả" kind="warn" />
+                    </View>
+                  }
+                />
               </View>
-            </Card>
-          ))
+            ))}
+          </Card>
         )}
       </View>
 
-      <View style={{ gap: space.sm }}>
-        <Text variant="h3">Lịch sử giao dịch</Text>
-        {detail && detail.transactions.length === 0 ? (
-          <EmptyState icon="swap-horizontal-outline" title="Chưa có giao dịch" />
+      <View>
+        <SectionHead title="Lịch sử giao dịch" />
+        {detail === null ? (
+          <ActivityIndicator color={color.bq} style={styles.spinner} />
+        ) : transactions.length === 0 ? (
+          <EmptyState
+            icon="swap-horizontal-outline"
+            title="Chưa có giao dịch"
+            hint="Khoản thanh toán cho BQ sẽ hiện ở đây sau khi được đối soát."
+          />
         ) : (
-          (detail?.transactions ?? []).map((t) => (
-            <Card key={t.id} flat>
-              <View style={styles.row}>
-                <View style={{ flex: 1, gap: 3 }}>
-                  <Text variant="bodySm" weight="600">{t.method}</Text>
-                  <Text variant="caption" color={colors.textMuted}>
-                    {t.created_at} · đơn {t.order_id}
-                  </Text>
-                </View>
-                <Text variant="bodySm" weight="700" color={colors.success.fg}>
-                  −{vnd(t.amount)}
-                </Text>
+          <Card variant="flat">
+            {transactions.map((t, i) => (
+              <View key={t.id}>
+                {i > 0 ? <CardDivider /> : null}
+                <ListRow
+                  title={t.method}
+                  subtitle={`${t.created_at} · đơn ${t.order_id}`}
+                  trailing={<Price value={-t.amount} variant="bodyStrong" tone="ok" />}
+                />
               </View>
-            </Card>
-          ))
+            ))}
+          </Card>
         )}
       </View>
     </ScrollView>
@@ -93,5 +99,9 @@ export default function DebtScreen() {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", gap: space.md },
+  screen: { flex: 1, backgroundColor: color.canvas },
+  body: { padding: space.screen, gap: space.x5, paddingBottom: space.x12 },
+  center: { textAlign: "center" },
+  spinner: { marginVertical: space.x8 },
+  trailing: { alignItems: "flex-end", gap: space.x1 },
 });
