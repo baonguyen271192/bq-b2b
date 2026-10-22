@@ -2,7 +2,7 @@
 
 Tài liệu này là **nguồn chuẩn duy nhất** cho giao diện app `apps/mobile`. Nó **thay thế** mọi đặc tả giao diện trước đó (design system "phòng trưng bày", bản cam/ink cũ, prototype HTML cũ). Prototype HTML cũ chỉ còn giá trị tham khảo về **chức năng và nội dung**.
 
-Ảnh chuẩn: `docs/design/v2/screens/*.png` (23 màn, chụp ở 390×844 pt, @2x). Bản tổng hợp: `docs/design/v2/BQ_Giao_dien_moi.pdf`.
+Ảnh chuẩn: `docs/design/v2/screens/*.png` (25 màn, chụp ở 390×844 pt, @2x). Bản tổng hợp: `docs/design/v2/BQ_Giao_dien_moi.pdf`.
 Khi chữ trong tài liệu này và ảnh mâu thuẫn: **số đo trong tài liệu này thắng**, bố cục và thứ bậc thị giác theo ảnh.
 
 ---
@@ -252,6 +252,22 @@ Thứ tự từ trên xuống, khoảng cách 16:
 - Mỗi địa chỉ một card: tên 16/700 + tag brand "Mặc định" (card mặc định viền 1.5 ink); người nhận + SĐT 14; địa chỉ 14/20 muted; nút "Sửa" (viền line, cao 40) + nút chữ gạch chân "Đặt mặc định" (ẩn ở địa chỉ mặc định)
 - Dock: Pill brand icon + "Thêm địa chỉ mới". Form thêm/sửa dùng Field như Đăng ký
 
+### 3.24 Sheet chọn địa chỉ giao hàng (`24-AddressSheet.png`)
+- Mở khi chạm card "Giao đến" ở Giỏ hàng. KHÔNG rời màn Giỏ hàng
+- Tiêu đề "Giao đến" 20/700 + nút đóng tròn 44
+- Mỗi địa chỉ là một radio card (bo 18; đang chọn viền 1.5 ink + vòng radio đặc): tên 15/700 + tag "Mặc định" (nền tint, chữ brandDeep), người nhận + SĐT 14, địa chỉ 13 muted. **Chạm là chọn và đóng sheet ngay** (không cần nút xác nhận)
+- Dưới danh sách: nút viền đứt ink cao 56 "+ Thêm địa chỉ mới" → chuyển sheet sang bước form (3.25), không rời Giỏ hàng
+- Ghi chú 13 muted: sửa/xoá địa chỉ ở Hồ sơ › Sổ địa chỉ
+- Khi đại lý chỉ có 1 địa chỉ: card "Giao đến" VẪN có chevron (để thêm địa chỉ mới); sheet hiện 1 card + nút thêm
+- Khi chưa có địa chỉ nào: card "Giao đến" hiện "Thêm địa chỉ giao hàng" (chữ brandDeep), chạm mở thẳng form 3.25; nút "Đặt hàng" vô hiệu cho đến khi có địa chỉ
+
+### 3.25 Sheet thêm địa chỉ mới (`25-AddressForm.png`)
+- Cùng sheet với 3.24, bước 2: nút back (về danh sách) + tiêu đề "Thêm địa chỉ mới"
+- Field: Tên gợi nhớ; Người nhận | Số điện thoại (2 cột); Tỉnh/Thành phố (chọn từ danh sách); Phường/Xã (chọn, phụ thuộc tỉnh); Số nhà, tên đường; Switch "Đặt làm địa chỉ mặc định"
+- Đơn vị hành chính 2 cấp (Tỉnh/Thành phố → Phường/Xã). Danh sách lấy từ API/bộ dữ liệu chính thức, không hardcode
+- Đáy: Pill brand "Lưu và giao đến đây": lưu vào sổ địa chỉ, chọn luôn cho đơn hiện tại, đóng sheet
+- Màn Sổ địa chỉ (3.23) dùng lại đúng component card địa chỉ và form này
+
 ---
 
 ## 4. Hành vi chung
@@ -261,74 +277,14 @@ Thứ tự từ trên xuống, khoảng cách 16:
 - Phản hồi nhấn: scale 0.98 cho Pill/card, 0.94 cho IconButton; không có animation tự chạy
 - Hỗ trợ Dynamic Type tới cỡ lớn hơn 1 bậc mà không vỡ bố cục: tên sản phẩm cắt 2 dòng, số tiền dùng `adjustsFontSizeToFit` khi cần
 
----
-
-## 5. Sửa đổi sau review
-
-Mục này được chốt **sau** khi review bộ ảnh v2 và **ưu tiên cao hơn** phần còn lại của tài liệu. Chỗ nào mục 1–4 nói khác thì theo mục này.
-
-### A. Cam làm chữ
-Cam làm **NỀN** có chữ trắng = `brand #C24E00`. Cam làm **CHỮ** trên nền sáng (`canvas`, `paper`, `tint`) = `brandDeep #9E3F00`.
-
-Áp cho: link "Đăng ký ngay", chip "Size 41 ×", tag "Giá hạng Vàng", tag "Mặc định", chữ "Thanh toán" trên nút trắng — và mọi chữ cam khác trên nền sáng.
-
-Thêm token ngữ nghĩa `textBrand = brandDeep`. Ghi tỉ lệ tương phản đo được vào comment của từng token:
-
-| Cặp màu | Tỉ lệ | Kết luận |
-|---|---|---|
-| `brand` trên `canvas` | 4.40:1 | **Không đạt** AA chữ thường → không dùng làm chữ |
-| `brand` trên `tint` | 4.19:1 | **Không đạt** → không dùng làm chữ |
-| `textBrand`/`brandDeep` trên `canvas` | 6.09:1 | Đạt |
-| `textBrand`/`brandDeep` trên `tint` | 5.81:1 | Đạt |
-| `textBrand`/`brandDeep` trên `paper` | 6.64:1 | Đạt |
-| trắng trên `brand` | 4.79:1 | Đạt |
-
-### B. Bảng hoá đơn VAT
-Đầu cột bảng ("Hàng hoá / SL / Đơn giá / Thành tiền") đổi từ 12px sang **13px**.
-
-Quy tắc chung, không ngoại lệ: **chữ mang thông tin ≥ 13px**. Chỉ chip/tag trạng thái được 12px, chỉ badge số trên icon được 11px.
-
-### C. VAT
-- Thêm dòng "Giá đã gồm VAT" (13 `muted`) dưới giá ở **Chi tiết sản phẩm**, **Đặt nhanh**, và trong **card tổng kết Giỏ hàng**.
-- Thuế suất, đơn giá chưa thuế, thành tiền, tiền thuế trên **Hoá đơn VAT**: hiển thị **đúng số** backend / hệ thống hoá đơn điện tử trả về. App **không tự tính, không tự làm tròn**. **Không hardcode 8%.**
-- Việc cho team backend: thành tiền hiện đang tính ngược từ tổng — `40 × 462.963 = 18.518.520` nhưng dòng thành tiền ghi `18.518.519`. Cần thống nhất quy tắc làm tròn (làm tròn từ đơn giá lên, hay chia ngược từ tổng đã gồm thuế) và trả về số đã thống nhất.
-
-### D. Tồn kho thay đổi khi gửi đơn
-Bổ sung cho §3.6 (Giỏ hàng), trước đây thiếu.
-
-1. **Đang gửi:** bấm "Đặt hàng" → Pill vào trạng thái đang gửi (spinner trong Pill, chữ "Đang gửi đơn…"), khoá mọi thao tác trên màn. Chống bấm hai lần bằng **idempotency key** nếu API hỗ trợ.
-2. **API báo thiếu hàng** → bottom sheet "Tồn kho đã thay đổi", dùng **đúng khuôn của `14-OverLimit`**: icon warn trong tròn 48 nền `warnTint`; tiêu đề 20/700; mô tả 14 `muted`; danh sách dòng bị ảnh hưởng ("OX-001 size 40: còn 4, bạn đặt 6"); 2 radio card — "Đặt theo số còn lại" (mặc định, tự hạ số lượng) / "Bỏ size này"; CTA `brand` "Cập nhật và đặt hàng"; nút phụ "Quay lại giỏ".
-3. **Gửi thất bại do mạng/lỗi server** → giữ nguyên giỏ, toast lỗi có nút "Thử lại". Không tạo đơn trùng.
-4. **Thành công** → màn xác nhận dùng khuôn `EmptyState`: icon check nền `okTint`, "Đã gửi đơn DH-…", trạng thái (chờ duyệt / đã xác nhận), 2 nút "Xem đơn" / "Về trang chủ".
-
-Dựng **từ component có sẵn**, không thiết kế kiểu mới.
-
-### E. Màu cam logo — CHƯA chốt
-`flame #E65C00` so với cam logo chính thức (`#F04F23`?) **chưa chốt**. Giữ `flame` là **một token duy nhất** dùng chung cho splash + header màn Đăng nhập + chấm tiến trình hiện tại, để khi có brand guideline thì đổi một chỗ là xong. **Không tự đổi.**
-
-### F. Sau "Tôi đã chuyển khoản"
-Quay về màn **Công nợ**. Hoá đơn vừa chuyển hiện `StatusTag` kiểu `info` "Đang chờ BQ ghi nhận" **thay cho** nút "Trả ngay", cho tới khi API xác nhận. **Không làm màn riêng.**
-
-### Ngoài phạm vi đợt này
-**Dark mode** và **onboarding lần đầu** không làm trong đợt này. Đã ghi vào `docs/tech-debt.md`.
-
-### G. Bỏ màn "Xác nhận đơn"
-Route `app/checkout.tsx` **xoá**. v2 gửi đơn thẳng từ dock Giỏ hàng, không có bước trung gian.
-
-Chuyển sang màn Giỏ hàng (`§3.6` + mục D), làm ở Phase 4:
-- `api.createOrder()` và xử lý lỗi — hiện là chỗ **duy nhất** trong app tạo đơn
-- Chọn kho nhận hàng → card "Giao đến" + Sổ địa chỉ (`23-Addresses`)
-- Hình thức thanh toán → dòng "Thanh toán · Công nợ 30 ngày" trong card tổng kết
-- Bảng giá trị → card tổng kết + dock
-- Cảnh báo vượt hạn mức → khối `warnTint` + sheet `14-OverLimit`
-
-Phase 4 chạy trước Phase 6 nên card "Giao đến" tạm chưa bấm được; nối vào Sổ địa chỉ ở Phase 6.
-
-### H. `plate` giữ `#F0F0F0`
-Mục 1 ghi `plate #EAECF0` — **sai, không áp dụng**.
-
-Đo lại chính ảnh v2: `05-Detail.png` và thẻ sản phẩm thứ nhất của `03-Products.png` cho `#F0F0F0`–`#EFEFEF`, chỉ thẻ thứ hai cho `#EAECF0`. Bộ ảnh thiết kế trộn hai nguồn ảnh sản phẩm.
-
-Giữ `plate: "#F0F0F0"` — giá trị này đã đo từ 5 ảnh catalog thật (GBW0295, SDW0155, GIW0208, SDW0136, SA003, cả bốn góc) và ghi trong comment token. Lấy `#EAECF0` sẽ thấy viền quanh phần lớn giày thật.
-
-Đổi nhà cung cấp ảnh thì đo lại, không chọn theo cảm tính.
+## 5. Sửa đổi sau review (ưu tiên cao hơn phần còn lại của SPEC)
+- **A. Cam làm chữ:** nền cam có chữ trắng = `brand #C24E00`; chữ cam trên nền sáng (canvas, paper, tint) = `brandDeep #9E3F00` (6.09:1 trên canvas, 5.81:1 trên tint). Token ngữ nghĩa `textBrand = brandDeep`
+- **B.** Đầu cột bảng hoá đơn VAT 13px. Chữ mang thông tin ≥ 13px, không ngoại lệ
+- **C. VAT:** dòng "Giá đã gồm VAT" (13 muted) dưới giá ở Chi tiết, Đặt nhanh, card tổng kết Giỏ hàng. Thuế suất, đơn giá chưa thuế, thành tiền, tiền thuế: hiển thị đúng số backend/hệ thống HĐĐT trả về, app không tự tính, không hardcode 8%
+- **D. Gửi đơn:** đang gửi (spinner trong Pill, khoá thao tác, chống gửi trùng) → thiếu hàng: sheet "Tồn kho đã thay đổi" theo khuôn 14-OverLimit (lựa chọn "Đặt theo số còn lại" / "Bỏ size này") → lỗi mạng: giữ giỏ, toast "Thử lại" → thành công: màn xác nhận khuôn empty state (icon check okTint, "Đã gửi đơn DH-…", nút "Xem đơn" / "Về trang chủ")
+- **E.** `flame` vs cam logo: chưa chốt, giữ một token duy nhất
+- **F.** Sau "Tôi đã chuyển khoản": hoá đơn ở Công nợ hiện tag info "Đang chờ BQ ghi nhận" thay nút "Trả ngay"
+- **G. Không có màn "Xác nhận đơn" riêng.** Gửi đơn thẳng từ Giỏ hàng. Route checkout cũ bị xoá sau khi chuyển hết logic và xử lý lỗi sang Giỏ hàng
+- **H. Địa chỉ giao hàng = sổ địa chỉ của đại lý** (3.24, 3.25). Kho xuất của BQ do backend cấu hình, KHÔNG hiển thị trên app. Danh sách cứng "Kho HCM / Hà Nội / Đà Nẵng" trong code cũ bị bỏ. Đơn gửi lên phải mang `addressId` có cấu trúc, không ghép vào ghi chú
+- **I. Hình thức thanh toán:** hiển thị read-only theo điều khoản hợp đồng của đại lý (ví dụ "Công nợ 30 ngày"), KHÔNG có bộ chọn theo từng đơn, chờ BQ xác nhận. Danh sách 3 lựa chọn trong code cũ bị bỏ
+- **Ngoài phạm vi đợt này:** dark mode, onboarding lần đầu
