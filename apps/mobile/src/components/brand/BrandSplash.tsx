@@ -104,7 +104,7 @@ const BAR_AFTER_MS = 1500;
  *
  * KHÔNG quay lại trắng tinh: phủ trắng lên trắng thì không thấy gì.
  */
-const SHINE_COLOR = color.bqShine;
+const SHINE_COLOR = color.shine;
 /** Bề ngang dải sáng, theo tỉ lệ bề rộng logo. */
 const SHINE_W_RATIO = 0.45;
 
@@ -578,7 +578,7 @@ export function BrandSplash({
           resizeMode="contain"
           accessibilityIgnoresInvertColors
         />
-        <T variant="heading" tone="white" style={styles.textCenter}>Chưa mở được ứng dụng</T>
+        <T variant="section" tone="white" style={styles.textCenter}>Chưa mở được ứng dụng</T>
         <T variant="small" tone="white" style={[styles.textCenter, styles.dim]}>{error}</T>
         {onRetry ? <Pill label="Thử lại" tone="paper" onPress={onRetry} style={styles.retry} /> : null}
       </View>
@@ -723,9 +723,9 @@ export const SPLASH_NATIVE_LOGO_W = NATIVE_LOGO_W;
 
 const styles = StyleSheet.create({
   fill: { ...ABSOLUTE_FILL, zIndex: 10 },
-  flat: { ...ABSOLUTE_FILL, backgroundColor: color.bq },
+  flat: { ...ABSOLUTE_FILL, backgroundColor: color.flame },
   /** PHẢI bằng màu mép ngoài của bg-radial.png — xem chú thích nơi dùng. */
-  deep: { ...ABSOLUTE_FILL, backgroundColor: color.bqDeep },
+  deep: { ...ABSOLUTE_FILL, backgroundColor: color.flameDeep },
   abs: { position: "absolute" },
   centerRow: { position: "absolute", left: 0, right: 0, alignItems: "center" },
   logoFill: { backgroundColor: color.white },
@@ -756,7 +756,7 @@ const styles = StyleSheet.create({
     transformOrigin: "left center",
   },
   errorWrap: {
-    backgroundColor: color.bqDeep, alignItems: "center", justifyContent: "center",
+    backgroundColor: color.flameDeep, alignItems: "center", justifyContent: "center",
     gap: space.x3, paddingHorizontal: space.x8,
   },
   retry: { marginTop: space.x4, alignSelf: "stretch" },

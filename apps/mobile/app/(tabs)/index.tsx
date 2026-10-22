@@ -3,13 +3,14 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import { vndShort } from "@bq/core";
 import type { Order } from "@bq/types";
 import { api } from "@/lib/api";
 import { useCart } from "@/lib/cart";
 import { useSession } from "@/lib/session";
 import { color, space } from "@/theme";
 import {
-  Chip, CreditCard, EmptyState, Fab, FAB_CLEARANCE, IconButton, OrderCard, Pill, ScreenHeader,
+  Chip, CreditCard, EmptyState, IconButton, OrderCard, Pill, ScreenHeader, TAB_BAR_CLEARANCE,
   SectionHead,
 } from "@/components/ui";
 
@@ -28,7 +29,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { dealer, refresh } = useSession();
-  const { subtotal: cartValue, lines } = useCart();
+  const { lines } = useCart();
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -61,7 +62,7 @@ export default function HomeScreen() {
           Gradient dừng ở `bq` -> `bqDeep`, KHÔNG dùng `bqBright`: chữ trắng
           trên `bqBright` chỉ đạt 2.61:1 — không hợp lệ kể cả với chữ lớn. */}
       <LinearGradient
-        colors={[color.bq, color.bqDeep]}
+        colors={[color.brand, color.brandDeep]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.hero, { height: insets.top + HERO_H }]}
@@ -76,10 +77,8 @@ export default function HomeScreen() {
         }
       >
         <ScreenHeader
-          tone="onBrand"
-          size="title"
-          eyebrow="Xin chào,"
           title={dealer.name}
+          caption="Xin chào,"
           trailing={
             <>
               <IconButton
@@ -101,16 +100,18 @@ export default function HomeScreen() {
         />
 
         <View style={styles.meta}>
-          <Chip label={dealer.code} tone="brand" />
-          <Chip label={`★ Hạng ${dealer.tier}`} tone="brand" />
+          <Chip label={dealer.code} variant="applied" />
+          <Chip label={`★ Hạng ${dealer.tier}`} variant="applied" />
         </View>
 
         <CreditCard
-          limit={dealer.credit_limit}
-          used={dealer.credit_used}
-          pending={cartValue}
-          detailLabel={cartValue > 0 ? undefined : "Xem chi tiết công nợ"}
-          onPressDetail={() => router.push("/(tabs)/debt")}
+          label="Hạn mức khả dụng"
+          amount={dealer.credit_available}
+          progress={dealer.credit_limit ? dealer.credit_used / dealer.credit_limit : 0}
+          stats={[
+            { label: "Tổng hạn mức", value: vndShort(dealer.credit_limit) },
+            { label: "Đã dùng", value: vndShort(dealer.credit_used) },
+          ]}
         />
 
         <View style={styles.actions}>
@@ -151,12 +152,6 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      <Fab
-        icon="sparkles"
-        accessibilityLabel="Trợ lý BQ"
-        style={styles.fab}
-        onPress={() => router.push("/assistant")}
-      />
     </View>
   );
 }
@@ -164,7 +159,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.canvas },
   hero: { position: "absolute", top: 0, left: 0, right: 0 },
-  body: { padding: space.screen, gap: space.x5, paddingBottom: FAB_CLEARANCE },
+  body: { padding: space.screen, gap: space.x5, paddingBottom: TAB_BAR_CLEARANCE },
   meta: { flexDirection: "row", alignItems: "center", gap: space.x2 },
   actions: { flexDirection: "row", gap: space.x2, alignItems: "center" },
   grow: { flex: 1 },

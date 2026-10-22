@@ -17,7 +17,7 @@ export function Price({ value, suffix, variant = "bodyStrong", ...rest }: PriceP
   return (
     <Num variant={variant} {...rest}>
       {vnd(value)}
-      {suffix ? <Num variant="micro" tone="muted">{suffix}</Num> : null}
+      {suffix ? <Num variant="chip" tone="muted">{suffix}</Num> : null}
     </Num>
   );
 }

@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { useFocusEffect } from "expo-router";
 import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { vndShort } from "@bq/core";
 import type { CreditDetail } from "@bq/types";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/session";
@@ -34,14 +35,22 @@ export default function DebtScreen() {
       contentContainerStyle={[styles.body, { paddingTop: insets.top + space.x3 }]}
       showsVerticalScrollIndicator={false}
     >
-      <ScreenHeader title="Công nợ" size="title" />
+      <ScreenHeader title="Công nợ" />
 
-      <CreditCard limit={dealer.credit_limit} used={dealer.credit_used} />
+      <CreditCard
+        label="Dư nợ hiện tại"
+        amount={dealer.credit_used}
+        progress={dealer.credit_limit ? dealer.credit_used / dealer.credit_limit : 0}
+        stats={[
+          { label: "Hạn mức", value: vndShort(dealer.credit_limit) },
+          { label: "Khả dụng", value: vndShort(dealer.credit_available) },
+        ]}
+      />
 
       <View>
         <SectionHead title="Hoá đơn chưa thanh toán" />
         {detail === null ? (
-          <ActivityIndicator color={color.bq} style={styles.spinner} />
+          <ActivityIndicator color={color.brand} style={styles.spinner} />
         ) : unpaid.length === 0 ? (
           <Card>
             <T variant="small" tone="muted" style={styles.center}>
@@ -58,7 +67,7 @@ export default function DebtScreen() {
                   subtitle={`${inv.created_at} · ${inv.payment}`}
                   trailing={
                     <View style={styles.trailing}>
-                      <Price value={inv.subtotal} variant="bodyStrong" tone="bq" />
+                      <Price value={inv.subtotal} variant="bodyStrong" tone="brand" />
                       <StatusTag label="Chưa trả" kind="warn" />
                     </View>
                   }
@@ -72,7 +81,7 @@ export default function DebtScreen() {
       <View>
         <SectionHead title="Lịch sử giao dịch" />
         {detail === null ? (
-          <ActivityIndicator color={color.bq} style={styles.spinner} />
+          <ActivityIndicator color={color.brand} style={styles.spinner} />
         ) : transactions.length === 0 ? (
           <EmptyState
             icon="swap-horizontal-outline"

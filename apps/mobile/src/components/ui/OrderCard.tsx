@@ -43,12 +43,12 @@ export function OrderCard({ order, onPress, style }: OrderCardProps) {
               <Num variant="bodyStrong">{order.id}</Num>
               <StatusTag label={order.status} kind={statusKindFor(order.status)} />
             </View>
-            <T variant="micro" tone="muted">
+            <T variant="chip" tone="muted">
               {order.created_at} · {order.items.length} mã · {pairs} đôi
             </T>
-            <Price value={order.subtotal} variant="bodyStrong" tone="bq" />
+            <Price value={order.subtotal} variant="bodyStrong" tone="brand" />
           </View>
-          <Ionicons name="chevron-forward" size={18} color={color.faint} />
+          <Ionicons name="chevron-forward" size={18} color={color.muted} />
         </View>
       </Card>
     </Pressable>

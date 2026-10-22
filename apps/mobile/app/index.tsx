@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Redirect, useRouter } from "expo-router";
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from "react-native";
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDemoSignIn, useSession } from "@/lib/session";
 import { color, radius, shadow, space } from "@/theme";
@@ -39,7 +39,7 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.intro}>
-          <T variant="display">Đăng nhập đại lý</T>
+          <T variant="amountHero">Đăng nhập đại lý</T>
           <T variant="body" tone="muted">
             Nhập số điện thoại đã đăng ký với BQ để nhận mã OTP.
           </T>
@@ -59,18 +59,18 @@ export default function LoginScreen() {
 
         <View style={styles.orRow}>
           <View style={styles.line} />
-          <T variant="micro" tone="faint">hoặc</T>
+          <T variant="chip" tone="muted">hoặc</T>
           <View style={styles.line} />
         </View>
 
         <Pill label="Kích hoạt từ lời mời của Sale" tone="outline" onPress={submit} />
       </View>
 
-      <Pressable style={[styles.footer, { paddingBottom: insets.bottom + space.x6 }]}>
+      <View style={[styles.footer, { paddingBottom: insets.bottom + space.x6 }]}>
         <T variant="small" tone="muted">
-          Chưa là đại lý BQ? <T variant="small" weight="bold" tone="bq">Đăng ký ngay</T>
+          Chưa là đại lý BQ? <T variant="small" weight="bold" tone="brand">Đăng ký ngay</T>
         </T>
-      </Pressable>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -80,8 +80,8 @@ const styles = StyleSheet.create({
   body: { flex: 1, paddingHorizontal: space.x6, gap: space.x6 },
   logo: {
     width: 64, height: 64, borderRadius: radius.field,
-    backgroundColor: color.bq, alignItems: "center", justifyContent: "center",
-    ...shadow.float,
+    backgroundColor: color.brand, alignItems: "center", justifyContent: "center",
+    ...shadow.tabBar,
   },
   intro: { gap: space.x2 },
   // `marginTop: auto` đẩy cụm "hoặc" và nút phụ xuống đáy phần thân, nên ô nhập

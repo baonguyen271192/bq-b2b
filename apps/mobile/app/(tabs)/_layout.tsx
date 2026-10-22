@@ -35,12 +35,12 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: color.bq,
-        tabBarInactiveTintColor: color.faint,
+        tabBarActiveTintColor: color.brand,
+        tabBarInactiveTintColor: color.muted,
         tabBarLabelStyle: {
           fontFamily: fontFamily.semibold,
-          fontSize: textStyle.micro.fontSize,
-          letterSpacing: textStyle.micro.letterSpacing,
+          fontSize: textStyle.chip.fontSize,
+          letterSpacing: textStyle.chip.letterSpacing,
         },
         tabBarStyle: {
           backgroundColor: color.paper,
@@ -67,9 +67,9 @@ export default function TabsLayout() {
           tabBarIcon: tabIcon("pricetags-outline"),
           tabBarBadge: lines.length || undefined,
           tabBarBadgeStyle: {
-            backgroundColor: color.bq,
+            backgroundColor: color.brand,
             fontFamily: fontFamily.bold,
-            fontSize: textStyle.micro.fontSize,
+            fontSize: textStyle.chip.fontSize,
           },
         }}
       />

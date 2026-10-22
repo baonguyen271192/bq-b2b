@@ -42,7 +42,7 @@ export default function OrdersScreen() {
   return (
     <View style={styles.screen}>
       <View style={[styles.header, { paddingTop: insets.top + space.x3 }]}>
-        <ScreenHeader title="Đơn hàng" size="title" />
+        <ScreenHeader title="Đơn hàng" />
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -52,7 +52,7 @@ export default function OrdersScreen() {
             <Chip
               key={f.key}
               label={f.label}
-              active={filter === f.key}
+              selected={filter === f.key}
               onPress={() => setFilter(f.key)}
             />
           ))}
@@ -60,7 +60,7 @@ export default function OrdersScreen() {
       </View>
 
       {orders === null ? (
-        <View style={styles.center}><ActivityIndicator color={color.bq} /></View>
+        <View style={styles.center}><ActivityIndicator color={color.brand} /></View>
       ) : visible.length === 0 ? (
         <EmptyState
           icon="receipt-outline"
@@ -76,7 +76,7 @@ export default function OrdersScreen() {
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
-              tintColor={color.bq}
+              tintColor={color.brand}
               onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }}
             />
           }

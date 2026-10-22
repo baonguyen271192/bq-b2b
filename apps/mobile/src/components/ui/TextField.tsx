@@ -43,7 +43,7 @@ export function TextField({
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={color.faint}
+          placeholderTextColor={color.muted}
           keyboardType={keyboardType}
           multiline={multiline}
           onSubmitEditing={onSubmitEditing}
@@ -51,7 +51,7 @@ export function TextField({
           style={[styles.input, multiline && styles.inputMultiline]}
         />
       </View>
-      {error ? <T variant="micro" tone="danger">{error}</T> : null}
+      {error ? <T variant="chip" tone="danger">{error}</T> : null}
     </View>
   );
 }

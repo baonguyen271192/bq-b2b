@@ -1,263 +1,354 @@
 import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import type { Dealer, Product } from "@bq/types";
+import type { Product } from "@bq/types";
+import { vndShort } from "@bq/core";
 import { ProductCard } from "@/components/product/ProductCard";
 import {
-  Avatar, Badge, Card, CardDivider, ChatBubble, Chip, CreditCard, DetailRow, Dock, DOCK_CLEARANCE,
-  EmptyState, IconButton, ListRow, Notice, Num, OptionRow, Pill, Price, ProductImage, ScreenHeader,
-  SearchField, SectionHead, SegmentedControl, StatPair, StatusTag, Stepper, T, TextField, Timeline,
+  Address, AddressCard, Avatar, Badge, BottomSheet, Card, CardDivider, ChatBubble, Chip,
+  CreditCard, DashedButton, DetailRow, Dock, DOCK_CLEARANCE, EmptyState, IconButton, ListRow,
+  Notice, Num, Pill, Price, ProductImage, ProductMini, QuickAction, RadioCard, ScreenHeader,
+  SearchField, SectionHead, SegmentedControl, Select, SizeChip, SizeList, SizeQty, Skeleton,
+  StatPair, StatusTag, Stepper, Switch, T, TabBar, TextButton, TextField, Timeline,
 } from "@/components/ui";
-import { color, radius, space } from "@/theme";
+import { color, radius, space, textStyle } from "@/theme";
 
 /**
- * Trưng bày mọi component với mọi biến thể — nơi duyệt giao diện, và là bằng
+ * Trưng bày mọi component §2 với mọi biến thể — nơi duyệt giao diện, và là bằng
  * chứng component chạy độc lập được với màn hình thật.
  *
  * Chỉ truy cập trong bản dev (`/_dev/ui`). Không có link nào trỏ tới.
  */
 
-const DEMO_DEALER: Dealer = {
-  code: "DL001", name: "Đại lý Minh Anh", tier: "Vàng",
-  credit_limit: 50_000_000, credit_used: 11_197_000, credit_available: 38_803_000,
-};
-
 const DEMO_PRODUCT: Product = {
-  code: "GBW0295",
-  name: "Giày cao gót mũi vuông quai ngang Solara GBW0295",
-  category: "Giày Nữ", retail: 689_000, wholesale: 448_000, price: 425_600,
-  sizes: { "35": 60, "36": 80, "37": 0, "38": 55, "39": 40 },
+  code: "OX-001",
+  name: "Giày cỏ nam da thật cột dây đế cao 3cm BQ GV 1916",
+  category: "Giày tây", retail: 1_350_000, wholesale: 1_150_000, price: 1_080_000,
+  sizes: { "38": 8, "39": 96, "40": 0, "41": 150, "42": 42, "43": 12, "44": 0 },
   image: "https://cdn.hstatic.net/products/200000473357/g2-1_23e8955f90b74e42ba29b335c679bc7f.jpg",
 };
 
-const SOLD_OUT: Product = { ...DEMO_PRODUCT, code: "SA003", sizes: { "35": 0, "36": 0 } };
+const DEMO_ADDRESS: Address = {
+  id: "kho-hoi-an", label: "Kho Hội An",
+  recipient: "Trần Văn Bình", phone: "0905 662 731",
+  street: "210 Cửa Đại", ward: "Phường Cẩm Châu", province: "Quảng Nam",
+};
 
-function Row({ children }: { children: React.ReactNode }) {
-  return <View style={styles.row}>{children}</View>;
-}
+const PROVINCES = [
+  { value: "48", label: "Đà Nẵng" },
+  { value: "49", label: "Quảng Nam" },
+  { value: "79", label: "TP. Hồ Chí Minh" },
+  { value: "01", label: "Hà Nội" },
+];
 
 export default function UiShowcase() {
   const insets = useSafeAreaInsets();
-  const [qty, setQty] = useState(0);
-  const [query, setQuery] = useState("");
-  const [seg, setSeg] = useState<"all" | "wait" | "done">("all");
+  const [qty, setQty] = useState(2);
+  const [sizes, setSizes] = useState<SizeQty>({ "39": 8, "41": 12 });
+  const [seg, setSeg] = useState("all");
+  const [tab, setTab] = useState("home");
+  const [q, setQ] = useState("");
+  const [on, setOn] = useState(true);
+  const [picked, setPicked] = useState("a");
+  const [province, setProvince] = useState<string>();
+  const [sheet, setSheet] = useState(false);
 
   return (
     <View style={styles.screen}>
       <ScrollView
         contentContainerStyle={[
-          styles.content,
-          {
-            paddingTop: insets.top + space.x4,
-            // Chừa chỗ cho CẢ hai thanh nổi. Thiếu padding thì mục cuối bị che —
-            // đã gặp đúng lỗi đó ở lần chụp đầu: Dock đè lên mục "Pill".
-            paddingBottom: DOCK_CLEARANCE + space.x12 * 2,
-          },
+          styles.body,
+          { paddingTop: insets.top + space.x3, paddingBottom: DOCK_CLEARANCE + insets.bottom },
         ]}
+        showsVerticalScrollIndicator={false}
       >
         <ScreenHeader
-          eyebrow="Thư viện giao diện"
-          title="Component"
-          caption="Mọi biến thể, dùng để duyệt thiết kế"
-          trailing={<IconButton icon="color-palette-outline" accessibilityLabel="Bảng màu" />}
+          title="Bộ giao diện"
+          caption="SPEC v2 · 20 component dùng chung"
+          trailing={<IconButton icon="cart-outline" badge={2} accessibilityLabel="Giỏ hàng" />}
         />
 
-        <SectionHead title="Chữ" />
-        <Card>
-          <T variant="display">Display 34</T>
-          <T variant="title">Title 24</T>
-          <T variant="heading">Heading 18</T>
-          <T variant="body">Body 15 — đoạn văn thường của app.</T>
-          <T variant="small" tone="muted">Small 13 muted</T>
-          <T variant="micro" tone="faint">MICRO 11 FAINT</T>
-          <Num variant="title">1234567890</Num>
-          <Price value={1_378_000} suffix=" /đôi" variant="heading" />
-        </Card>
+        <Group title="Thang chữ">
+          <Card>
+            {(Object.keys(textStyle) as (keyof typeof textStyle)[]).map((k) => (
+              <T key={k} variant={k} numberOfLines={1}>
+                {`${k} · ${textStyle[k].fontSize}/${textStyle[k].weight}`}
+              </T>
+            ))}
+          </Card>
+        </Group>
 
-        <SectionHead title="Pill — 4 tone" />
-        <View style={styles.stack}>
-          <Pill label="Tạo đơn hàng mới" tone="brand" />
-          <Pill label="Lưu đơn nháp" tone="ink" />
-          <Pill label="Xem tất cả đơn" tone="outline" />
-          <Pill label="Trên nền tối" tone="paper" />
-          <Pill label="Đang khoá" tone="brand" disabled />
-        </View>
-
-        <SectionHead title="IconButton — 4 tone" />
-        <Row>
-          <IconButton icon="cart-outline" accessibilityLabel="Giỏ hàng" badge={3} />
-          <IconButton icon="notifications-outline" tone="dark" accessibilityLabel="Thông báo" />
-          <IconButton icon="heart-outline" tone="brand" accessibilityLabel="Yêu thích" />
-          <View style={styles.glassBed}>
-            <IconButton icon="arrow-back" tone="glass" accessibilityLabel="Quay lại" />
-          </View>
-          <IconButton icon="share-outline" accessibilityLabel="Chia sẻ" disabled />
-        </Row>
-
-        <SectionHead title="Chip · StatusTag · Badge" />
-        <Row>
-          <Chip label="Tất cả" active onPress={() => {}} />
-          <Chip label="Giày Nữ" onPress={() => {}} />
-          <Chip label="Hạng Vàng" tone="brand" />
-        </Row>
-        <Row>
-          <StatusTag label="Hoàn tất" kind="ok" />
-          <StatusTag label="Chờ duyệt" kind="warn" />
-          <StatusTag label="Đang giao" kind="info" />
-          <StatusTag label="Đã huỷ" kind="danger" />
-          <StatusTag label="Nháp" />
-        </Row>
-        <Row>
-          <Badge count={1} /><Badge count={12} /><Badge count={420} />
-        </Row>
-
-        <SectionHead title="SearchField" />
-        <SearchField value={query} onChangeText={setQuery} />
-
-        <SectionHead title="SegmentedControl" />
-        <SegmentedControl
-          value={seg}
-          onChange={setSeg}
-          options={[
-            { value: "all", label: "Tất cả" },
-            { value: "wait", label: "Chờ duyệt" },
-            { value: "done", label: "Hoàn tất" },
-          ]}
-        />
-
-        <SectionHead title="Stepper — 0 và > 0" />
-        <Row>
-          <Stepper value={0} onChange={() => {}} subject="size 35" />
-          <Stepper value={qty} onChange={setQty} max={40} longPressStep={5} subject="size 39" />
-        </Row>
-
-        <SectionHead title="Card + ListRow" />
-        <Card variant="flat">
-          <ListRow icon="person-outline" title="Thông tin đại lý" subtitle="DL001 · Hạng Vàng" onPress={() => {}} />
-          <CardDivider />
-          <ListRow icon="receipt-outline" title="Hoá đơn BQ1017" trailing={<Price value={1_197_000} variant="small" />} />
-          <CardDivider />
-          <ListRow icon="log-out-outline" title="Đăng xuất" danger onPress={() => {}} />
-        </Card>
-
-        <SectionHead title="ProductImage · ProductCard" />
-        <Row>
-          <ProductCard product={DEMO_PRODUCT} isNew style={styles.half} />
-          <ProductCard product={SOLD_OUT} style={styles.half} />
-        </Row>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hscroll}>
-          <ProductCard product={DEMO_PRODUCT} variant="spotlight" isNew />
-          <ProductCard product={DEMO_PRODUCT} variant="spotlight" />
-        </ScrollView>
-        <ProductImage uri={DEMO_PRODUCT.image} shape="hero" />
-
-        <SectionHead title="CreditCard" />
-        <CreditCard
-          limit={DEMO_DEALER.credit_limit}
-          used={DEMO_DEALER.credit_used}
-          pending={4_000_000}
-          detailLabel="Xem chi tiết công nợ"
-          onPressDetail={() => {}}
-        />
-
-        <SectionHead title="EmptyState" />
-        <Card>
-          <EmptyState
-            icon="cart-outline"
-            title="Giỏ hàng trống"
-            hint="Chọn mẫu ở tab Sản phẩm rồi nhập số lượng theo size để tạo đơn."
-            actionLabel="Xem sản phẩm"
-            onActionPress={() => {}}
-          />
-        </Card>
-
-        <SectionHead title="TextField · OptionRow" />
-        <View style={styles.stack}>
-          <TextField label="Số điện thoại" prefix="+84" value="912 345 468" onChangeText={() => {}} />
-          <TextField
-            label="Mã sai"
-            value="0000"
-            onChangeText={() => {}}
-            error="Mã không đúng, thử lại."
-          />
-          <OptionRow label="Kho HCM" selected onPress={() => {}} />
-          <OptionRow label="Kho Hà Nội" selected={false} onPress={() => {}} />
-        </View>
-
-        <SectionHead title="Notice — 4 loại" />
-        <View style={styles.stack}>
-          <Notice kind="info">Đơn sẽ được xác nhận trong giờ hành chính.</Notice>
-          <Notice kind="warn">Đơn vượt hạn mức, Sale sẽ duyệt trước khi xử lý.</Notice>
-          <Notice kind="danger">Không gửi được đơn. Kiểm tra mạng rồi thử lại.</Notice>
-          <Notice kind="ok">Đã nhận đơn, BQ đang đóng gói.</Notice>
-        </View>
-
-        <SectionHead title="Avatar · StatPair · DetailRow" />
-        <Card>
+        <Group title="Màu — nền cam có chữ trắng vs cam làm chữ">
           <View style={styles.row}>
-            <Avatar name="Đại lý Minh Anh" />
-            <T variant="heading">Đại lý Minh Anh</T>
+            <Swatch bg={color.brand} label="brand" fg={color.white} note="4.79:1" />
+            <Swatch bg={color.brandDeep} label="brandDeep" fg={color.white} note="6.64:1" />
+            <Swatch bg={color.flame} label="flame" fg={color.white} note="3.56:1 — chữ lớn" />
           </View>
-          <View style={styles.rule}><CardDivider /></View>
-          <StatPair
-            items={[
-              { label: "Hạn mức", value: <Price value={50_000_000} variant="bodyStrong" /> },
-              { label: "Khả dụng", value: <Price value={38_803_000} variant="bodyStrong" tone="ok" /> },
+          <Card>
+            <T variant="bodyStrong" tone="brand">Chữ cam trên nền sáng dùng textBrand (6.64:1)</T>
+          </Card>
+        </Group>
+
+        <Group title="ScreenHeader · back">
+          <ScreenHeader variant="back" title="Giỏ hàng" caption="2 mẫu, 50 đôi" onBack={() => {}} />
+        </Group>
+
+        <Group title="Pill">
+          <Pill label="Thêm vào giỏ" />
+          <Pill label="Đã nhận hàng" tone="ink" />
+          <Pill label="Lưu nháp" tone="outline" />
+          <Pill label="Đang gửi đơn…" loading loadingLabel="Đang gửi đơn…" />
+          <Pill label="Xác nhận" disabled />
+        </Group>
+
+        <Group title="IconButton · TextButton · DashedButton">
+          <View style={styles.row}>
+            <IconButton icon="notifications-outline" badge={2} accessibilityLabel="Thông báo" />
+            <IconButton icon="heart-outline" tone="glass" accessibilityLabel="Yêu thích" />
+            <IconButton icon="call" tone="brand" accessibilityLabel="Gọi Sale" />
+            <IconButton icon="chevron-forward" tone="dark" accessibilityLabel="Chi tiết" />
+            <TextButton label="Đặt mặc định" />
+            <TextButton label="Sửa size" underline />
+            <TextButton label="Xoá" tone="danger" />
+          </View>
+          <DashedButton label="Thêm địa chỉ mới" />
+        </Group>
+
+        <Group title="Badge · Chip · SizeChip · StatusTag">
+          <View style={styles.row}>
+            <Badge count={3} />
+            <Chip label="Giày tây" onPress={() => {}} />
+            <Chip label="Tất cả" selected onPress={() => {}} />
+            <Chip label="Size 41" variant="applied" onRemove={() => {}} onPress={() => {}} />
+            <Chip label="Bán chạy" variant="filter" dropdown onPress={() => {}} />
+            <SizeChip size={41} qty={12} />
+          </View>
+          <View style={styles.row}>
+            <StatusTag label="Đã nhận hàng" kind="ok" />
+            <StatusTag label="Chờ duyệt hạn mức" kind="warn" />
+            <StatusTag label="Đang giao" kind="info" />
+            <StatusTag label="Bị từ chối" kind="danger" />
+            <StatusTag label="Giá hạng Vàng" kind="brand" />
+          </View>
+        </Group>
+
+        <Group title="CreditCard">
+          <CreditCard
+            label="Hạn mức khả dụng"
+            amount={187_600_000}
+            chip={<StatusTag label="✓ Hạng Vàng, CK 20%" kind="brand" />}
+            progress={312.4 / 500}
+            stats={[
+              { label: "Tổng hạn mức", value: vndShort(500_000_000) },
+              { label: "Đã dùng", value: vndShort(312_400_000) },
             ]}
           />
-          <View style={styles.rule}><CardDivider /></View>
-          <DetailRow label="Giao tới" value="Kho HCM" />
-          <DetailRow label="Tổng cộng" strong value={<Price value={2_553_600} variant="bodyStrong" />} />
-        </Card>
+        </Group>
 
-        <SectionHead title="Timeline" />
-        <Card>
-          <Timeline
-            current={2}
-            steps={["Chờ xác nhận", "Đã xác nhận", "Đang đóng gói", "Đang giao", "Đại lý đã nhận"]}
+        <Group title="QuickAction">
+          <View style={styles.row}>
+            <QuickAction icon="add" label="Tạo đơn" tone="ink" />
+            <QuickAction icon="refresh" label="Đặt lại" />
+            <QuickAction icon="document-text-outline" label="Đơn nháp" badge={1} />
+            <QuickAction icon="sparkles-outline" label="Trợ lý AI" />
+          </View>
+        </Group>
+
+        <Group title="Stepper — chạm số để nhập, giữ +/− để lặp">
+          <View style={styles.row}>
+            <Stepper value={qty} onChange={setQty} max={96} subject="size 39" />
+            <Stepper value={0} onChange={() => {}} max={8} subject="size 38" />
+            <Stepper value={0} onChange={() => {}} soldOut subject="size 40" />
+          </View>
+        </Group>
+
+        <Group title="SizeList">
+          <Card>
+            <SizeList stock={DEMO_PRODUCT.sizes} value={sizes} onChange={setSizes} />
+          </Card>
+        </Group>
+
+        <Group title="ProductCard · ProductMini · ProductImage">
+          <View style={styles.grid}>
+            <ProductCard
+              product={DEMO_PRODUCT}
+              tag="Bán chạy"
+              favourite
+              onToggleFavourite={() => {}}
+              onQuickAdd={() => {}}
+            />
+            <ProductCard product={DEMO_PRODUCT} tag="Mới" onQuickAdd={() => {}} />
+          </View>
+          <ProductCard product={DEMO_PRODUCT} stockNote="Tồn kho lúc 09:12" />
+          <View style={styles.row}>
+            <ProductMini name={DEMO_PRODUCT.name} price={DEMO_PRODUCT.price} image={DEMO_PRODUCT.image} />
+            <ProductImage uri={DEMO_PRODUCT.image} style={styles.thumb} />
+          </View>
+        </Group>
+
+        <Group title="RadioCard · Switch · Select">
+          <RadioCard
+            selected={picked === "a"}
+            onPress={() => setPicked("a")}
+            title="Gửi đơn chờ Sale duyệt"
+            description="Sale sẽ xem xét nâng hạn mức cho đơn này."
           />
-        </Card>
+          <RadioCard selected={picked === "b"} onPress={() => setPicked("b")}>
+            <AddressCard address={{ ...DEMO_ADDRESS, isDefault: true }} variant="select" />
+          </RadioCard>
+          <Card>
+            <ListRow
+              title="Thông báo đẩy"
+              subtitle="Đơn hàng, công nợ, hoá đơn"
+              icon="notifications-outline"
+              trailing={<Switch value={on} onValueChange={setOn} accessibilityLabel="Thông báo đẩy" />}
+            />
+          </Card>
+          <Select
+            label="Tỉnh / Thành phố"
+            placeholder="Chọn tỉnh, thành phố"
+            options={PROVINCES}
+            value={province}
+            onChange={setProvince}
+          />
+          <Select
+            label="Phường / Xã"
+            placeholder="Chọn phường, xã"
+            options={[]}
+            onChange={() => {}}
+            disabled={!province}
+            disabledHint="Chọn tỉnh, thành phố trước"
+          />
+        </Group>
 
-        <SectionHead title="ChatBubble" />
-        <View style={styles.stack}>
-          <ChatBubble from="bot">Em tra được tồn kho, công nợ hoặc lên đơn nhanh.</ChatBubble>
-          <ChatBubble from="me">Đặt 20 đôi size 40-42 giao kho HCM</ChatBubble>
-        </View>
+        <Group title="AddressCard · manage">
+          <AddressCard address={{ ...DEMO_ADDRESS, isDefault: true }} onEdit={() => {}} />
+          <AddressCard address={DEMO_ADDRESS} onEdit={() => {}} onSetDefault={() => {}} />
+        </Group>
 
-        <SectionHead title="Dock (ví dụ nội dung)" />
-        <Card>
-          <T variant="small" tone="muted">
-            Dock thật được ghim ở đáy màn hình. Xem bản ghim ở dưới cùng trang này.
-          </T>
-        </Card>
+        <Group title="SegmentedControl · SearchField · TextField">
+          <SegmentedControl
+            options={[
+              { value: "all", label: "Tất cả" },
+              { value: "wait", label: "Chờ duyệt", count: 1 },
+              { value: "ship", label: "Đang giao", count: 1 },
+              { value: "done", label: "Đã nhận" },
+            ]}
+            value={seg}
+            onChange={setSeg}
+          />
+          <SearchField value={q} onChangeText={setQ} placeholder="Tìm tên hoặc mã mẫu" />
+          <TextField label="Người nhận" value="" onChangeText={() => {}} placeholder="Họ và tên" />
+        </Group>
+
+        <Group title="Card · ListRow · DetailRow · StatPair · Timeline">
+          <Card>
+            <ListRow title="Sổ địa chỉ giao hàng" subtitle="3 địa chỉ" icon="location-outline" onPress={() => {}} divider />
+            <ListRow title="Hoá đơn VAT" subtitle="Tải PDF, chia sẻ cho kế toán" icon="receipt-outline" onPress={() => {}} />
+          </Card>
+          <Card>
+            <DetailRow label="Tạm tính (50 đôi)" value={<Price value={57_780_000} />} />
+            <DetailRow label="Vận chuyển" value={<T variant="bodyStrong" tone="ok">Miễn phí</T>} />
+            <View style={styles.rule}><CardDivider /></View>
+            <DetailRow label="Tổng thanh toán" strong value={<Price value={57_780_000} variant="cardTitle" />} />
+          </Card>
+          <Card>
+            <StatPair items={[{ label: "Đơn tháng này", value: <Num variant="cardTitle" weight="bold">12</Num> }, { label: "Tổng đôi", value: <Num variant="cardTitle" weight="bold">428</Num> }]} />
+          </Card>
+          <Card>
+            <Timeline
+              steps={[
+                { label: "Gửi đơn", caption: "18/10/2026 08:30", state: "done" },
+                { label: "BQ xác nhận", caption: "18/10/2026 10:15", state: "done" },
+                { label: "Đang giao", caption: "20/10/2026 09:30", state: "current" },
+                { label: "Đã nhận hàng", caption: "Dự kiến 22/10/2026", state: "todo" },
+              ]}
+            />
+          </Card>
+        </Group>
+
+        <Group title="Notice · EmptyState · Skeleton · ChatBubble · Avatar">
+          <Notice kind="warn">Đơn vượt hạn mức 12.440.000đ. Bạn vẫn đặt được, đơn sẽ chờ Sale duyệt.</Notice>
+          <Notice kind="ok">Sau đơn này hạn mức còn 129.820.000đ</Notice>
+          <Card>
+            <EmptyState icon="bag-outline" title="Giỏ hàng đang trống" hint="Chọn mẫu rồi đặt số lượng theo từng size." />
+          </Card>
+          <View style={styles.row}>
+            <Skeleton width={120} height={16} />
+            <Skeleton width={72} height={16} />
+          </View>
+          <ChatBubble from="bot">Chào anh Phát, em có thể tra tồn kho, công nợ hoặc lên đơn nhanh cho anh.</ChatBubble>
+          <ChatBubble from="me">Đặt 20 đôi OX-002 size 40–42, giao kho Hội An</ChatBubble>
+          <View style={styles.row}>
+            <Avatar name="Đại lý Minh Phát" />
+            <Avatar name="Trần Thu Hà" tone="info" />
+          </View>
+        </Group>
+
+        <Group title="BottomSheet">
+          <Pill label="Mở sheet" tone="outline" onPress={() => setSheet(true)} />
+        </Group>
+
+        <Group title="TabBar">
+          <View style={styles.tabDemo}>
+            <TabBar
+              items={[
+                { key: "home", icon: "home-outline", label: "Trang chủ" },
+                { key: "products", icon: "grid-outline", label: "Sản phẩm" },
+                { key: "orders", icon: "receipt-outline", label: "Đơn hàng" },
+                { key: "debt", icon: "card-outline", label: "Công nợ" },
+                { key: "profile", icon: "person-outline", label: "Hồ sơ" },
+              ]}
+              active={tab}
+              onSelect={setTab}
+            />
+          </View>
+        </Group>
       </ScrollView>
 
-      <Dock style={styles.dockDemo}>
-        <View style={styles.dockRow}>
-          <View>
-            <T variant="micro" tone="muted">6 đôi</T>
-            <Price value={2_553_600} variant="heading" />
-          </View>
-          <Pill label="Thêm vào giỏ" tone="brand" style={styles.flex} />
-        </View>
+      <Dock
+        left={{ label: "18 đôi đã chọn", value: <Price value={23_220_000} variant="amountSm" /> }}
+        right={{ label: "Hạn mức còn", value: <Price value={164_380_000} variant="label" /> }}
+      >
+        <Pill label="Thêm vào giỏ" style={styles.flex} />
       </Dock>
 
+      <BottomSheet visible={sheet} onClose={() => setSheet(false)} title="Đặt nhanh">
+        <SizeList stock={DEMO_PRODUCT.sizes} value={sizes} onChange={setSizes} />
+      </BottomSheet>
+    </View>
+  );
+}
+
+function Group({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <View style={styles.group}>
+      <SectionHead title={title} />
+      <View style={styles.groupBody}>{children}</View>
+    </View>
+  );
+}
+
+function Swatch({ bg, label, fg, note }: { bg: string; label: string; fg: string; note: string }) {
+  return (
+    <View style={[styles.swatch, { backgroundColor: bg }]}>
+      <Num variant="chip" weight="bold" style={{ color: fg }}>{label}</Num>
+      <Num variant="badge" style={{ color: fg }}>{note}</Num>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.canvas },
-  content: { paddingHorizontal: space.screen, gap: space.x3 },
-  row: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.x2 },
-  stack: { gap: space.x2 },
+  body: { padding: space.screen, gap: space.x6 },
+  group: { gap: space.x3 },
+  groupBody: { gap: space.x3 },
+  row: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.x3 },
+  grid: { flexDirection: "row", gap: space.x3 },
+  thumb: { width: 96 },
   rule: { marginVertical: space.x3 },
-  half: { flexBasis: "47%", flexGrow: 0 },
-  hscroll: { gap: space.x3, paddingVertical: space.x1 },
-  glassBed: { backgroundColor: color.plate, padding: space.x2, borderRadius: radius.pill },
-  // Thanh tab giờ do expo-router dựng (app/(tabs)/_layout.tsx), không còn
-  // component riêng để trưng ở đây. Chừa một khoảng cố định cho Dock demo.
-  dockDemo: { bottom: space.x12 * 2 },
-  dockRow: { flexDirection: "row", alignItems: "center", gap: space.x4 },
   flex: { flex: 1 },
+  swatch: { flex: 1, minWidth: 96, height: 72, borderRadius: radius.chip, padding: space.x2, justifyContent: "flex-end" },
+  // TabBar tự neo xuống đáy màn; bọc trong khối cao 96 để xem được trong trang này.
+  tabDemo: { height: 96 },
 });

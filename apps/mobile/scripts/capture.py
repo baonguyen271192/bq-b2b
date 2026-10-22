@@ -8,6 +8,9 @@ việc chỉ nằm trong bộ nhớ nên không seed sẵn được, mà `simctl
   "Nhận mã OTP"                      -> chỉ đăng nhập
   "Nhận mã OTP|Sản phẩm"             -> đăng nhập rồi sang tab Sản phẩm
 
+Bước bắt đầu bằng `type:` thì GÕ chữ thay vì bấm, dạng `type:<aria-label>=<chữ>`:
+  "Nhận mã OTP|Sản phẩm|type:Tìm sản phẩm=xyzzy"
+
 Nói chuyện với Chrome qua DevTools Protocol để: (1) ép đúng viewport —
 `--window-size` bị bỏ qua ở chế độ headless có debug port; (2) cuộn được
 ScrollView của React Native, vốn cuộn BÊN TRONG một div nên `document`
@@ -59,9 +62,49 @@ def wait(t):
         if m.get("id") == t: return m
 wait(send("Emulation.setDeviceMetricsOverride",
           {"width": W, "height": H, "deviceScaleFactor": 2, "mobile": True}))
-wait(send("Page.navigate", {"url": TARGET})); time.sleep(9)
+wait(send("Page.navigate", {"url": TARGET}))
+
+def evaluate(js):
+    return wait(send("Runtime.evaluate", {"expression": js, "returnByValue": True})) \
+        ["result"]["result"].get("value")
+
+def wait_for(js, what, timeout=40):
+    """Chờ tới khi biểu thức trả về true. Trả False nếu hết hạn."""
+    for _ in range(timeout * 2):
+        try:
+            if evaluate(js) is True: return True
+        except Exception: pass
+        time.sleep(0.5)
+    print(f"   HẾT HẠN chờ: {what}")
+    return False
+
+# Chờ app vẽ xong thay vì ngủ một khoảng cố định. Ngủ cứng 9 giây là nguồn
+# flake chính: máy đang bận (export song song, Chrome khác) thì chưa kịp vẽ,
+# bước bấm sau đó không thấy nút và cả lượt chụp hỏng mà không rõ vì sao.
+wait_for("document.body.innerText.trim().length > 20", "app vẽ xong")
+
+TYPE_JS = """(() => {
+  const [label, text] = %s;
+  const el = document.querySelector('[aria-label="' + label + '"]');
+  if (!el) return 'KHÔNG thấy ô nhập: ' + label;
+  // React giữ giá trị trong một tracker riêng, nên gán thẳng `el.value` rồi bắn
+  // `input` sẽ bị React coi là "không đổi" và bỏ qua. Phải gọi setter gốc của
+  // prototype để tracker thấy giá trị cũ khác giá trị mới.
+  const proto = Object.getPrototypeOf(el);
+  const setter = Object.getOwnPropertyDescriptor(proto, 'value').set;
+  setter.call(el, text);
+  el.dispatchEvent(new Event('input', {bubbles: true}));
+  return 'đã gõ "' + text + '" vào ' + label;
+})()"""
 
 for CLICK in CLICKS:
+    if CLICK.startswith("type:"):
+        label, _, text = CLICK[len("type:"):].partition("=")
+        r = wait(send("Runtime.evaluate",
+                      {"expression": TYPE_JS % json.dumps([label, text]), "returnByValue": True}))
+        print("  ", r["result"]["result"]["value"])
+        time.sleep(3)
+        continue
     # Bấm theo NHÃN CHỮ, không theo selector: react-native-web sinh class ngẫu
     # nhiên nên selector vỡ ở mỗi lần build. Bắn `click` lên chính node chứa chữ
     # rồi lên các node cha — RNW gắn handler ở lớp Pressable bọc ngoài.
@@ -73,18 +116,29 @@ for CLICK in CLICKS:
       let hit = [...document.querySelectorAll('div,span,a')]
         .filter(e => (e.textContent || '').trim() === want)
         .pop();
-      if (!hit) hit = document.querySelector('[aria-label="' + want + '"]');
+      let exact = false;
+      if (!hit) { hit = document.querySelector('[aria-label="' + want + '"]'); exact = !!hit; }
       if (!hit) return 'KHÔNG thấy nút: ' + want;
+      // Khớp bằng CHỮ thì phải lan lên cha, vì handler nằm ở lớp Pressable bọc
+      // ngoài node chứa chữ. Khớp bằng aria-label thì KHÔNG: chính node đó đã là
+      // Pressable, lan lên cha sẽ kích hoạt luôn thẻ bao ngoài — đã chụp nhầm
+      // một lần, nút "Đặt nhanh" mở sheet rồi thẻ cha điều hướng sang màn khác.
       let n = hit;
-      for (let i = 0; i < 5 && n; i++) {
+      for (let i = 0; i < (exact ? 1 : 5) && n; i++) {
         n.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
         n = n.parentElement;
       }
       return 'đã bấm: ' + want;
     })()""" % json.dumps(CLICK)
+    # Chờ nút xuất hiện rồi mới bấm — màn trước có thể còn đang nạp dữ liệu.
+    present = ("(() => { const w = %s;"
+               " return [...document.querySelectorAll('div,span,a')]"
+               ".some(e => (e.textContent || '').trim() === w)"
+               " || !!document.querySelector('[aria-label=\"' + w + '\"]'); })()") % json.dumps(CLICK)
+    wait_for(present, f'nút "{CLICK}"')
     r = wait(send("Runtime.evaluate", {"expression": JS, "returnByValue": True}))
     print("  ", r["result"]["result"]["value"])
-    time.sleep(5)
+    time.sleep(2.5)
 
 # Chọn vùng cuộn CAO NHẤT, không phải cái đầu tiên tìm thấy: react-native-web
 # lồng nhiều div cuộn được, và cái đầu tiên theo thứ tự DOM thường là khung
@@ -99,7 +153,15 @@ SCROLLER = """(() => {
 })()"""
 r = wait(send("Runtime.evaluate", {"expression": SCROLLER, "returnByValue": True}))
 print("  scroller:", r["result"]["result"]["value"])
-for i, frac in enumerate([0.0, 0.45, 1.0]):
+# Splash chạy ~2,4s rồi mới thoát. Chụp sớm hơn thì ảnh đầu dính splash, và tệ
+# hơn: lớp nền của splash là absolute nên trên web nó CUỘN THEO nội dung, để lại
+# một mảng cam ở đầu những ảnh sau. Chờ cho nó thoát hẳn.
+time.sleep(float(os.environ.get("BQ_SETTLE", "5")))
+
+# Số vị trí cuộn lấy từ env: trang showcase cao 7000px thì 3 ảnh bỏ sót quá
+# nhiều, còn một màn thường thì 3 là đủ.
+FRACS = [float(x) for x in os.environ.get("BQ_SHOTS", "0,0.45,1").split(",")]
+for i, frac in enumerate(FRACS):
     wait(send("Runtime.evaluate", {
         "expression": f"window.__sc.scrollTop = (window.__sc.scrollHeight - window.__sc.clientHeight) * {frac}; 1",
         "returnByValue": True}))

@@ -18,12 +18,12 @@ export function SearchField({
 }: SearchFieldProps) {
   return (
     <View style={[styles.wrap, style]}>
-      <Ionicons name="search" size={18} color={color.faint} />
+      <Ionicons name="search" size={18} color={color.muted} />
       <TextInput
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={color.faint}
+        placeholderTextColor={color.muted}
         accessibilityLabel={accessibilityLabel}
         returnKeyType="search"
         style={styles.input}

@@ -45,10 +45,10 @@ export default function ProfileScreen() {
             {/* Hai dòng chứ không một: avatar 56 + chip hạng ~110 + hai khe 32
                 chỉ chừa ~123pt cho tên, trong khi "Đại lý Minh Anh" cần ~140pt.
                 Cắt mất tên đại lý là mất thứ quan trọng nhất trên thẻ này. */}
-            <T variant="heading" numberOfLines={2}>{dealer.name}</T>
+            <T variant="section" numberOfLines={2}>{dealer.name}</T>
             <T variant="small" tone="muted">{dealer.code}</T>
           </View>
-          <Chip label={`★ Hạng ${dealer.tier}`} tone="brand" />
+          <Chip label={`★ Hạng ${dealer.tier}`} variant="applied" />
         </View>
 
         <View style={styles.rule}><CardDivider /></View>
@@ -70,7 +70,7 @@ export default function ProfileScreen() {
           <Card>
             {contacts.map((c) => (
               <View key={c.value} style={styles.infoRow}>
-                <Ionicons name={c.icon} size={17} color={color.faint} />
+                <Ionicons name={c.icon} size={17} color={color.muted} />
                 <T variant="small" style={styles.grow}>{c.value}</T>
               </View>
             ))}

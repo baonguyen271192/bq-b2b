@@ -26,6 +26,9 @@ export type { FontWeightToken, TextStyleToken };
  * `weight` đi qua TÊN FONT chứ không qua `fontWeight`: Android bỏ qua
  * `fontWeight` khi dùng font tuỳ biến, nên khai số ở đó sẽ ra chữ mảnh trên
  * Android mà iOS vẫn đúng — lỗi chỉ lộ trên máy thật.
+ *
+ * `tabular` BẮT BUỘC cho tiền, số lượng, mã đơn và ngày (SPEC §1): thiếu nó thì
+ * các con số trong một cột nhảy ngang khi giá trị đổi.
  */
 export function text(
   token: TextStyleToken,
@@ -45,36 +48,38 @@ export function text(
 }
 
 /**
- * Bóng đổ CHỈ cho phần tử nổi (tab bar, dock đáy).
- *
- * Card thường không có shadow — tách khỏi nền bằng `paper` trên `canvas`. Rắc
- * shadow lên mọi card làm màn hình trông đục và mất cảm giác phân cấp.
+ * Đổ bóng — CHỈ ba chỗ này (SPEC §1). Card thường không có shadow: nó tách khỏi
+ * nền bằng `paper` trên `canvas`. Rắc shadow lên mọi card làm màn hình trông
+ * đục và mất hẳn cảm giác phân cấp.
  *
  * Khai cả `shadow*` (iOS) lẫn `elevation` (Android): thiếu một bên là một nền
  * tảng phẳng lì.
  */
-export const shadow: Record<"float" | "dock", ViewStyle> = {
-  float: {
+export const shadow: Record<"tabBar" | "dock" | "segment", ViewStyle> = {
+  /** Tab bar viên thuốc nổi. `0 12 32 rgba(28,25,21,0.28)`. */
+  tabBar: {
     shadowColor: color.ink,
-    shadowOpacity: 0.18,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 10,
+    shadowOpacity: 0.28,
+    shadowRadius: 32,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 16,
   },
+  /** Dock đáy — bóng hắt LÊN. `0 -8 28 rgba(28,25,21,0.10)`. */
   dock: {
     shadowColor: color.ink,
     shadowOpacity: 0.1,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: -6 },
-    elevation: 16,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: -8 },
+    elevation: 12,
   },
-};
-
-/** Gradient cam, chéo trên-trái → dưới-phải. Dùng cho CreditCard và splash. */
-export const brandGradient = {
-  colors: [color.bqBright, color.bq, color.bqDeep] as const,
-  start: { x: 0, y: 0 },
-  end: { x: 1, y: 1 },
+  /** Tab đang chọn trong SegmentedControl. `0 1 3 rgba(28,25,21,0.08)`. */
+  segment: {
+    shadowColor: color.ink,
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
+  },
 };
 
 /**
@@ -86,11 +91,14 @@ export function hitSlopFor(visualSize: number) {
 }
 
 /**
- * Chữ trên nền cam `bq` chỉ đạt 3.56:1 → chỉ hợp lệ khi ≥ 15px và weight ≥ 600.
- * Hàm này để component tự kiểm tra thay vì tin người dùng component.
+ * Chữ trắng trên `flame` chỉ đạt 3.56:1 → chỉ hợp lệ khi là "chữ lớn" theo
+ * WCAG: ≥ 24px, hoặc ≥ 18.66px khi in đậm.
+ *
+ * Trên `brand` thì KHÔNG cần kiểm: 4.79:1 đã đạt AA cho cả chữ thường — đó
+ * chính là lý do SPEC mục 5.A tách hai sắc cam ra.
  */
-export const onBrandTextIsLegible = (fontSize: number, weight: FontWeightToken) =>
-  fontSize >= 15 && (weight === "semibold" || weight === "bold" || weight === "extrabold");
+export const onFlameTextIsLegible = (fontSize: number, weight: FontWeightToken) =>
+  fontSize >= 24 || (fontSize >= 18.66 && weight !== "regular" && weight !== "medium");
 
 /** Android cắt chữ có lineHeight sát fontSize; cộng thêm 1px cho chắc. */
 export const lineHeightFix = Platform.OS === "android" ? 1 : 0;

@@ -8,21 +8,26 @@ export interface ListRowProps {
   title: string;
   subtitle?: string;
   icon?: keyof typeof Ionicons.glyphMap;
-  /** Nội dung bên phải thay cho chevron, vd StatusTag hoặc số tiền. */
+  /** Nội dung bên phải thay cho chevron, vd `Switch`, `StatusTag`, số tiền. */
   trailing?: React.ReactNode;
   onPress?: () => void;
   /** Dòng nguy hiểm (đăng xuất, xoá) — chữ và icon màu danger. */
   danger?: boolean;
+  /** Kẻ divider phía DƯỚI. Dòng cuối trong card thì để false. */
+  divider?: boolean;
   accessibilityLabel?: string;
   style?: ViewStyle;
 }
 
 /**
- * Một dòng trong danh sách: icon + tiêu đề + phụ đề + chevron.
- * Dùng cho màn Hồ sơ, danh sách cài đặt, danh sách hoá đơn.
+ * Một dòng trong card danh sách (SPEC §2): icon tròn 40 + tiêu đề + phụ đề + chevron.
+ *
+ * Divider do NGƯỜI GỌI bật, không tự suy: component không biết mình có phải
+ * dòng cuối không, và tự vẽ rồi che đi bằng overflow là cách làm dễ vỡ khi card
+ * đổi bo góc.
  */
 export function ListRow({
-  title, subtitle, icon, trailing, onPress, danger, accessibilityLabel, style,
+  title, subtitle, icon, trailing, onPress, danger, divider, accessibilityLabel, style,
 }: ListRowProps) {
   const [down, setDown] = useState(false);
   const tone = danger ? "danger" : "ink";
@@ -35,18 +40,20 @@ export function ListRow({
       onPressOut={() => setDown(false)}
       accessibilityRole={onPress ? "button" : "text"}
       accessibilityLabel={accessibilityLabel ?? title}
-      style={[styles.row, down && styles.down, style]}
+      style={[styles.row, divider && styles.divider, down && styles.down, style]}
     >
       {icon ? (
         <View style={styles.iconWrap}>
-          <Ionicons name={icon} size={18} color={danger ? color.danger : color.muted} />
+          <Ionicons name={icon} size={20} color={danger ? color.danger : color.ink} />
         </View>
       ) : null}
       <View style={styles.body}>
-        <T variant="bodyStrong" tone={tone}>{title}</T>
+        <T variant="bodyStrong" weight="semibold" tone={tone}>{title}</T>
         {subtitle ? <T variant="small" tone="muted">{subtitle}</T> : null}
       </View>
-      {trailing ?? (onPress ? <Ionicons name="chevron-forward" size={18} color={color.faint} /> : null)}
+      {trailing ?? (onPress
+        ? <Ionicons name="chevron-forward" size={18} color={color.muted} />
+        : null)}
     </Pressable>
   );
 }
@@ -54,13 +61,13 @@ export function ListRow({
 const styles = StyleSheet.create({
   row: {
     flexDirection: "row", alignItems: "center", gap: space.x3,
-    // 56 > 44: dòng danh sách cần thoáng hơn ngưỡng chạm tối thiểu.
-    minHeight: 56, paddingHorizontal: space.x4, paddingVertical: space.x3,
+    paddingVertical: 14, minHeight: 44,
   },
+  divider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: color.divider },
   iconWrap: {
-    width: 36, height: 36, borderRadius: radius.chip, backgroundColor: color.canvas,
+    width: 40, height: 40, borderRadius: radius.pill, backgroundColor: color.subtle,
     alignItems: "center", justifyContent: "center",
   },
   body: { flex: 1, gap: 2 },
-  down: { backgroundColor: color.canvas },
+  down: { opacity: 0.6 },
 });

@@ -7,7 +7,7 @@ import { useCart } from "@/lib/cart";
 import { useSession } from "@/lib/session";
 import { color, space } from "@/theme";
 import {
-  Card, CardDivider, DetailRow, Dock, DOCK_CLEARANCE, Notice, OptionRow, Pill, Price,
+  Card, CardDivider, DetailRow, Dock, DOCK_CLEARANCE, Notice, Pill, Price, RadioCard,
   SectionHead,
 } from "@/components/ui";
 
@@ -60,7 +60,7 @@ export default function CheckoutScreen() {
           <SectionHead title="Kho nhận hàng" />
           <View style={styles.group}>
             {WAREHOUSES.map((w) => (
-              <OptionRow key={w} label={w} selected={w === warehouse} onPress={() => setWarehouse(w)} />
+              <RadioCard key={w} title={w} selected={w === warehouse} onPress={() => setWarehouse(w)} />
             ))}
           </View>
         </View>
@@ -69,7 +69,7 @@ export default function CheckoutScreen() {
           <SectionHead title="Hình thức thanh toán" />
           <View style={styles.group}>
             {PAYMENTS.map((p) => (
-              <OptionRow key={p} label={p} selected={p === payment} onPress={() => setPayment(p)} />
+              <RadioCard key={p} title={p} selected={p === payment} onPress={() => setPayment(p)} />
             ))}
           </View>
         </View>

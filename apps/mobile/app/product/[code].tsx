@@ -8,7 +8,7 @@ import { useCart } from "@/lib/cart";
 import { useSession } from "@/lib/session";
 import { color, space } from "@/theme";
 import {
-  Card, Chip, Dock, DOCK_CLEARANCE, Pill, Price, ProductImage, SizeGrid, StatPair, T,
+  Card, Chip, Dock, DOCK_CLEARANCE, Pill, Price, ProductImage, SizeList, StatPair, T,
   type SizeQty,
 } from "@/components/ui";
 
@@ -50,7 +50,7 @@ export default function ProductScreen() {
   }, [sizes, product]);
 
   if (!product) {
-    return <View style={styles.center}><ActivityIndicator color={color.bq} /></View>;
+    return <View style={styles.center}><ActivityIndicator color={color.brand} /></View>;
   }
 
   const margin = product.retail - product.price;
@@ -80,12 +80,12 @@ export default function ProductScreen() {
 
         <View style={styles.head}>
           <View style={styles.codeRow}>
-            <T variant="micro" tone="faint">{product.code}</T>
-            {dealer ? <Chip label={`★ Hạng ${dealer.tier}`} tone="brand" /> : null}
+            <T variant="chip" tone="muted">{product.code}</T>
+            {dealer ? <Chip label={`★ Hạng ${dealer.tier}`} variant="applied" /> : null}
           </View>
           <T variant="title">{product.name}</T>
           <View style={styles.priceRow}>
-            <Price value={product.price} variant="display" tone="bq" />
+            <Price value={product.price} variant="amountHero" tone="brand" />
             <T variant="small" tone="muted">/ đôi · giá sỉ</T>
           </View>
         </View>
@@ -99,13 +99,13 @@ export default function ProductScreen() {
           />
         </Card>
 
-        <SizeGrid stock={product.sizes} value={sizes} onChange={setSizes} />
+        <SizeList stock={product.sizes} value={sizes} onChange={setSizes} />
       </ScrollView>
 
       <Dock>
         <View style={styles.dockRow}>
           <T variant="small" tone="muted">{totals.pairs} đôi</T>
-          <Price value={totals.money} variant="heading" tone="bq" />
+          <Price value={totals.money} variant="section" tone="brand" />
         </View>
         <Pill
           label={totals.pairs > 0 ? "Thêm vào giỏ" : "Chọn size để đặt"}

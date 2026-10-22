@@ -64,18 +64,18 @@ export default function ProductsScreen() {
           contentContainerStyle={styles.chips}
         >
           {categories.map((c) => (
-            <Chip key={c} label={c} active={c === category} onPress={() => setCategory(c)} />
+            <Chip key={c} label={c} selected={c === category} onPress={() => setCategory(c)} />
           ))}
           <Chip
             label="Còn hàng"
-            active={inStockOnly}
+            selected={inStockOnly}
             onPress={() => setInStockOnly((v) => !v)}
           />
         </ScrollView>
       </View>
 
       {products === null ? (
-        <View style={styles.center}><ActivityIndicator color={color.bq} /></View>
+        <View style={styles.center}><ActivityIndicator color={color.brand} /></View>
       ) : visible.length === 0 ? (
         <EmptyState
           icon="search-outline"
@@ -86,7 +86,7 @@ export default function ProductsScreen() {
         />
       ) : (
         <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-          <T variant="micro" tone="muted">{visible.length} mẫu</T>
+          <T variant="chip" tone="muted">{visible.length} mẫu</T>
           <View style={styles.grid}>
             {visible.map((p) => (
               <ProductCard

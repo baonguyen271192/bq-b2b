@@ -49,5 +49,5 @@ export function ProductImage({
 const styles = StyleSheet.create({
   base: { backgroundColor: color.plate, overflow: "hidden", width: "100%" },
   plate: { borderRadius: radius.card },
-  hero: { borderBottomLeftRadius: radius.plate, borderBottomRightRadius: radius.plate },
+  hero: { borderBottomLeftRadius: radius.card, borderBottomRightRadius: radius.card },
 });

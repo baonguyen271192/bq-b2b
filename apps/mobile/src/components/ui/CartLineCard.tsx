@@ -38,8 +38,8 @@ export function CartLineCard({
         <ProductImage uri={image} style={styles.thumb} />
         <View style={styles.main}>
           <T variant="bodyStrong" numberOfLines={2}>{name}</T>
-          <Price value={unitPrice} variant="micro" tone="muted" suffix={` × ${pairs} đôi`} />
-          <Price value={unitPrice * pairs} variant="bodyStrong" tone="bq" />
+          <Price value={unitPrice} variant="chip" tone="muted" suffix={` × ${pairs} đôi`} />
+          <Price value={unitPrice * pairs} variant="bodyStrong" tone="brand" />
         </View>
         {onRemove ? (
           <IconButton
@@ -54,8 +54,8 @@ export function CartLineCard({
       <View style={styles.sizes}>
         {rows.map(([size, qty]) => (
           <View key={size} style={styles.sizeTag}>
-            <Num variant="micro">{size}</Num>
-            <Num variant="micro" tone="muted">{`×${qty}`}</Num>
+            <Num variant="chip">{size}</Num>
+            <Num variant="chip" tone="muted">{`×${qty}`}</Num>
           </View>
         ))}
         {onEdit ? <Chip label="Sửa" onPress={onEdit} accessibilityLabel={`Sửa size ${name}`} /> : null}

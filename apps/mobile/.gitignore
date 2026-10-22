@@ -45,3 +45,6 @@ expo-env.d.ts
 
 # Bản export web dùng để soi giao diện (scripts/preview-web.sh)
 /dist-web
+
+# Bundle web dựng tạm (dist-web, dist-slow…) — không commit, không lint.
+/dist-*

@@ -14,7 +14,7 @@ export interface SectionHeadProps {
 export function SectionHead({ title, actionLabel, onActionPress, style }: SectionHeadProps) {
   return (
     <View style={[styles.row, style]}>
-      <T variant="heading">{title}</T>
+      <T variant="section">{title}</T>
       {actionLabel ? (
         <Pressable
           onPress={onActionPress}
@@ -22,7 +22,7 @@ export function SectionHead({ title, actionLabel, onActionPress, style }: Sectio
           accessibilityRole="button"
           accessibilityLabel={actionLabel}
         >
-          <T variant="small" weight="semibold" tone="bq">{actionLabel}</T>
+          <T variant="small" weight="semibold" tone="brand">{actionLabel}</T>
         </Pressable>
       ) : null}
     </View>

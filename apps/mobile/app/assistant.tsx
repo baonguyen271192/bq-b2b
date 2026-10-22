@@ -8,7 +8,7 @@ import type { AssistantProductCard } from "@bq/types";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { color, space } from "@/theme";
-import { ChatBubble, Chip, IconButton, MiniProductCard, T, TextField } from "@/components/ui";
+import { ChatBubble, Chip, IconButton, ProductMini, T, TextField } from "@/components/ui";
 
 interface Bubble {
   id: string;
@@ -86,7 +86,7 @@ export default function AssistantScreen() {
                 contentContainerStyle={styles.cards}
               >
                 {b.cards.map((c) => (
-                  <MiniProductCard
+                  <ProductMini
                     key={c.code}
                     name={c.name}
                     price={c.price}
@@ -107,7 +107,7 @@ export default function AssistantScreen() {
 
         {thinking ? (
           <View style={styles.typing}>
-            <ActivityIndicator size="small" color={color.faint} />
+            <ActivityIndicator size="small" color={color.muted} />
             <T variant="small" tone="muted">Đang tra cứu…</T>
           </View>
         ) : null}

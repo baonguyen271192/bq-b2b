@@ -60,7 +60,7 @@ export default function CartScreen() {
       <Dock>
         <View style={styles.totalRow}>
           <View>
-            <T variant="micro" tone="muted">{totalPairs} đôi · {lines.length} mã</T>
+            <T variant="chip" tone="muted">{totalPairs} đôi · {lines.length} mã</T>
             <Price value={subtotal} variant="title" />
           </View>
           {overLimit ? <StatusTag label="Vượt hạn mức" kind="warn" /> : null}

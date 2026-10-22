@@ -24,9 +24,9 @@ export function EmptyState({
   return (
     <View style={[styles.wrap, style]}>
       <View style={styles.iconWrap}>
-        <Ionicons name={icon} size={28} color={color.faint} />
+        <Ionicons name={icon} size={28} color={color.muted} />
       </View>
-      <T variant="heading" style={styles.center}>{title}</T>
+      <T variant="section" style={styles.center}>{title}</T>
       <T variant="body" tone="muted" style={styles.center}>{hint}</T>
       {actionLabel ? (
         <Pill label={actionLabel} onPress={onActionPress} tone="brand" style={styles.action} />

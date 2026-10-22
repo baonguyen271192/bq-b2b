@@ -2,7 +2,7 @@ import { StyleSheet, View, type ViewStyle } from "react-native";
 import { color, radius, space } from "@/theme";
 import { T } from "./T";
 
-export type StatusKind = "ok" | "warn" | "info" | "danger" | "neutral";
+export type StatusKind = "ok" | "warn" | "info" | "danger" | "brand" | "neutral";
 
 export interface StatusTagProps {
   label: string;
@@ -11,11 +11,13 @@ export interface StatusTagProps {
 }
 
 const KIND = {
-  ok: { dot: color.ok, bg: color.okTint },
-  warn: { dot: color.warn, bg: color.warnTint },
-  info: { dot: color.info, bg: color.infoTint },
-  danger: { dot: color.danger, bg: color.dangerTint },
-  neutral: { dot: color.muted, bg: color.canvas },
+  ok: { dot: color.ok, bg: color.okTint, fg: "ink" },
+  warn: { dot: color.warn, bg: color.warnTint, fg: "ink" },
+  info: { dot: color.info, bg: color.infoTint, fg: "ink" },
+  danger: { dot: color.danger, bg: color.dangerTint, fg: "ink" },
+  /** "Giá hạng Vàng", "Mặc định" — chữ dùng `textBrand` (SPEC mục 5.A). */
+  brand: { dot: color.brand, bg: color.tint, fg: "brand" },
+  neutral: { dot: color.muted, bg: color.canvas, fg: "ink" },
 } as const;
 
 /**
@@ -27,7 +29,7 @@ export function StatusTag({ label, kind = "neutral", style }: StatusTagProps) {
   return (
     <View style={[styles.base, { backgroundColor: k.bg }, style]}>
       <View style={[styles.dot, { backgroundColor: k.dot }]} />
-      <T variant="micro" tone="ink">{label}</T>
+      <T variant="chip" weight="semibold" tone={k.fg}>{label}</T>
     </View>
   );
 }
@@ -51,7 +53,7 @@ export function statusKindFor(status: string): StatusKind {
 const styles = StyleSheet.create({
   base: {
     flexDirection: "row", alignItems: "center", gap: space.x2,
-    height: 26, paddingHorizontal: space.x3, borderRadius: radius.chip,
+    height: 26, paddingHorizontal: 10, borderRadius: radius.pill,
     alignSelf: "flex-start",
   },
   dot: { width: 6, height: 6, borderRadius: radius.pill },

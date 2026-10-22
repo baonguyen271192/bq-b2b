@@ -28,7 +28,7 @@ export default function OrderScreen() {
   }, [id]);
 
   if (!order) {
-    return <View style={styles.center}><ActivityIndicator color={color.bq} /></View>;
+    return <View style={styles.center}><ActivityIndicator color={color.brand} /></View>;
   }
 
   const kind = statusKindFor(order.status);
@@ -44,12 +44,12 @@ export default function OrderScreen() {
       <Card>
         <View style={styles.head}>
           <View style={styles.headText}>
-            <T variant="micro" tone="muted">Mã đơn</T>
+            <T variant="chip" tone="muted">Mã đơn</T>
             <Num variant="title">{order.id}</Num>
           </View>
           <StatusTag label={order.status} kind={kind} />
         </View>
-        <T variant="micro" tone="muted" style={styles.meta}>
+        <T variant="chip" tone="muted" style={styles.meta}>
           Đặt lúc {order.created_at} · qua {order.channel}
         </T>
       </Card>
@@ -58,9 +58,17 @@ export default function OrderScreen() {
         <View>
           <SectionHead title="Tiến trình" />
           <Card>
-            <Timeline steps={STEPS} current={STEPS.indexOf(order.status)} />
+            <Timeline
+              steps={STEPS.map((label, i) => ({
+                label,
+                state:
+                  i < STEPS.indexOf(order.status) ? "done"
+                  : i === STEPS.indexOf(order.status) ? "current"
+                  : "todo",
+              }))}
+            />
             {next ? (
-              <T variant="micro" tone="muted">Bước kế tiếp do BQ thực hiện: {next}</T>
+              <T variant="chip" tone="muted">Bước kế tiếp do BQ thực hiện: {next}</T>
             ) : null}
           </Card>
         </View>
@@ -75,13 +83,13 @@ export default function OrderScreen() {
               <View style={styles.item}>
                 <View style={styles.itemMain}>
                   <T variant="bodyStrong" numberOfLines={2}>{item.name}</T>
-                  <T variant="micro" tone="muted">
+                  <T variant="chip" tone="muted">
                     {Object.entries(item.sizes).map(([s, q]) => `${s}×${q}`).join("  ")}
                   </T>
                 </View>
                 <View style={styles.itemRight}>
                   <Price value={item.line_total} variant="bodyStrong" />
-                  <T variant="micro" tone="muted">{item.qty_total} đôi</T>
+                  <T variant="chip" tone="muted">{item.qty_total} đôi</T>
                 </View>
               </View>
             </View>
@@ -90,7 +98,7 @@ export default function OrderScreen() {
           <DetailRow
             label="Tổng cộng"
             strong
-            value={<Price value={order.subtotal} variant="heading" tone="bq" />}
+            value={<Price value={order.subtotal} variant="section" tone="brand" />}
           />
         </Card>
       </View>

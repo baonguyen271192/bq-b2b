@@ -11,7 +11,9 @@
 #   ./scripts/preview-web.sh "/(tabs)" 393 852   # một màn cụ thể
 #   ./scripts/preview-web.sh / 393 852 "Nhận mã OTP"   # bấm nút rồi mới chụp
 #
-# Ảnh ra: /tmp/bq-preview/sc-{0,1,2}.png (đầu trang / giữa / cuối)
+#   BQ_SHOTS=0,0.2,0.4,0.6,0.8,1 ./scripts/preview-web.sh /_dev/ui   # nhiều vị trí cuộn
+#
+# Ảnh ra: /tmp/bq-preview/sc-N.png theo thứ tự vị trí cuộn
 
 set -euo pipefail
 cd "$(dirname "$0")/.."

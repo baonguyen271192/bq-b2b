@@ -5,7 +5,7 @@ import { Price } from "./Price";
 import { ProductImage } from "./ProductImage";
 import { T } from "./T";
 
-export interface MiniProductCardProps {
+export interface ProductMiniProps {
   name: string;
   price: number;
   image?: string | null;
@@ -13,8 +13,13 @@ export interface MiniProductCardProps {
   style?: ViewStyle;
 }
 
-/** Thẻ sản phẩm nhỏ trong băng ngang — trợ lý gợi ý mẫu. */
-export function MiniProductCard({ name, price, image, onPress, style }: MiniProductCardProps) {
+/**
+ * Thẻ sản phẩm nhỏ rộng 150 trong băng cuộn ngang (SPEC §2) — "Bán chạy tuần này".
+ *
+ * Khác {@link ProductCard}: không có tag, không ♡, không (+), không dòng tình
+ * trạng size. Băng ngang là chỗ để LƯỚT, mọi thứ cần cân nhắc nằm ở màn Sản phẩm.
+ */
+export function ProductMini({ name, price, image, onPress, style }: ProductMiniProps) {
   const [down, setDown] = useState(false);
   return (
     <Pressable
@@ -27,15 +32,15 @@ export function MiniProductCard({ name, price, image, onPress, style }: MiniProd
     >
       <ProductImage uri={image} />
       <View style={styles.body}>
-        <T variant="micro" numberOfLines={2}>{name}</T>
-        <Price value={price} variant="micro" tone="bq" />
+        <T variant="small" weight="semibold" numberOfLines={2}>{name}</T>
+        <Price value={price} variant="bodyStrong" weight="bold" />
       </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { width: 132, gap: space.x2 },
+  card: { width: 150, gap: space.x2 },
   body: { gap: space.x1 },
-  down: { opacity: 0.75 },
+  down: { transform: [{ scale: 0.98 }] },
 });

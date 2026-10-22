@@ -19,7 +19,7 @@ export function Badge({ count, ringColor = "canvas", style }: BadgeProps) {
     ringColor === "paper" ? color.paper : ringColor === "ink" ? color.ink : color.canvas;
   return (
     <View style={[styles.base, { borderColor: ring }, style]}>
-      <Num variant="micro" tone="white">{count > 99 ? "99+" : count}</Num>
+      <Num variant="badge" tone="white">{count > 99 ? "99+" : count}</Num>
     </View>
   );
 }
@@ -27,7 +27,7 @@ export function Badge({ count, ringColor = "canvas", style }: BadgeProps) {
 const styles = StyleSheet.create({
   base: {
     minWidth: 20, height: 20, paddingHorizontal: space.x1,
-    borderRadius: radius.pill, backgroundColor: color.bq,
+    borderRadius: radius.pill, backgroundColor: color.brand,
     alignItems: "center", justifyContent: "center", borderWidth: 2,
   },
 });

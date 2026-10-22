@@ -1,11 +1,6 @@
 import { Text as RNText } from "react-native";
-import { color, text } from "@/theme";
-import type { TProps } from "./T";
-
-const TONE = {
-  ink: color.ink, muted: color.muted, faint: color.faint, white: color.white,
-  bq: color.bq, ok: color.ok, warn: color.warn, danger: color.danger, info: color.info,
-} as const;
+import { text } from "@/theme";
+import { TONE, type TProps } from "./T";
 
 /**
  * Chữ SỐ: bật `tabular-nums` nên mọi chữ số rộng bằng nhau.

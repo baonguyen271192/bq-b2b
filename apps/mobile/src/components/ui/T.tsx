@@ -7,13 +7,19 @@ export interface TProps extends Omit<TextProps, "style"> {
   /** Ghi đè weight của bậc chữ (vd `body` nhưng muốn đậm). */
   weight?: FontWeightToken;
   /** Màu chữ — chỉ nhận token màu, không nhận hex. */
-  tone?: "ink" | "muted" | "faint" | "white" | "bq" | "ok" | "warn" | "danger" | "info";
+  tone?: "ink" | "muted" | "white" | "brand" | "ok" | "warn" | "danger" | "info";
   style?: TextStyle | TextStyle[];
 }
 
-const TONE = {
-  ink: color.ink, muted: color.muted, faint: color.faint, white: color.white,
-  bq: color.bq, ok: color.ok, warn: color.warn, danger: color.danger, info: color.info,
+/**
+ * `brand` trỏ tới `textBrand`, KHÔNG phải `brand` (SPEC mục 5.A): cam làm nền và
+ * cam làm chữ là hai màu khác nhau. Ánh xạ ở đây để không chỗ nào đặt được chữ
+ * cam 4.19:1 lên nền sáng.
+ */
+export const TONE = {
+  ink: color.ink, muted: color.muted, white: color.white,
+  brand: color.textBrand, ok: color.ok, warn: color.warn,
+  danger: color.danger, info: color.info,
 } as const;
 
 /**

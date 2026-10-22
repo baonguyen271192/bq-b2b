@@ -33,7 +33,7 @@ const FONT_TIMEOUT_MS = 2500;
  * Màu nền dùng chung cho native splash, root view và Stack khi splash còn hiện.
  * PHẢI trùng `backgroundColor` trong app.json — lệch một chút là thấy ranh giới.
  */
-const SPLASH_BG = color.bq;
+const SPLASH_BG = color.brand;
 
 /**
  * Thời gian tối đa chờ backend trả lời lúc khởi động.
@@ -170,10 +170,10 @@ export default function RootLayout() {
                 headerStyle: { backgroundColor: color.paper },
                 headerTitleStyle: {
                   fontFamily: fontFamily.bold,
-                  fontSize: textStyle.heading.fontSize,
+                  fontSize: textStyle.section.fontSize,
                   color: color.ink,
                 },
-                headerTintColor: color.bq,
+                headerTintColor: color.brand,
                 // Cùng lý do: trong lúc splash còn phủ, nền của Stack phải là màu
                 // splash — không thì lúc splash mờ đi sẽ thấy một lớp sáng lọt qua.
                 contentStyle: { backgroundColor: bgHandedOver ? color.canvas : SPLASH_BG },

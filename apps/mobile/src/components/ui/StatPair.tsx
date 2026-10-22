@@ -27,7 +27,7 @@ export function StatPair({ items, style }: StatPairProps) {
         <Fragment key={it.label}>
           {i > 0 ? <View style={styles.vline} /> : null}
           <View style={styles.cell}>
-            <T variant="micro" tone="muted">{it.label}</T>
+            <T variant="chip" tone="muted">{it.label}</T>
             {it.value}
           </View>
         </Fragment>
