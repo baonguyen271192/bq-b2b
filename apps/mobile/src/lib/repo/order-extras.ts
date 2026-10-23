@@ -1,6 +1,7 @@
 import { orderStep, parseOrderDate } from "@bq/core";
 import type { Order } from "@bq/types";
 import type { Address } from "@/components/ui";
+import { loadJson, saveJson } from "../storage";
 import { addressRepository } from "./addresses";
 
 /**
@@ -47,14 +48,33 @@ function addHours(d: Date, h: number): Date {
   return new Date(d.getTime() + h * 3_600_000);
 }
 
+/**
+ * Ghi chú lưu theo MÃ ĐƠN trên máy (SPEC §5-N.8).
+ *
+ * Trước đây giữ trong `Map` nên đại lý ghi "Giao buổi sáng", gửi đơn, mở lại app
+ * thì ghi chú biến mất. Vẫn là bộ nhớ cục bộ, KHÔNG sang máy khác — việc đó chờ
+ * `POST /api/orders` nhận trường ghi chú.
+ */
+const NOTES_KEY = "bq.order-notes.v1";
+/** Bằng giới hạn trường `Comments` của SAP B1. */
+const NOTE_MAX = 254;
+
+type NoteMap = Record<string, string>;
+
 export function createMockOrderExtrasRepository(): OrderExtrasRepository {
-  const notes = new Map<string, string>();
+  /** Bộ nhớ đệm trong phiên để `get` không phải đọc ổ đĩa mỗi lần mở màn. */
+  let cache: NoteMap | null = null;
+  const notes = async (): Promise<NoteMap> => {
+    if (!cache) cache = (await loadJson<NoteMap>(NOTES_KEY)) ?? {};
+    return cache;
+  };
 
   return {
     async get(order, dealerCode) {
       const placed = parseOrderDate(order.created_at);
       const step = orderStep(order.status);
       const addresses = await addressRepository.list(dealerCode).catch(() => [] as Address[]);
+      const saved = await notes();
 
       // Chọn địa chỉ theo mã đơn chứ không lấy mặc định: đại lý ba kho thì mọi
       // đơn cùng về một kho trông sai rõ ràng hơn là sai lặng lẽ.
@@ -74,7 +94,7 @@ export function createMockOrderExtrasRepository(): OrderExtrasRepository {
         trackingNo: shipping ? `BQ-VN${order.id.replace(/\D/g, "")}${LEAD_DAYS}158` : null,
         stepTimes,
         address,
-        note: notes.get(order.id) ?? null,
+        note: saved[order.id] ?? null,
         // Backend chưa trả VAT (SPEC §5-C): để `null` và màn hình bỏ dòng VAT,
         // thay vì tự nhân 8% rồi hiện một con số app tự bịa.
         vatRate: null,
@@ -82,9 +102,12 @@ export function createMockOrderExtrasRepository(): OrderExtrasRepository {
       };
     },
     async setNote(orderId, note) {
-      const clean = note.trim();
-      if (clean) notes.set(orderId, clean);
-      else notes.delete(orderId);
+      const clean = note.trim().slice(0, NOTE_MAX);
+      const map = { ...(await notes()) };
+      if (clean) map[orderId] = clean;
+      else delete map[orderId];
+      cache = map;
+      await saveJson(NOTES_KEY, map);
     },
   };
 }

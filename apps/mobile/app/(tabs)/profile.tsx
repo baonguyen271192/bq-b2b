@@ -1,11 +1,13 @@
-import { useState } from "react";
-import { useRouter } from "expo-router";
+import { useCallback, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
 import { Alert, Linking, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Constants from "expo-constants";
 import { dealerIdLine, tierLabel } from "@/lib/dealer";
+import { profileRepository, withLocalEdits, type RepresentativeDraft } from "@/lib/repo/profile";
 import { useSession } from "@/lib/session";
 import { hotlineContact, prettyPhone, supportContact, telUrl } from "@/lib/support";
+import { RepresentativeSheet } from "@/components/profile/RepresentativeSheet";
 import { color, space } from "@/theme";
 import {
   Avatar, Card, IconButton, ListRow, Num, ScreenHeader, StatusTag, Switch, T, TAB_BAR_CLEARANCE,
@@ -19,10 +21,21 @@ export default function ProfileScreen() {
   const { dealer, signOut } = useSession();
   /** TODO(api): bật/tắt thông báo đẩy chưa có nơi lưu. */
   const [push, setPush] = useState(true);
+  const [repSheet, setRepSheet] = useState(false);
+  /** Bản sửa cục bộ chồng lên hồ sơ từ API (SPEC §5-N.7). */
+  const [edits, setEdits] = useState<RepresentativeDraft | null>(null);
+
+  useFocusEffect(useCallback(() => {
+    if (!dealer) return;
+    void profileRepository.get(dealer.code).then(setEdits);
+  }, [dealer]));
   const support = supportContact(dealer);
   const hotline = hotlineContact();
 
   if (!dealer) return null;
+
+  /** Hồ sơ hiển thị = dữ liệu API chồng bản sửa cục bộ (SPEC §5-N.7). */
+  const shown = withLocalEdits(dealer, edits);
 
   const confirmSignOut = () => {
     Alert.alert("Đăng xuất?", "Giỏ hàng và đơn nháp trên máy này sẽ bị xoá.", [
@@ -57,7 +70,8 @@ export default function ProfileScreen() {
         <ListRow
           icon="person-outline"
           title="Thông tin đại diện"
-          subtitle={[dealer.owner, dealer.phone].filter(Boolean).join(", ") || undefined}
+          subtitle={[shown.owner, shown.phone].filter(Boolean).join(", ") || undefined}
+          onPress={() => setRepSheet(true)}
           divider
         />
         <ListRow
@@ -152,6 +166,19 @@ export default function ProfileScreen() {
           onPress={() => router.push("/delete-account")}
         />
       </View>
+
+      <RepresentativeSheet
+        visible={repSheet}
+        onClose={() => setRepSheet(false)}
+        owner={shown.owner ?? ""}
+        phone={shown.phone ?? ""}
+        email={shown.email}
+        onSave={async (draft) => {
+          await profileRepository.save(dealer.code, draft);
+          setEdits(draft);
+          setRepSheet(false);
+        }}
+      />
 
       {Constants.expoConfig?.version ? (
         <T variant="chip" tone="muted" style={styles.version}>

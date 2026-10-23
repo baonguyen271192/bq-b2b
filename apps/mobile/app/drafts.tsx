@@ -32,7 +32,7 @@ export default function DraftsScreen() {
   const confirmRemove = (draft: Draft) => {
     Alert.alert(
       "Xoá đơn nháp?",
-      `${draft.id} sẽ bị xoá khỏi tài khoản. Không khôi phục lại được.`,
+      `${draft.id} sẽ bị xoá khỏi máy này. Không khôi phục lại được.`,
       [
         { text: "Giữ lại", style: "cancel" },
         {
@@ -158,7 +158,7 @@ export default function DraftsScreen() {
           khoản — câu dưới đây chỉ đúng khi có API. Xem báo cáo Phase 4. */}
       {drafts && drafts.length > 0 ? (
         <T variant="small" tone="muted" style={styles.note}>
-          Đơn nháp được lưu trên tài khoản, mở được trên mọi thiết bị.
+          Đơn nháp được lưu trên máy này.
         </T>
       ) : null}
     </ScrollView>
