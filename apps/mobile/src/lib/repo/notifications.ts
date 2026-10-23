@@ -1,8 +1,9 @@
-import { dayMonth, dueDateOf, daysUntil, orderIsOpen, vnd } from "@bq/core";
+import { dayMonth, dueDateOf, daysUntil, orderIsOpen, orderStep, vnd } from "@bq/core";
 import type { CreditDetail, Order } from "@bq/types";
 import { api } from "../api";
 
-export type NotificationKind = "shipping" | "pending" | "due" | "paid" | "invoice";
+export type NotificationKind =
+  | "shipping" | "pending" | "due" | "paid" | "invoice" | "rejected";
 export type NotificationGroup = "order" | "debt" | "invoice";
 
 export interface Notification {
@@ -41,8 +42,30 @@ const DUE_SOON_DAYS = 15;
 function fromOrders(orders: Order[]): Notification[] {
   const out: Notification[] = [];
   for (const o of orders) {
-    if (!orderIsOpen(o.status)) continue;
     const at = parseVnDate(o.created_at) ?? new Date();
+
+    /*
+     * Đơn bị TỪ CHỐI / HUỶ phải báo trước mọi thứ khác.
+     *
+     * Bản cũ lọc `!orderIsOpen(o.status)` ngay đầu vòng, mà `orderStep` trả -1
+     * cho đơn bị từ chối nên nó rơi luôn khỏi danh sách: đại lý có một đơn 98,7
+     * triệu bị từ chối mà hộp thông báo không có một dòng nào. Đây chính là sự
+     * kiện đại lý cần biết nhất.
+     */
+    if (orderStep(o.status) < 0) {
+      const rejected = o.status.toLowerCase().includes("từ chối");
+      out.push({
+        id: `order-rejected-${o.id}`, kind: "rejected", group: "order",
+        title: rejected ? `Đơn ${o.id} bị từ chối` : `Đơn ${o.id} đã huỷ`,
+        body: o.approve_note
+          ? `Lý do: ${o.approve_note}`
+          : `${vnd(o.subtotal)} · Đơn không ghi nợ. Xem chi tiết hoặc gửi lại.`,
+        at, href: `/order/${o.id}`,
+      });
+      continue;
+    }
+
+    if (!orderIsOpen(o.status)) continue;
     if (o.over_limit && o.status.toLowerCase().includes("chờ")) {
       out.push({
         id: `order-pending-${o.id}`, kind: "pending", group: "order",

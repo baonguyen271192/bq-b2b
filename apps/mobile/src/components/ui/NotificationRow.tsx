@@ -4,7 +4,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { color, radius, space } from "@/theme";
 import { T } from "./T";
 
-export type NotificationTone = "shipping" | "pending" | "due" | "paid" | "invoice";
+export type NotificationTone =
+  | "shipping" | "pending" | "due" | "paid" | "invoice" | "rejected";
 
 export interface NotificationRowProps {
   tone: NotificationTone;
@@ -24,6 +25,7 @@ const TONE: Record<NotificationTone, { bg: string; fg: string; icon: keyof typeo
   due: { bg: color.tint, fg: color.textBrand, icon: "calendar-outline" },
   paid: { bg: color.okTint, fg: color.ok, icon: "checkmark-outline" },
   invoice: { bg: color.subtle, fg: color.muted, icon: "receipt-outline" },
+  rejected: { bg: color.dangerTint, fg: color.danger, icon: "close-circle-outline" },
 };
 
 /**

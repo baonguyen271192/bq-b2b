@@ -23,10 +23,19 @@ function relative(at: Date, now: Date): string {
   return `${String(at.getDate()).padStart(2, "0")}/${String(at.getMonth() + 1).padStart(2, "0")}/${at.getFullYear()}`;
 }
 
-function isToday(at: Date, now: Date): boolean {
-  return at.getDate() === now.getDate()
-    && at.getMonth() === now.getMonth()
-    && at.getFullYear() === now.getFullYear();
+/** Một ngày, tính bằng mili giây. */
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * "Hôm nay" = 24 GIỜ gần nhất, không cắt theo nửa đêm.
+ *
+ * Cắt theo ngày lịch thì một thông báo "6 giờ trước" rơi xuống nhóm "Trước đó"
+ * ngay khi qua 0 giờ — hai dòng chữ cạnh nhau nói ngược nhau. Cửa sổ trượt khớp
+ * với nhãn thời gian tương đối ở ngay bên phải nó.
+ */
+function isRecent(at: Date, now: Date): boolean {
+  const diff = now.getTime() - at.getTime();
+  return diff >= 0 && diff < DAY_MS;
 }
 
 /**
@@ -58,8 +67,8 @@ export default function NotificationsScreen() {
     [rows, tab],
   );
   const unread = (rows ?? []).filter((n) => !n.read).length;
-  const today = shown.filter((n) => isToday(n.at, now));
-  const earlier = shown.filter((n) => !isToday(n.at, now));
+  const today = shown.filter((n) => isRecent(n.at, now));
+  const earlier = shown.filter((n) => !isRecent(n.at, now));
 
   const open = (n: Notification) => {
     notificationRepository.markRead(n.id);
@@ -117,7 +126,7 @@ export default function NotificationsScreen() {
         <>
           {today.length > 0 ? (
             <View style={styles.group}>
-              <T variant="small" weight="semibold" tone="muted">Hôm nay</T>
+              <T variant="small" weight="semibold" tone="muted">24 giờ qua</T>
               <Card>
                 {today.map((n, i) => (
                   <NotificationRow
