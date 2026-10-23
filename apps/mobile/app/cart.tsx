@@ -2,12 +2,13 @@ import { useCallback, useState } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { orderIsOpen, paymentLabel, vnd } from "@bq/core";
+import { paymentLabel, vnd } from "@bq/core";
 import type { Order } from "@bq/types";
 import { api } from "@/lib/api";
 import { useCart } from "@/lib/cart";
 import { useSession } from "@/lib/session";
 import { addressRepository } from "@/lib/repo/addresses";
+import { reorderableOrders } from "@/lib/orders";
 import { draftRepository, type Draft } from "@/lib/repo/drafts";
 import {
   checkStock, dropShortSizes, newIdempotencyKey, submitOrder, trimToStock,
@@ -63,7 +64,8 @@ export default function CartScreen() {
       setAddressId((prev) => prev ?? addr.value.find((a) => a.isDefault)?.id ?? addr.value[0]?.id);
     }
     if (orders.status === "fulfilled") {
-      setRecent(orders.value.filter((o) => !orderIsOpen(o.status)).slice(0, 1));
+      // Chỉ đơn ĐÃ NHẬN (SPEC §5-N.2) — xem `reorderableOrders`.
+      setRecent(reorderableOrders(orders.value, 1));
     }
     if (saved.status === "fulfilled") setDrafts(saved.value);
   }, [dealer]);
@@ -163,6 +165,9 @@ export default function CartScreen() {
 
             {recent.map((o) => (
               <Card key={o.id} style={styles.reorder}>
+                {/* TODO(api): `OrderItem` không mang ảnh, mà đọc lại cả danh mục
+                    chỉ để lấy một thumbnail ở màn giỏ TRỐNG là không đáng.
+                    `ProductImage` tự vẽ placeholder (SPEC §5-N.2). */}
                 <ProductImage uri={null} style={styles.reorderThumb} />
                 <View style={styles.reorderText}>
                   <T variant="bodyStrong" weight="bold">{o.id}</T>

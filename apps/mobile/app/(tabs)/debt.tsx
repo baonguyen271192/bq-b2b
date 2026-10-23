@@ -9,12 +9,23 @@ import {
 import type { CreditDetail } from "@bq/types";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/session";
-import { paymentDeclarations } from "@/lib/repo/payments";
+import {
+  debtDeclarations, declaredInvoiceIds, paymentDeclarations,
+  type PaymentDeclaration,
+} from "@/lib/repo/payments";
 import { color, radius, space } from "@/theme";
 import {
-  Card, CardDivider, CreditCard, EmptyState, Num, OfflineBanner, Pill, Price, ScreenHeader,
+  Card, CardDivider, CreditCard, EmptyState, Notice, Num, OfflineBanner, Pill, Price, ScreenHeader,
   Skeleton, StatusTag, T, TAB_BAR_CLEARANCE, hhmm,
 } from "@/components/ui";
+
+/** "2026-10-23T14:05:00.000Z" -> "14:05 23/10". */
+function declaredAtLabel(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(d.getHours())}:${p(d.getMinutes())} ${p(d.getDate())}/${p(d.getMonth() + 1)}`;
+}
 
 /** Hoá đơn còn ≤ ngần này ngày thì "còn N ngày" đổi màu warn (SPEC §3.9). */
 const DUE_SOON_DAYS = 15;
@@ -25,11 +36,13 @@ export default function DebtScreen() {
   const insets = useSafeAreaInsets();
   const { dealer } = useSession();
   const [detail, setDetail] = useState<CreditDetail | null>(null);
+  const [declarations, setDeclarations] = useState<PaymentDeclaration[]>([]);
   const [fetchedAt, setFetchedAt] = useState(new Date());
   const [offline, setOffline] = useState(false);
 
   const load = useCallback(async () => {
     if (!dealer) return;
+    setDeclarations(await paymentDeclarations.list(dealer.code));
     try {
       setDetail(await api.credit(dealer.code));
       setFetchedAt(new Date());
@@ -46,6 +59,10 @@ export default function DebtScreen() {
   // hạn gần nhất, nên hai màn không thể nói hai số khác nhau nữa.
   const unpaid = useMemo(() => unpaidInvoices(detail?.invoices ?? []), [detail]);
   const overdue = overdueTotal(unpaid);
+  const declaredInvoices = declaredInvoiceIds(declarations);
+  /** Khoản trả theo SỐ TIỀN đã báo, chưa gắn hoá đơn nào (SPEC §5-N.4). */
+  const pendingDebt = debtDeclarations(declarations);
+  const pendingDebtTotal = pendingDebt.reduce((s, d) => s + d.amount, 0);
 
   if (!dealer) return null;
 
@@ -86,6 +103,17 @@ export default function DebtScreen() {
         }
       />
 
+      {/* Ngay DƯỚI thẻ: đại lý vừa báo chuyển khoản thì câu trả lời phải nằm
+          cạnh con số dư nợ, không lẫn trong danh sách bên dưới. Hạn mức KHÔNG
+          đổi cho tới khi BQ ghi nhận (SPEC §5-N.4). */}
+      {pendingDebt.length > 0 ? (
+        <Notice kind="info">
+          {pendingDebt.length === 1
+            ? `Đã báo chuyển ${vnd(pendingDebtTotal)} lúc ${declaredAtLabel(pendingDebt[0].declaredAt)}, chờ BQ ghi nhận.`
+            : `Đã báo chuyển ${pendingDebt.length} khoản, tổng ${vnd(pendingDebtTotal)}, chờ BQ ghi nhận.`}
+        </Notice>
+      ) : null}
+
       <Card style={styles.card}>
         <View style={styles.cardHead}>
           <T variant="cardTitle" weight="bold">Hoá đơn chưa thanh toán</T>
@@ -105,7 +133,7 @@ export default function DebtScreen() {
               <InvoiceLine
                 row={row}
                 first={i === 0}
-                declared={paymentDeclarations.declared(row.order.id)}
+                declared={declaredInvoices.has(row.order.id)}
                 onPay={() => router.push(`/transfer/${row.order.id}`)}
                 onOpen={() => router.push(`/order/${row.order.id}`)}
               />

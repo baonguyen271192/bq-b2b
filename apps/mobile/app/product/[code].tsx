@@ -11,6 +11,7 @@ import { useFavourites } from "@/lib/favourites";
 import { useSession } from "@/lib/session";
 import { color, space } from "@/theme";
 import { ColorPicker } from "@/components/product/ColorPicker";
+import { OrderDock } from "@/components/product/OrderDock";
 import {
   Dock, DOCK_CLEARANCE, EmptyState, IconButton, Num, OfflineBanner, Pill, Price, ProductImage,
   SizeList, StatusTag, StockStamp, T, TextButton, Toast, hhmm, type SizeQty,
@@ -100,11 +101,6 @@ export default function ProductDetailScreen() {
   const left = (dealer?.credit_available ?? 0) - (cartWithout + money);
   /** Hạn mức còn khi CHƯA chọn gì ở màn này — số hiện lúc `pairs === 0`. */
   const available = (dealer?.credit_available ?? 0) - cartWithout;
-  /**
-   * Chỉ báo vượt khi đã chọn đôi nào đó. Ở "0 đôi · 0đ" thì khoản vượt là nợ cũ,
-   * không phải việc đang làm — bật cảnh báo đỏ ở đó là doạ nhầm chỗ.
-   */
-  const over = pairs > 0 && left < 0;
 
   const addAll = () => {
     setSizes((prev) => {
@@ -204,22 +200,9 @@ export default function ProductDetailScreen() {
         </View>
       </ScrollView>
 
-      <Dock
-        left={{
-          label: `${pairs} đôi đã chọn`,
-          value: <Price value={money} variant="amountSm" weight="extrabold" />,
-        }}
-        right={{
-          // Chưa chọn đôi nào thì chưa có gì để vượt: cảnh báo đỏ ở "0 đôi · 0đ"
-          // là nói về khoản nợ cũ, không phải về việc đang làm.
-          label: over ? "Vượt hạn mức" : "Hạn mức còn",
-          value: (
-            <Num variant="label" weight="semibold" tone={over ? "danger" : "ink"}>
-              {vnd(over ? -left : Math.max(0, pairs > 0 ? left : available))}
-            </Num>
-          ),
-        }}
-      >
+      {/* Hai số ở dock do `OrderDock` lo — CHUNG với sheet Đặt nhanh (SPEC
+          §5-N.3), nên luật "0 đôi thì không báo vượt" chỉ có một bản. */}
+      <Dock custom={<OrderDock pairs={pairs} money={money} left={left} available={available} />}>
         <Pill
           label={inCart ? "Cập nhật giỏ hàng" : "Thêm vào giỏ"}
           disabled={pairs === 0}

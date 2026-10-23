@@ -52,10 +52,12 @@ export default function ProfileScreen() {
       </Card>
 
       <Card>
+        {/* Thiếu cả tên lẫn số thì bỏ phụ đề, KHÔNG ghi "Chưa có" (SPEC §5-M.3
+            và §5-N.6): chữ đó đọc như dữ liệu bị mất. */}
         <ListRow
           icon="person-outline"
           title="Thông tin đại diện"
-          subtitle={[dealer.owner, dealer.phone].filter(Boolean).join(", ") || "Chưa có"}
+          subtitle={[dealer.owner, dealer.phone].filter(Boolean).join(", ") || undefined}
           divider
         />
         <ListRow
@@ -151,9 +153,11 @@ export default function ProfileScreen() {
         />
       </View>
 
-      <T variant="chip" tone="muted" style={styles.version}>
-        {`Phiên bản ${Constants.expoConfig?.version ?? "—"}`}
-      </T>
+      {Constants.expoConfig?.version ? (
+        <T variant="chip" tone="muted" style={styles.version}>
+          {`Phiên bản ${Constants.expoConfig.version}`}
+        </T>
+      ) : null}
     </ScrollView>
   );
 }

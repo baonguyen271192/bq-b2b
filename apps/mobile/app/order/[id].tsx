@@ -68,10 +68,13 @@ export default function OrderDetailScreen() {
   if (missing) {
     return (
       <View style={[styles.screen, styles.center]}>
+        {/* Cùng khuôn với `+not-found` (SPEC §5-N.5), câu riêng cho đơn: deep
+            link tới một đơn đã xoá phải nói đúng là ĐƠN không còn, không phải
+            "trang không tồn tại". */}
         <EmptyState
-          icon="help-circle-outline"
-          title={`Không thấy đơn ${id}`}
-          hint="Đơn có thể đã bị xoá. Quay lại danh sách để xem các đơn khác."
+          icon="search-outline"
+          title="Đơn hàng này không còn"
+          hint={`Đơn ${id} có thể đã bị xoá. Quay lại danh sách để xem các đơn khác.`}
           actionLabel="Về danh sách đơn"
           onActionPress={() => router.replace("/(tabs)/orders")}
         />
@@ -92,6 +95,8 @@ export default function OrderDetailScreen() {
   const cancelled = step < 0;
   const pending = orderAwaitingApproval(order.status);
   const shipping = step === 3;
+  /** Đơn đã đi hết quy trình — bước cuối cũng là `done`, không còn bước nào đang chạy. */
+  const closed = step >= ORDER_STEPS.length - 1;
   const pairs = order.items.reduce((s, i) => s + i.qty_total, 0);
   const support = supportContact(dealer);
   const imageOf = (code: string) => products.find((p) => p.code === code)?.image;
@@ -114,7 +119,10 @@ export default function OrderDetailScreen() {
       return {
         label: pending && i === 1 ? "Chờ Sale duyệt" : label,
         caption: at ? shortDateTime(at) : i === step ? (pending ? "Đang chờ" : undefined) : eta,
-        state: i < step ? "done" : i === step ? "current" : "todo",
+        // Đơn đã khép lại thì MỌI bước là `done` (SPEC §5-N.1). Bản cũ để
+        // `i === step → "current"` nên bước cuối của đơn đã nhận hàng vẫn là
+        // chấm cam đang chạy — đọc ra là việc còn dở, trong khi hàng đã tới nơi.
+        state: closed ? "done" : i < step ? "done" : i === step ? "current" : "todo",
       };
     });
 

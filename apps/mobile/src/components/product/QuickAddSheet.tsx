@@ -1,14 +1,15 @@
 import { useMemo, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { totalPairs, vnd } from "@bq/core";
+import { totalPairs } from "@bq/core";
 import type { Product } from "@bq/types";
 import { color, space } from "@/theme";
 import {
-  BottomSheet, Num, Pill, Price, ProductImage, SizeList, StockStamp, T, TextButton,
+  BottomSheet, Pill, Price, ProductImage, SizeList, StockStamp, T, TextButton,
   type SizeQty,
 } from "../ui";
 import { ColorPicker } from "./ColorPicker";
+import { OrderDock } from "./OrderDock";
 
 export interface QuickAddSheetProps {
   /** Mẫu đang đặt. `null` = sheet đóng. */
@@ -94,18 +95,7 @@ function QuickAddBody({
       header={header}
       footer={
         <View style={styles.footer}>
-          <View style={styles.totals}>
-            <View style={styles.col}>
-              <T variant="small" tone="muted">{`${pairs} đôi đã chọn`}</T>
-              <Price value={money} variant="amountSm" weight="extrabold" />
-            </View>
-            <View style={[styles.col, styles.colRight]}>
-              <T variant="small" tone="muted">{left < 0 ? "Vượt hạn mức" : "Hạn mức còn"}</T>
-              <Num variant="label" weight="semibold" tone={left < 0 ? "danger" : "ink"}>
-                {vnd(Math.abs(left))}
-              </Num>
-            </View>
-          </View>
+          <OrderDock pairs={pairs} money={money} left={left} available={creditAvailable - cartSubtotalWithout} />
           <Pill
             label="Thêm vào giỏ"
             disabled={pairs === 0}
@@ -127,7 +117,7 @@ function QuickAddBody({
             />
           </View>
         ) : <View />}
-        <TextButton label="+1 mỗi size" underline onPress={addAll} />
+        <TextButton label="Thêm 1 đôi mỗi size" underline onPress={addAll} />
       </View>
 
       <StockStamp fetchedAt={stockFetchedAt} onRefresh={onRefreshStock} style={styles.stamp} />
@@ -159,7 +149,4 @@ const styles = StyleSheet.create({
   // khoảng 330, còn lại dành cho danh sách size.
   list: { maxHeight: 360 },
   footer: { gap: space.x3 },
-  totals: { flexDirection: "row", alignItems: "flex-end", gap: space.x3 },
-  col: { flex: 1, gap: 1 },
-  colRight: { alignItems: "flex-end" },
 });

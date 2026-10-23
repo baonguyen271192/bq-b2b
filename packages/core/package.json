@@ -9,7 +9,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf .turbo node_modules",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "node --test \"src/**/*.test.ts\""
   },
   "dependencies": {
     "@bq/types": "workspace:*"

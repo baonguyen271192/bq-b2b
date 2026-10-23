@@ -1,5 +1,6 @@
 import { StyleSheet, View, type ViewStyle } from "react-native";
 import { Image } from "expo-image";
+import { Ionicons } from "@expo/vector-icons";
 import { color, radius } from "@/theme";
 
 export interface ProductImageProps {
@@ -40,7 +41,13 @@ export function ProductImage({
           transition={160}
           accessibilityIgnoresInvertColors
         />
-      ) : null}
+      ) : (
+        /* Không có ảnh thì vẽ icon mờ giữa ô, KHÔNG để một ô xám rỗng (SPEC
+           §5-N.2): ô rỗng đọc như ảnh đang tải mãi không xong. */
+        <View style={styles.empty}>
+          <Ionicons name="image-outline" size={20} color={color.line} />
+        </View>
+      )}
       {overlay}
     </View>
   );
@@ -50,4 +57,8 @@ const styles = StyleSheet.create({
   base: { backgroundColor: color.plate, overflow: "hidden", width: "100%" },
   plate: { borderRadius: radius.card },
   hero: { borderBottomLeftRadius: radius.card, borderBottomRightRadius: radius.card },
+  empty: {
+    position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+    alignItems: "center", justifyContent: "center",
+  },
 });

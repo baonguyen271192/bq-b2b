@@ -223,6 +223,9 @@ export default function RootLayout() {
                 <Stack.Screen name="transfer/[id]" options={{ headerShown: false }} />
                 <Stack.Screen name="pay" options={{ headerShown: false }} />
                 <Stack.Screen name="delete-account" options={{ headerShown: false }} />
+                {/* Không khai thì expo-router vẽ header mặc định với tên route
+                    ("+not-found") ngay trên màn hình. */}
+                <Stack.Screen name="+not-found" options={{ headerShown: false }} />
                 <Stack.Screen name="assistant" options={{ headerShown: false }} />
                 <Stack.Screen name="notifications" options={{ headerShown: false }} />
               </Stack>

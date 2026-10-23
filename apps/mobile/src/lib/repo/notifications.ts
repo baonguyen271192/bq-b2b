@@ -1,6 +1,7 @@
 import { dayMonth, dueDateOf, daysUntil, orderIsOpen, orderStep, vnd } from "@bq/core";
 import type { CreditDetail, Order } from "@bq/types";
 import { api } from "../api";
+import { paymentDeclarations, type PaymentDeclaration } from "./payments";
 
 export type NotificationKind =
   | "shipping" | "pending" | "due" | "paid" | "invoice" | "rejected";
@@ -112,6 +113,27 @@ function fromCredit(detail: CreditDetail): Notification[] {
 }
 
 /** "18/10/2026 08:30" hoặc "18/10/2026" -> Date. */
+/**
+ * Thông báo cho mỗi lần đại lý tự báo đã chuyển khoản (SPEC §5-N.4).
+ *
+ * Suy từ chính bản ghi đại lý vừa tạo, nên không phải tin tức từ BQ — nhưng đó
+ * là cách duy nhất để việc "tôi đã báo rồi" có dấu vết nhìn thấy được khi chưa
+ * có endpoint đối soát.
+ */
+function fromDeclarations(rows: readonly PaymentDeclaration[]): Notification[] {
+  return rows.map((d) => ({
+    id: `declared-${d.declaredAt}`,
+    kind: "paid" as const,
+    group: "debt" as const,
+    title: "Đã gửi báo chuyển khoản",
+    body: d.kind === "invoice"
+      ? `${vnd(d.amount)} cho ${d.invoiceId}. Hạn mức cập nhật khi BQ ghi nhận.`
+      : `${vnd(d.amount)}, nội dung "${d.content}". Hạn mức cập nhật khi BQ ghi nhận.`,
+    at: new Date(d.declaredAt),
+    href: "/(tabs)/debt",
+  }));
+}
+
 function parseVnDate(s: string): Date | null {
   const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2}))?/);
   if (!m) return null;
@@ -124,13 +146,15 @@ export function createNotificationRepository(): NotificationRepository {
 
   return {
     async list(dealerCode) {
-      const [o, c] = await Promise.allSettled([
+      const [o, c, d] = await Promise.allSettled([
         api.orders(dealerCode),
         api.credit(dealerCode),
+        paymentDeclarations.list(dealerCode),
       ]);
       const rows = [
         ...(o.status === "fulfilled" ? fromOrders(o.value) : []),
         ...(c.status === "fulfilled" ? fromCredit(c.value) : []),
+        ...(d.status === "fulfilled" ? fromDeclarations(d.value) : []),
       ];
       return rows
         .map((n) => ({ ...n, read: read.has(n.id) }))

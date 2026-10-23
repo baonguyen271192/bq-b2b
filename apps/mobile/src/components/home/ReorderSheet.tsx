@@ -1,13 +1,11 @@
 import { ScrollView, StyleSheet, View } from "react-native";
-import { orderStep, vnd } from "@bq/core";
+import { vnd } from "@bq/core";
 import type { Order } from "@bq/types";
+import { reorderableOrders, REORDER_LIMIT } from "@/lib/orders";
 import { space } from "@/theme";
 import {
   BottomSheet, EmptyState, ListRow, Pill, T,
 } from "../ui";
-
-/** Số đơn hiện trong sheet. Đủ để tìm lại đơn tháng trước, chưa thành danh sách. */
-export const REORDER_LIMIT = 5;
 
 export interface ReorderSheetProps {
   visible: boolean;
@@ -20,11 +18,6 @@ export interface ReorderSheetProps {
   onOpenOrder: (order: Order) => void;
 }
 
-/** Đơn đã nhận, mới nhất trước. */
-export function reorderable(orders: Order[]): Order[] {
-  return orders.filter((o) => orderStep(o.status) === 4).slice(0, REORDER_LIMIT);
-}
-
 /**
  * Sheet "Đặt lại" ở Trang chủ.
  *
@@ -35,7 +28,7 @@ export function reorderable(orders: Order[]): Order[] {
 export function ReorderSheet({
   visible, onClose, orders, busyId, onReorder, onOpenOrder,
 }: ReorderSheetProps) {
-  const rows = reorderable(orders);
+  const rows = reorderableOrders(orders, REORDER_LIMIT);
 
   return (
     <BottomSheet visible={visible} onClose={onClose} title="Đặt lại đơn cũ">

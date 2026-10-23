@@ -39,6 +39,7 @@ export default function TransferScreen() {
   const [order, setOrder] = useState<Order | null>(null);
   const [missing, setMissing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [declaring, setDeclaring] = useState(false);
 
   const load = useCallback(async () => {
     if (!id || byAmount) return;
@@ -50,6 +51,29 @@ export default function TransferScreen() {
   }, [id, byAmount]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
+
+  /**
+   * Ghi lại việc đại lý tự báo đã chuyển khoản.
+   *
+   * Ghi CẢ hai loại (SPEC §5-N.4): trả theo hoá đơn thì gắn mã hoá đơn, trả theo
+   * số tiền thì chỉ ghi số và nội dung. Bản cũ bỏ qua hẳn nhánh thứ hai nên đại
+   * lý báo chuyển gần 300 triệu mà app không lưu gì.
+   */
+  const declare = async () => {
+    if (!dealer || declaring) return;
+    setDeclaring(true);
+    try {
+      await paymentDeclarations.declare(dealer.code, {
+        ...(byAmount ? { kind: "debt" as const } : { kind: "invoice" as const, invoiceId: order?.id ?? "" }),
+        amount: money,
+        content: note,
+        declaredAt: new Date().toISOString(),
+      });
+      router.replace("/(tabs)/debt");
+    } finally {
+      setDeclaring(false);
+    }
+  };
 
   const copy = async (label: string, value: string) => {
     await Clipboard.setStringAsync(value);
@@ -156,12 +180,8 @@ export default function TransferScreen() {
       <View style={[styles.foot, { paddingBottom: insets.bottom + space.x5 }]}>
         <Pill
           label="Tôi đã chuyển khoản"
-          onPress={() => {
-            // Trả theo số tiền thì chưa gắn được vào hoá đơn nào, nên không
-            // đánh dấu hoá đơn nào là "đã báo chuyển khoản".
-            if (order) paymentDeclarations.declare(order.id);
-            router.replace("/(tabs)/debt");
-          }}
+          loading={declaring}
+          onPress={() => void declare()}
         />
       </View>
 

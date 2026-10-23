@@ -21,7 +21,14 @@ export interface StepTrackProps {
  */
 export function StepTrack({ steps, current, style }: StepTrackProps) {
   return (
-    <View style={[styles.wrap, style]} accessibilityLabel={`Tiến trình: ${steps[current] ?? "—"}`}>
+    <View
+      style={[styles.wrap, style]}
+      // Bước ngoài dải (đơn huỷ/từ chối, `current` = -1) thì nói "chưa xác định"
+      // chứ không đọc ra một dấu gạch.
+      accessibilityLabel={
+        steps[current] ? `Tiến trình: ${steps[current]}` : "Tiến trình chưa xác định"
+      }
+    >
       <View style={styles.dots}>
         {steps.map((s, i) => (
           <Fragment key={s}>

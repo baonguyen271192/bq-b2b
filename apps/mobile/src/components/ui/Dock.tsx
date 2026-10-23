@@ -14,6 +14,11 @@ export interface DockProps {
   left?: DockSummary;
   /** Hàng tóm tắt bên phải: "Hạn mức còn" + số. */
   right?: DockSummary;
+  /**
+   * Hàng tóm tắt TỰ DỰNG, thay cho cặp `left`/`right`. Dùng khi hai số có logic
+   * riêng — vd `OrderDock` của màn chọn size (SPEC §5-N.3).
+   */
+  custom?: React.ReactNode;
   /** Nút hành động — một hoặc hai `Pill`. */
   children: React.ReactNode;
   style?: ViewStyle;
@@ -26,11 +31,11 @@ export interface DockProps {
  * (có hàng tóm tắt) hoặc {@link DOCK_CLEARANCE_ACTIONS} (chỉ có nút) cộng
  * safe area — nếu không, dòng cuối của danh sách nằm vĩnh viễn dưới thanh này.
  */
-export function Dock({ left, right, children, style }: DockProps) {
+export function Dock({ left, right, custom, children, style }: DockProps) {
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.wrap, { paddingBottom: insets.bottom + 14 }, shadow.dock, style]}>
-      {left || right ? (
+      {custom ? <View style={styles.summary}>{custom}</View> : left || right ? (
         <View style={styles.summary}>
           {left ? (
             <View style={styles.col}>
