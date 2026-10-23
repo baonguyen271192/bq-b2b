@@ -2,7 +2,7 @@
 
 Tài liệu này là **nguồn chuẩn duy nhất** cho giao diện app `apps/mobile`. Nó **thay thế** mọi đặc tả giao diện trước đó (design system "phòng trưng bày", bản cam/ink cũ, prototype HTML cũ). Prototype HTML cũ chỉ còn giá trị tham khảo về **chức năng và nội dung**.
 
-Ảnh chuẩn: `docs/design/v2/screens/*.png` (25 màn, chụp ở 390×844 pt, @2x). Bản tổng hợp: `docs/design/v2/BQ_Giao_dien_moi.pdf`.
+Ảnh chuẩn: `docs/design/v2/screens/*.png` (33 màn, chụp ở 390×844 pt, @2x). Bản tổng hợp: `docs/design/v2/BQ_Giao_dien_moi.pdf`.
 Khi chữ trong tài liệu này và ảnh mâu thuẫn: **số đo trong tài liệu này thắng**, bố cục và thứ bậc thị giác theo ảnh.
 
 ---
@@ -20,10 +20,10 @@ Khi chữ trong tài liệu này và ảnh mâu thuẫn: **số đo trong tài l
 | `paper` | `#FFFFFF` | Nền card, dock đáy, sheet |
 | `subtle` | `#F1EFEC` | Nền icon tròn trong list, stepper khi = 0, chip size trong giỏ |
 | `plate` | `#EAECF0` | Nền ảnh sản phẩm (khớp nền ảnh gốc) |
-| `brand` | `#C24E00` | MỌI nền cam có chữ trắng: CTA, tab đang chọn, thẻ hạn mức, badge, nút gọi. Chữ trắng trên nền này đạt 4.8:1 |
-| `brandDeep` | `#9E3F00` | Trạng thái nhấn của `brand` |
-| `flame` | `#E65C00` | Chỉ cho phần KHÔNG có chữ nhỏ: chấm tiến trình hiện tại, mảng cam header màn Đăng nhập (chỉ chứa logo cỡ lớn), splash. **Chưa chốt** so với cam logo chính thức (`#F04F23`?): giữ là MỘT token để đổi một chỗ khi có brand guideline |
-| `tint` | `#FDEDE2` | Nền chip cam nhạt ("Giá hạng Vàng", "Size 41 ×"), vòng sáng quanh chấm tiến trình |
+| `brand` | `#D23E14` | MỌI nền cam có chữ trắng: CTA, tab đang chọn, thẻ hạn mức, badge, nút gọi. Cùng sắc với logo (≈13°), chỉ đậm hơn để chữ trắng đạt 4.73:1 |
+| `brandDeep` / `textBrand` | `#B8330D` | Chữ cam trên nền sáng (5.48:1 trên canvas, 5.97:1 trên paper, 5.17:1 trên tint) và trạng thái nhấn của `brand` |
+| `flame` | `#F04F23` (đúng màu logo) | Chỉ cho phần KHÔNG có chữ nhỏ: chấm tiến trình hiện tại, mảng cam header màn Đăng nhập (chỉ chứa logo cỡ lớn), splash. Mã đo từ file logo trong repo, CHƯA đối chiếu brand guideline chính thức của BQ. Khi có mã chính thức: `flame` = mã đó; `brand` và `textBrand` tính lại cùng sắc, chỉ đổi độ đậm cho tới khi đạt 4.5:1 |
+| `tint` | `#FDEBE5` | Nền chip cam nhạt ("Giá hạng Vàng", "Size 41 ×"), vòng sáng quanh chấm tiến trình |
 | `ok` / `okTint` | `#17734A` / `#E3F3EA` | Lãi, đã nhận, đủ hạn mức, tiền vào |
 | `warn` / `warnTint` | `#8A5300` / `#FBEFD9` | Chờ duyệt, sắp đến hạn, ghi chú quan trọng |
 | `info` / `infoTint` | `#2350B8` / `#E5ECFB` | Đang giao, icon xe tải, avatar Sale |
@@ -88,7 +88,7 @@ Nét (stroke) 2, đầu tròn, khung 24, hiển thị 16–22. Dùng `lucide-rea
 | `SegmentedControl` | Nền `#ECEAE6`, padding 4, viên thuốc; item cao 40, chữ 13/600; item đang chọn nền paper + bóng nhẹ, chưa chọn chữ muted; đếm số trong ngoặc |
 | `ListRow` | Icon trong vòng tròn 40 nền subtle, tiêu đề 15/600 + phụ 13 muted, chevron 18 muted, padding dọc 14, divider |
 | `Switch` | 44×26, nền ink khi bật, núm 20 trắng |
-| `RadioCard` | Bo 18, padding 14, gap 12. Vòng radio 22: đang chọn viền 6 ink, chưa chọn viền 2 line. Tiêu đề 15/600 (riêng địa chỉ 15/700) + mô tả 13/18 muted. Card đang chọn viền 1.5 ink, chưa chọn viền 1 line. Hai biến thể hành vi: **chạm là chọn rồi đóng sheet** (3.24) / **chạm chỉ chọn**, cần CTA để xác nhận (3.14, sheet mục D). `accessibilityRole="radio"` |
+| `RadioCard` | Bo 18, padding 14, gap 12. Vòng radio 22: đang chọn viền 6 ink, chưa chọn viền 2 line. Tiêu đề 15/600 (riêng địa chỉ 15/700) + mô tả 13/18 muted. Card đang chọn viền 1.5 ink, chưa chọn viền 1 line. Hai biến thể hành vi: **chạm là chọn rồi đóng sheet** (3.24) / **chạm chỉ chọn**, cần CTA để xác nhận (3.14, 3.27, 3.31) |
 | `AddressCard` | Nội dung theo 3.23/3.24: tên 15–16/700 + tag "Mặc định" (nền tint, chữ brandDeep), người nhận + SĐT 14, địa chỉ 13–14 muted. Hai biến thể: `manage` — nút "Sửa" + link "Đặt mặc định", card mặc định viền 1.5 ink (dùng ở 3.23); `select` — bọc trong `RadioCard` (dùng ở 3.24) |
 | `Select` | Cùng khung với ô nhập của `Field`: cao 52, bo 16, viền 1 line. Placeholder muted, chevron xuống 18 ink. Chạm → bottom sheet danh sách **có ô tìm kiếm** (danh sách phường/xã tới hàng nghìn mục, không cuộn tay được). Vô hiệu khi chưa chọn cấp trên (Phường/Xã chờ Tỉnh/TP) |
 | `DashedButton` | Cao 56, bo 18, viền 1.5 **nét đứt** ink, icon 20 + chữ 15/600 ink |
@@ -152,7 +152,13 @@ Thứ tự từ trên xuống, khoảng cách 16:
 - Trạng thái: Chờ duyệt hạn mức (warn), Đang giao (info), Đã nhận hàng (ok), Đã huỷ (danger)
 - TabBar, tab Đơn hàng đang chọn
 
-### 3.8 Chi tiết đơn đang giao (`08-OrderDetail.png`)
+### 3.8 Chi tiết đơn đang giao (`08-OrderDetail.png`) — ĐÃ CẬP NHẬT, xem ảnh mới
+- Dòng thời gian 5 bước khớp 1-1 với trạng thái backend: Gửi đơn › BQ xác nhận (hoặc Chờ Sale duyệt) › Đang đóng gói › Bàn giao vận chuyển › Đã nhận hàng. Mỗi bước có giờ; bước chưa tới để trống hoặc "Dự kiến …". Card đơn đang giao ở Trang chủ dùng cùng 5 bước, nhãn ngắn: Đặt / Duyệt / Đóng gói / Bàn giao / Nhận
+- Header KHÔNG có tag trạng thái; phụ đề "mã đơn, đặt ngày …"
+- Card 1: Dự kiến nhận + đơn vị vận chuyển + mã vận đơn rút gọn có nút sao chép, rồi dòng thời gian
+- Card 2: Giao đến (tên, người nhận, SĐT, địa chỉ) + Ghi chú cho BQ
+- Card 3: sản phẩm (gộp theo mẫu, ghi số đôi từng màu) + Tạm tính / VAT / Tổng / Thanh toán (số từ backend)
+- Phần mô tả cũ dưới đây chỉ còn giá trị tham khảo
 - ScreenHeader back: "Chi tiết đơn", phụ mã đơn, slot phải StatusTag
 - Card vận chuyển: icon xe tải tròn 44 nền infoTint; "Dự kiến nhận" 13 muted + "Thứ Năm, 22/10/2026" 18/700; khối subtle bo 14: "BQ Express, mã vận đơn" 12 muted + mã 14/600 + nút sao chép 44; timeline dọc: chấm 22 (xong: nền ink + dấu ✓ trắng; hiện tại: nền tint + chấm flame 10; chưa tới: viền 2 line), đường nối 2px, tên bước 14/600 (hiện tại 700) + thời gian 12 muted
 - Card sản phẩm: thumbnail 56 + tên 13/600, mỗi màu một hàng (tên màu 12 muted + SizeChip); đáy: "36 đôi, công nợ 30 ngày" | tổng 700
@@ -272,6 +278,54 @@ Thứ tự từ trên xuống, khoảng cách 16:
 - Đáy: Pill brand "Lưu và giao đến đây": lưu vào sổ địa chỉ, chọn luôn cho đơn hiện tại, đóng sheet
 - Màn Sổ địa chỉ (3.23) dùng lại đúng component card địa chỉ và form này
 
+### 3.26 Trang chủ khi đã vượt hạn mức (`26-HomeOverLimit.png`)
+- Số khả dụng KHÔNG BAO GIỜ âm: dừng ở `0đ`. Phần vượt hiện bằng chip nền trắng chữ danger có icon i: "Vượt 247,4 tr"
+- Thanh tiến độ đầy trắng 100%; hàng dưới: "Hạn mức **500 tr**" / "Dư nợ **747,4 tr**"
+- Khối phụ (nền `rgba(0,0,0,0.18)`): "Dư nợ gồm **N đơn chờ duyệt (X tr)**. Đơn mới sẽ cần Sale duyệt cho tới khi bạn thanh toán bớt." + nút trắng chữ brandDeep "Thanh toán công nợ" → 3.31. Bỏ câu "gồm N đơn chờ duyệt" nếu BQ xác nhận đơn chờ duyệt KHÔNG tính vào dư nợ
+- Áp dụng cùng quy tắc cho CreditCard ở mọi nơi (Trang chủ, Công nợ)
+
+### 3.27 Vượt hạn mức khi nợ cũ đã vượt (`27-OverLimitDebt.png`)
+- Biến thể của 3.14, dùng khi khả dụng ≤ 0 TRƯỚC khi tính đơn hiện tại
+- Tiêu đề "Hạn mức đã dùng hết" + mô tả: đơn này cần Sale duyệt dù ít hay nhiều
+- Khối nền `#F7F6F4` bo 18: "Đang vượt hạn mức" (số danger) / "Đơn này" (+số) / gạch ngang / "Cần duyệt tổng" (17/800). KHÔNG dùng thanh so sánh
+- Chỉ 2 lựa chọn: "Gửi đơn chờ Sale duyệt" (mặc định, mô tả: hàng chưa được giữ trong lúc chờ) và "Thanh toán công nợ trước" (→ 3.31). BỎ "Giảm số lượng"
+- Gửi xong → 3.28
+
+### 3.28 Đơn chờ duyệt (`28-OrderPending.png`)
+- Header KHÔNG có tag trạng thái (trạng thái nằm ở dòng thời gian, xem 3.8)
+- Khối nền warnTint: lý do chờ ("Đơn vượt hạn mức X, đang chờ Sale duyệt"), câu "Muốn huỷ hoặc sửa đơn này, gọi Sale phụ trách…", nút trắng "Gọi <tên Sale>". Khi có API huỷ đơn: thêm nút "Huỷ đơn" (outline danger) và bỏ câu gọi Sale
+- Dòng thời gian 5 bước, bước 2 "Chờ Sale duyệt" dùng chấm warn
+- Card Giao đến, card tổng (Tạm tính / VAT / Tổng)
+
+### 3.29 Chi tiết sau khi thêm vào giỏ (`29-DetailAdded.png`)
+- Header Chi tiết: back | ♡ + giỏ hàng có badge (thay nút chia sẻ)
+- Toast nền ink bo 18, nằm ngay trên dock: icon check + "Đã thêm N đôi vào giỏ" 15/600 + nút trắng "Xem giỏ" (cao 44). Tự ẩn sau 4 giây
+- Sau khi thêm, CTA dock đổi thành "Cập nhật giỏ hàng"
+- "Thêm 1 đôi mỗi size" (đổi tên từ "+1 mỗi size") nằm cùng hàng tiêu đề "Chọn size và số lượng", không cạnh giá
+
+### 3.30 Ghi chú cho BQ (`30-NoteSheet.png`)
+- Giỏ hàng có card "Ghi chú cho BQ" (ListRow có icon tài liệu, hiện nội dung hoặc "Thêm ghi chú"), đặt sau danh sách sản phẩm
+- Bottom sheet: tiêu đề + nút đóng; mô tả 14 muted; textarea viền 1.5 ink bo 16, tối đa 254 ký tự (giới hạn trường Comments của SAP B1), bộ đếm "N/254"; chip gợi ý chèn nhanh; Pill "Lưu ghi chú"
+- Chi tiết đơn hiện lại ghi chú trong card Giao đến
+
+### 3.31 Thanh toán công nợ, cho phép trả một phần (`31-PayAmount.png`)
+- Vào từ: nút "Thanh toán công nợ" trên thẻ Công nợ (9), thẻ Trang chủ khi vượt hạn mức (26), sheet 27
+- RadioCard: "Hoá đơn gần hạn nhất" / "Toàn bộ dư nợ" / "Số tiền khác" (mở rộng: ô nhập số 30/800 gạch chân ink + chip 20 tr / 50 tr / 100 tr)
+- Khối okTint: "Khi BQ ghi nhận, hạn mức khả dụng tăng thêm X"
+- Ghi chú quy tắc cấn trừ (chờ BQ xác nhận)
+- Dock: "Tạo mã chuyển khoản" → màn Chuyển khoản (10) với số tiền đã chọn; nội dung chuyển khoản không gắn số hoá đơn khi trả số tiền khác (ví dụ "DL0215 TT")
+
+### 3.32 Sửa và xoá địa chỉ (`32-AddressEdit.png`)
+- Vào từ nút "Sửa" ở Sổ địa chỉ (23). Form như 3.25, điền sẵn; Tỉnh/TP và Phường/Xã cùng một hàng 2 cột
+- Nút outline danger "Xoá địa chỉ này" (hỏi xác nhận trước khi xoá). Địa chỉ mặc định: nút vô hiệu + ghi chú "Địa chỉ mặc định không xoá được: hãy đặt địa chỉ khác làm mặc định trước"
+- Dock: "Lưu thay đổi"
+
+### 3.33 Xoá tài khoản (`33-DeleteAccount.png`)
+- Vào từ Hồ sơ (link chữ danger "Xoá tài khoản" cùng hàng với "Đăng xuất"). Bắt buộc theo quy định App Store với app có đăng nhập
+- Danh sách hệ quả (không đăng nhập được nữa; chứng từ vẫn được lưu theo quy định kế toán; công nợ vẫn phải thanh toán; đơn chờ duyệt bị huỷ)
+- Khối warnTint nếu còn dư nợ
+- Checkbox xác nhận; nút nền danger "Gửi yêu cầu xoá" vô hiệu cho tới khi tick. Nội dung pháp lý cụ thể chờ BQ xác nhận
+
 ---
 
 ## 4. Hành vi chung
@@ -282,17 +336,15 @@ Thứ tự từ trên xuống, khoảng cách 16:
 - Hỗ trợ Dynamic Type tới cỡ lớn hơn 1 bậc mà không vỡ bố cục: tên sản phẩm cắt 2 dòng, số tiền dùng `adjustsFontSizeToFit` khi cần
 
 ## 5. Sửa đổi sau review (ưu tiên cao hơn phần còn lại của SPEC)
-- **A. Cam làm chữ:** nền cam có chữ trắng = `brand #C24E00`; chữ cam trên nền sáng (canvas, paper, tint) = `brandDeep #9E3F00` (6.09:1 trên canvas, 5.81:1 trên tint). Token ngữ nghĩa `textBrand = brandDeep`
+- **A. Cam làm chữ:** nền cam có chữ trắng = `brand #D23E14`; chữ cam trên nền sáng (canvas, paper, tint) = `brandDeep #B8330D` (5.48:1 trên canvas, 5.17:1 trên tint). Token ngữ nghĩa `textBrand = brandDeep`
 - **B.** Đầu cột bảng hoá đơn VAT 13px. Chữ mang thông tin ≥ 13px, không ngoại lệ
-- **C. VAT:** ~~dòng "Giá đã gồm VAT"~~ — SAI, đã bỏ. Bảng giá sỉ CHƯA gồm VAT: `InvoicePreview` cộng thêm "Thuế GTGT 8%" lên trên tạm tính, nên nói "đã gồm" là hứa sai một khoản 8% mà đại lý chỉ phát hiện lúc nhận hoá đơn.
-  - **Tạm thời (chưa có API):** card tổng kết Giỏ hàng hiện dòng "Giá chưa gồm VAT" (13 muted) ngay trên Tổng thanh toán. Chi tiết và Đặt nhanh không ghi gì — một dòng ở nơi chốt đơn là đủ, rắc khắp nơi thành nhiễu
-  - **Khi API trả trường VAT:** card tổng kết hiện ba dòng Tạm tính / Thuế GTGT / Tổng thanh toán, bỏ dòng tạm thời ở trên
-  - Thuế suất, đơn giá chưa thuế, thành tiền, tiền thuế: hiển thị đúng số backend/hệ thống HĐĐT trả về, app không tự tính, không hardcode 8%
+- **C. VAT (ĐÃ SỬA sau rà soát dữ liệu thật):** giá trong app là giá CHƯA gồm VAT. Giỏ hàng và Chi tiết đơn hiện Tạm tính / VAT x% / Tổng đúng số backend trả về; dock ghi "Tổng thanh toán, đã gồm VAT". Khi API chưa trả trường VAT: bỏ dòng VAT, ghi "Giá chưa gồm VAT" (13 muted) ngay trên Tổng. App không tự tính, không hardcode 8%. Mọi so sánh hạn mức dùng tổng đã gồm VAT nếu BQ ghi nợ theo tổng hoá đơn (chờ BQ xác nhận)
 - **D. Gửi đơn:** đang gửi (spinner trong Pill, khoá thao tác, chống gửi trùng) → thiếu hàng: sheet "Tồn kho đã thay đổi" theo khuôn 14-OverLimit (lựa chọn "Đặt theo số còn lại" / "Bỏ size này") → lỗi mạng: giữ giỏ, toast "Thử lại" → thành công: màn xác nhận khuôn empty state (icon check okTint, "Đã gửi đơn DH-…", nút "Xem đơn" / "Về trang chủ")
 - **E.** `flame` vs cam logo: chưa chốt, giữ một token duy nhất
 - **F.** Sau "Tôi đã chuyển khoản": hoá đơn ở Công nợ hiện tag info "Đang chờ BQ ghi nhận" thay nút "Trả ngay"
 - **G. Không có màn "Xác nhận đơn" riêng.** Gửi đơn thẳng từ Giỏ hàng. Route checkout cũ bị xoá sau khi chuyển hết logic và xử lý lỗi sang Giỏ hàng
 - **H. Địa chỉ giao hàng = sổ địa chỉ của đại lý** (3.24, 3.25). Kho xuất của BQ do backend cấu hình, KHÔNG hiển thị trên app. Danh sách cứng "Kho HCM / Hà Nội / Đà Nẵng" trong code cũ bị bỏ. Đơn gửi lên phải mang `addressId` có cấu trúc, không ghép vào ghi chú
 - **I. Hình thức thanh toán:** hiển thị read-only theo điều khoản hợp đồng của đại lý (ví dụ "Công nợ 30 ngày"), KHÔNG có bộ chọn theo từng đơn, chờ BQ xác nhận. Danh sách 3 lựa chọn trong code cũ bị bỏ
-- **J. `plate` giữ `#F0F0F0`**, KHÔNG dùng `#EAECF0` như mục 1 ghi. Đo lại chính ảnh v2: `05-Detail.png` và thẻ sản phẩm thứ nhất của `03-Products.png` cho `#F0F0F0`–`#EFEFEF`, chỉ thẻ thứ hai cho `#EAECF0` — bộ ảnh trộn hai nguồn ảnh sản phẩm. `#F0F0F0` đã đo từ 5 ảnh catalog thật (GBW0295, SDW0155, GIW0208, SDW0136, SA003, cả bốn góc). Lấy `#EAECF0` sẽ thấy viền quanh phần lớn giày thật. Đổi nhà cung cấp ảnh thì đo lại
+- **K. Rà soát với dữ liệu thật (23/10/2026):** thêm 3.26–3.33; 3.8 dùng 5 bước theo backend; Hồ sơ thêm "Điều khoản và chính sách" và "Xoá tài khoản"; nhãn trạng thái ngắn ("Chờ duyệt", không "Chờ duyệt (vượt hạn mức)"); icon trạng thái đơn theo bước (đồng hồ / hộp / xe tải / check / ×); số tiền mọi nơi dùng "đ"
+- **L. Bộ màu theo logo (thay A, E):** `flame #F04F23` (đúng màu logo, cho splash, header Đăng nhập, chấm tiến trình), `brand #D23E14` (nền cam có chữ), `textBrand #B8330D` (chữ cam trên nền sáng, trạng thái nhấn), `tint #FDEBE5`. Cả ba cùng sắc ≈13° với logo. Thay toàn bộ giá trị cũ #C24E00 / #9E3F00 / #E65C00 / #FDEDE2 trong `packages/tokens`, splash và native splash
 - **Ngoài phạm vi đợt này:** dark mode, onboarding lần đầu
