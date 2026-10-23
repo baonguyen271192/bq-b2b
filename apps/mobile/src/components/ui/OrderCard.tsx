@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, View, type ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { statusLabel } from "@bq/core";
 import type { Order } from "@bq/types";
 import { color, radius, space } from "@/theme";
 import { CardDivider } from "./Card";
@@ -54,7 +55,7 @@ export function OrderCard({
             <Num variant="bodyStrong" weight="bold">{order.id}</Num>
             <T variant="small" tone="muted">{order.created_at.split(" ")[0]}</T>
           </View>
-          <StatusTag label={order.status} kind={statusKindFor(order.status)} />
+          <StatusTag label={statusLabel(order.status)} kind={statusKindFor(order.status)} />
         </View>
 
         <View style={styles.body}>

@@ -55,3 +55,18 @@ export const orderIsOpen = (status: string): boolean => {
   const step = orderStep(status);
   return step >= 0 && step < 3;
 };
+
+/**
+ * Nhãn trạng thái NGẮN để đặt trong tag.
+ *
+ * Backend trả "Chờ duyệt (vượt hạn mức)" — 24 ký tự. Đặt cạnh tiêu đề màn thì
+ * đẩy "Chi tiết đơn" xuống hai dòng ở khổ 393, và trong danh sách đơn thì tag
+ * chiếm gần nửa hàng. Phần trong ngoặc là LÝ DO, thuộc về nội dung màn chứ
+ * không phải cái tag.
+ */
+export const statusLabel = (status: string): string =>
+  status.replace(/\s*\([^)]*\)\s*$/, "").trim() || status;
+
+/** Phần trong ngoặc của chuỗi trạng thái, vd "vượt hạn mức". `null` nếu không có. */
+export const statusReason = (status: string): string | null =>
+  status.match(/\(([^)]*)\)\s*$/)?.[1]?.trim() ?? null;

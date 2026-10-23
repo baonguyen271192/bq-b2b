@@ -22,6 +22,7 @@ export { Badge, type BadgeProps } from "./Badge";
 export { Chip, type ChipProps } from "./Chip";
 export { SizeChip, type SizeChipProps } from "./SizeChip";
 export { StatusTag, statusKindFor, type StatusTagProps, type StatusKind } from "./StatusTag";
+export { statusIconFor, statusColorsFor } from "./status-icon";
 
 // --- Khung màn hình -------------------------------------------------------
 export { ScreenHeader, type ScreenHeaderProps } from "./ScreenHeader";

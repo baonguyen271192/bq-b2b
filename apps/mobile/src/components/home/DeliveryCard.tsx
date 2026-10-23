@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, View, type ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { ORDER_STEPS, orderStep } from "@bq/core";
+import { ORDER_STEPS, orderStep, statusLabel } from "@bq/core";
 import type { Order } from "@bq/types";
 import { color, radius, space } from "@/theme";
-import { Num, Price, T } from "../ui";
+import { Num, Price, statusColorsFor, statusIconFor, T } from "../ui";
 import { StepTrack } from "./StepTrack";
 
 export interface DeliveryCardProps {
@@ -36,12 +36,17 @@ export function DeliveryCard({ order, eta, onPress, style }: DeliveryCardProps) 
       style={[styles.card, down && styles.down, style]}
     >
       <View style={styles.head}>
-        <View style={styles.icon}>
-          <Ionicons name="car-outline" size={20} color={color.info} />
+        {/* Icon theo bước thật — xem `statusIconFor`. */}
+        <View style={[styles.icon, { backgroundColor: statusColorsFor(order.status).bg }]}>
+          <Ionicons
+            name={statusIconFor(order.status)}
+            size={20}
+            color={statusColorsFor(order.status).fg}
+          />
         </View>
         <View style={styles.text}>
           <Num variant="bodyStrong" weight="bold">{order.id}</Num>
-          <T variant="small" tone="muted" numberOfLines={2}>{eta ?? order.status}</T>
+          <T variant="small" tone="muted" numberOfLines={2}>{eta ?? statusLabel(order.status)}</T>
         </View>
         <Price value={order.subtotal} variant="bodyStrong" weight="bold" />
       </View>
@@ -57,7 +62,7 @@ const styles = StyleSheet.create({
   },
   head: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   icon: {
-    width: 40, height: 40, borderRadius: radius.pill, backgroundColor: color.infoTint,
+    width: 40, height: 40, borderRadius: radius.pill,
     alignItems: "center", justifyContent: "center",
   },
   text: { flex: 1, gap: 1 },

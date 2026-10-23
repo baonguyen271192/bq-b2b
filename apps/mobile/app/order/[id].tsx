@@ -3,15 +3,18 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { ActivityIndicator, Linking, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { ORDER_STEPS, orderStep, paymentLabel } from "@bq/core";
+import {
+  ORDER_STEPS, orderStep, paymentLabel, statusLabel, statusReason,
+} from "@bq/core";
 import type { Order, Product } from "@bq/types";
 import { api } from "@/lib/api";
 import { useCart } from "@/lib/cart";
 import { useSession } from "@/lib/session";
 import { color, radius, space } from "@/theme";
 import {
-  Card, CardDivider, Dock, DOCK_CLEARANCE_ACTIONS, EmptyState, Pill, Price, ProductImage,
-  ScreenHeader, SizeChip, StatusTag, T, Timeline, Toast, statusKindFor, type TimelineStep,
+  Card, CardDivider, Dock, DOCK_CLEARANCE_ACTIONS, EmptyState, Notice, Pill, Price,
+  ProductImage, ScreenHeader, SizeChip, StatusTag, T, Timeline, Toast,
+  statusColorsFor, statusIconFor, statusKindFor, type TimelineStep,
 } from "@/components/ui";
 
 /** Tổng đài BQ — TODO(api): chưa có số Sale phụ trách theo từng đại lý. */
@@ -76,6 +79,10 @@ export default function OrderDetailScreen() {
   const cancelled = step < 0;
   const shipping = step === 2;
   const pairs = order.items.reduce((s, i) => s + i.qty_total, 0);
+  const why = statusReason(order.status);
+  const reason = order.over_limit || why === "vượt hạn mức"
+    ? "Đơn vượt hạn mức công nợ khả dụng nên cần Sale duyệt. Bạn nhận thông báo ngay khi có kết quả."
+    : why;
   const imageOf = (code: string) => products.find((p) => p.code === code)?.image;
 
   /**
@@ -88,7 +95,7 @@ export default function OrderDetailScreen() {
     ? [
       { label: "Gửi đơn", caption: order.created_at, state: "done" },
       { label: "Chờ duyệt hạn mức", state: "done" },
-      { label: order.status, caption: order.approver ?? undefined, state: "failed" },
+      { label: statusLabel(order.status), caption: order.approver ?? undefined, state: "failed" },
     ]
     : ORDER_STEPS.map((label, i) => ({
       label,
@@ -145,7 +152,7 @@ export default function OrderDetailScreen() {
           title="Chi tiết đơn"
           caption={order.id}
           onBack={() => router.back()}
-          trailing={<StatusTag label={order.status} kind={statusKindFor(order.status)} />}
+          trailing={<StatusTag label={statusLabel(order.status)} kind={statusKindFor(order.status)} />}
         />
 
         {cancelled ? (
@@ -166,17 +173,27 @@ export default function OrderDetailScreen() {
         ) : (
           <Card style={styles.shipCard}>
             <View style={styles.shipHead}>
-              <View style={styles.truck}>
-                <Ionicons name="car-outline" size={20} color={color.info} />
+              {/* Icon theo BƯỚC THẬT, không phải xe tải cho mọi đơn: đơn còn
+                  đang chờ duyệt thì chưa có gì chạy trên đường. */}
+              <View style={[styles.truck, { backgroundColor: statusColorsFor(order.status).bg }]}>
+                <Ionicons
+                  name={statusIconFor(order.status)}
+                  size={20}
+                  color={statusColorsFor(order.status).fg}
+                />
               </View>
               <View style={styles.shipText}>
                 {/* TODO(api): `Order` chưa có ngày dự kiến nhận lẫn mã vận đơn —
                     hiện nêu bước đang ở, không bịa ngày giao. */}
                 <T variant="small" tone="muted">Trạng thái</T>
-                <T variant="section">{order.status}</T>
+                <T variant="section">{statusLabel(order.status)}</T>
               </View>
             </View>
             <Timeline steps={steps} />
+            {/* Lý do nằm TRONG màn chứ không nhét vào tag: tag "Chờ duyệt (vượt
+                hạn mức)" dài 24 ký tự, đặt cạnh tiêu đề thì bẻ tiêu đề xuống
+                hai dòng, mà vẫn không nói được đại lý phải làm gì tiếp. */}
+            {reason ? <Notice kind="warn">{reason}</Notice> : null}
           </Card>
         )}
 
@@ -264,7 +281,7 @@ const styles = StyleSheet.create({
   shipCard: { gap: space.x4 },
   shipHead: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   truck: {
-    width: 44, height: 44, borderRadius: radius.pill, backgroundColor: color.infoTint,
+    width: 44, height: 44, borderRadius: radius.pill,
     alignItems: "center", justifyContent: "center",
   },
   shipText: { flex: 1, gap: 1 },
