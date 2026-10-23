@@ -10,6 +10,15 @@ export interface Dealer {
   phone?: string;
   email?: string;
   invoice_address?: string;
+  /**
+   * Điều khoản công nợ theo hợp đồng, vd "Công nợ 30 ngày".
+   *
+   * TODO(api): `GET /api/dealers/{code}` CHƯA trả trường này — đã hỏi BQ (câu 3
+   * trong `docs/sap-b1-mapping-proposal.md` A7). Cho tới lúc đó mọi nơi hiện
+   * "Công nợ" trống số ngày qua `paymentLabel()` của `@bq/core`, thay vì mỗi màn
+   * đoán một kiểu.
+   */
+  payment_term?: string;
 }
 
 /** Trường đại lý mà admin được phép sửa. */

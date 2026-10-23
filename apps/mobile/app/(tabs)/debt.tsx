@@ -3,8 +3,10 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { dayMonth, daysUntil, dueDateOf, vnd, vndShort } from "@bq/core";
-import type { CreditDetail, Order } from "@bq/types";
+import {
+  dayMonth, overdueTotal, unpaidInvoices, vnd, vndShort, type InvoiceRow,
+} from "@bq/core";
+import type { CreditDetail } from "@bq/types";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { paymentDeclarations } from "@/lib/repo/payments";
@@ -16,12 +18,6 @@ import {
 
 /** Hoá đơn còn ≤ ngần này ngày thì "còn N ngày" đổi màu warn (SPEC §3.9). */
 const DUE_SOON_DAYS = 15;
-
-interface InvoiceRow {
-  order: Order;
-  due: Date | null;
-  left: number | null;
-}
 
 /** Màn Công nợ (SPEC §3.9, ảnh `09-Debt.png`). */
 export default function DebtScreen() {
@@ -46,20 +42,10 @@ export default function DebtScreen() {
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
-  const unpaid = useMemo<InvoiceRow[]>(() => {
-    const rows = (detail?.invoices ?? []).filter((i) => !i.paid);
-    return rows
-      .map((order) => {
-        const due = dueDateOf(order.created_at, order.payment);
-        return { order, due, left: due ? daysUntil(due) : null };
-      })
-      .sort((a, b) => (a.due?.getTime() ?? Infinity) - (b.due?.getTime() ?? Infinity));
-  }, [detail]);
-
-  /** Quá hạn = tổng tiền các hoá đơn đã qua ngày đến hạn. */
-  const overdue = unpaid
-    .filter((r) => r.left !== null && r.left < 0)
-    .reduce((s, r) => s + r.order.subtotal, 0);
+  // `unpaidInvoices` của `@bq/core` — CÙNG hàm Trang chủ dùng để chọn khoản tới
+  // hạn gần nhất, nên hai màn không thể nói hai số khác nhau nữa.
+  const unpaid = useMemo(() => unpaidInvoices(detail?.invoices ?? []), [detail]);
+  const overdue = overdueTotal(unpaid);
 
   if (!dealer) return null;
 

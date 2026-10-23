@@ -3,8 +3,8 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { dayMonth, dueDateOf, orderIsOpen, vndShort } from "@bq/core";
-import type { Order, Product } from "@bq/types";
+import { dayMonth, nextDueInvoice, orderIsOpen, vndShort } from "@bq/core";
+import type { CreditDetail, Order, Product } from "@bq/types";
 import { api } from "@/lib/api";
 import { useCart } from "@/lib/cart";
 import { useSession } from "@/lib/session";
@@ -29,20 +29,6 @@ function greeting(now = new Date()): string {
   return "Chào buổi tối,";
 }
 
-/**
- * Hoá đơn gần đến hạn nhất trong số chưa thanh toán.
- *
- * Hạn SUY RA từ `created_at` + số ngày trong chuỗi `payment` (xem
- * `@bq/core/credit`); đơn nào không suy ra được thì bỏ qua chứ không đoán.
- */
-function nextDue(orders: Order[]): { label: string; amount: number } | null {
-  const rows = orders
-    .map((o) => ({ due: dueDateOf(o.created_at, o.payment), amount: o.subtotal }))
-    .filter((x): x is { due: Date; amount: number } => x.due !== null)
-    .sort((a, b) => a.due.getTime() - b.due.getTime());
-  return rows[0] ? { label: dayMonth(rows[0].due), amount: rows[0].amount } : null;
-}
-
 /** Trang chủ (SPEC §3.2, ảnh `02-Home.png`). */
 export default function HomeScreen() {
   const router = useRouter();
@@ -51,6 +37,7 @@ export default function HomeScreen() {
   const { lines } = useCart();
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [spotlight, setSpotlight] = useState<Product[] | null>(null);
+  const [credit, setCredit] = useState<CreditDetail | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [fetchedAt, setFetchedAt] = useState(new Date());
   const [offline, setOffline] = useState(false);
@@ -58,9 +45,10 @@ export default function HomeScreen() {
   const load = useCallback(async () => {
     if (!dealer) return;
     // `allSettled`: băng sản phẩm hỏng thì vẫn phải thấy đơn và ngược lại.
-    const [o, p] = await Promise.allSettled([
+    const [o, p, c] = await Promise.allSettled([
       api.orders(dealer.code),
       api.products(dealer.code),
+      api.credit(dealer.code),
     ]);
     const failed = o.status === "rejected" && p.status === "rejected";
     // setState DẠNG HÀM, không đọc `orders`/`spotlight` hiện tại: đọc chúng thì
@@ -69,6 +57,7 @@ export default function HomeScreen() {
     setOrders((prev) => (o.status === "fulfilled" ? o.value : (prev ?? [])));
     setSpotlight((prev) =>
       p.status === "fulfilled" ? p.value.slice(0, SPOTLIGHT_LIMIT) : (prev ?? []));
+    setCredit((prev) => (c.status === "fulfilled" ? c.value : prev));
     setOffline(failed);
     if (!failed) setFetchedAt(new Date());
   }, [dealer]);
@@ -85,7 +74,16 @@ export default function HomeScreen() {
   if (!dealer) return null;
 
   const open = (orders ?? []).filter((o) => orderIsOpen(o.status)).slice(0, OPEN_LIMIT);
-  const due = nextDue(orders ?? []);
+  /*
+   * Khoản tới hạn gần nhất đọc từ `api.credit()` — CÙNG nguồn và CÙNG hàm với
+   * tab Công nợ.
+   *
+   * Bản cũ tự quét `api.orders()` nên vơ cả đơn đã nhận và đã trả tiền: Trang
+   * chủ hiện "Hạn thanh toán 22/10 — 2.128.000đ" của đơn BQ1016 đã tất toán từ
+   * 23/09, trong khi tab Công nợ cùng lúc chỉ đúng hoá đơn 1.197.000đ đang quá
+   * hạn. Hai màn nói hai số về cùng một khoản nợ.
+   */
+  const due = nextDueInvoice(credit?.invoices ?? []);
   const usedRatio = dealer.credit_limit ? dealer.credit_used / dealer.credit_limit : 0;
 
   return (
@@ -137,8 +135,12 @@ export default function HomeScreen() {
           <View style={styles.due}>
             <Ionicons name="calendar-outline" size={18} color={color.white} />
             <View style={styles.dueText}>
-              <T variant="chip" tone="white">{`Hạn thanh toán ${due.label}`}</T>
-              <Price value={due.amount} variant="bodyStrong" weight="bold" tone="white" />
+              <T variant="chip" tone="white">
+                {due.left !== null && due.left < 0
+                  ? `Quá hạn ${-due.left} ngày · ${dayMonth(due.due as Date)}`
+                  : `Hạn thanh toán ${dayMonth(due.due as Date)}`}
+              </T>
+              <Price value={due.order.subtotal} variant="bodyStrong" weight="bold" tone="white" />
             </View>
             <Pill
               label="Thanh toán"

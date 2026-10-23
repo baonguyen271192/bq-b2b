@@ -3,7 +3,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { ActivityIndicator, Linking, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { ORDER_STEPS, orderStep } from "@bq/core";
+import { ORDER_STEPS, orderStep, paymentLabel } from "@bq/core";
 import type { Order, Product } from "@bq/types";
 import { api } from "@/lib/api";
 import { useCart } from "@/lib/cart";
@@ -197,7 +197,7 @@ export default function OrderDetailScreen() {
           ))}
           <View style={styles.rule}><CardDivider /></View>
           <View style={styles.totals}>
-            <T variant="small" tone="muted">{`${pairs} đôi, ${order.payment}`}</T>
+            <T variant="small" tone="muted">{`${pairs} đôi, ${paymentLabel(order.payment)}`}</T>
             <Price value={order.subtotal} variant="cardTitle" weight="bold" />
           </View>
         </Card>

@@ -49,3 +49,82 @@ export const daysUntil = (due: Date, now: Date = new Date()): number => {
   const b = new Date(due.getFullYear(), due.getMonth(), due.getDate());
   return Math.round((b.getTime() - a.getTime()) / 86_400_000);
 };
+
+/**
+ * Hoá đơn công nợ, rút gọn về đúng những trường cần để tính hạn.
+ *
+ * Khai ở đây thay vì nhập `Order` từ `@bq/types`: `@bq/core` không phụ thuộc gói
+ * nào, và `Order` thoả cấu trúc này nên chỗ gọi không phải ép kiểu.
+ */
+export interface CreditInvoice {
+  id: string;
+  created_at: string;
+  payment: string;
+  subtotal: number;
+  /** Backend đánh dấu ở `CreditDetail.invoices`. Thiếu = coi như chưa trả. */
+  paid?: boolean;
+}
+
+export interface InvoiceRow<T extends CreditInvoice = CreditInvoice> {
+  order: T;
+  due: Date | null;
+  /** Số ngày còn lại tới hạn; âm là đã quá hạn. `null` khi không có hạn. */
+  left: number | null;
+}
+
+/**
+ * Hoá đơn CHƯA thanh toán, sắp theo hạn gần nhất.
+ *
+ * MỘT nguồn cho cả Trang chủ và tab Công nợ. Trước đây Trang chủ tự quét
+ * `api.orders()` nên vơ cả đơn đã nhận và đã trả tiền vào, rồi hiện đơn đã tất
+ * toán lên thành "Hạn thanh toán" — trong khi tab Công nợ cùng lúc chỉ đúng một
+ * hoá đơn khác. Hai màn nói hai số về cùng một khoản nợ.
+ *
+ * Đơn không suy ra được hạn (chuỗi `payment` không có số ngày) vẫn được giữ
+ * trong danh sách nhưng xếp CUỐI: nó vẫn là tiền phải trả, chỉ là chưa biết khi
+ * nào.
+ */
+export function unpaidInvoices<T extends CreditInvoice>(
+  invoices: readonly T[],
+  now: Date = new Date(),
+): InvoiceRow<T>[] {
+  return invoices
+    .filter((o) => !o.paid)
+    .map((order) => {
+      const due = dueDateOf(order.created_at, order.payment);
+      return { order, due, left: due ? daysUntil(due, now) : null };
+    })
+    .sort((a, b) => (a.due?.getTime() ?? Infinity) - (b.due?.getTime() ?? Infinity));
+}
+
+/** Hoá đơn tới hạn sớm nhất trong số chưa thanh toán. `null` nếu không có hạn nào. */
+export function nextDueInvoice<T extends CreditInvoice>(
+  invoices: readonly T[],
+  now: Date = new Date(),
+): InvoiceRow<T> | null {
+  return unpaidInvoices(invoices, now).find((r) => r.due !== null) ?? null;
+}
+
+/** Tổng tiền các hoá đơn đã qua ngày đến hạn. */
+export function overdueTotal(rows: readonly InvoiceRow[]): number {
+  return rows
+    .filter((r) => r.left !== null && r.left < 0)
+    .reduce((s, r) => s + r.order.subtotal, 0);
+}
+
+/**
+ * Nhãn điều khoản công nợ — MỘT nguồn cho giỏ hàng, chi tiết đơn, màn Công nợ
+ * và trợ lý.
+ *
+ * Giỏ hàng từng ghi cứng "Công nợ 30 ngày" trong khi đơn gửi đi xong trả về
+ * đúng chữ "Công nợ": app hứa 30 ngày rồi tự rút lời. Không có số ngày thì nói
+ * "Công nợ", không đoán thêm.
+ *
+ * TODO(api): điều khoản thật nằm ở hợp đồng đại lý, `GET /api/dealers/{code}`
+ * chưa trả trường nào cho nó (xem `Dealer.payment_term`). Khi có, truyền thẳng
+ * giá trị đó vào đây.
+ */
+export const paymentLabel = (payment?: string | null): string => {
+  const days = payment ? creditTermDays(payment) : null;
+  return days === null ? "Công nợ" : `Công nợ ${days} ngày`;
+};

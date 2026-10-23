@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { orderIsOpen, vnd } from "@bq/core";
+import { orderIsOpen, paymentLabel, vnd } from "@bq/core";
 import type { Order } from "@bq/types";
 import { api } from "@/lib/api";
 import { useCart } from "@/lib/cart";
@@ -227,10 +227,18 @@ export default function CartScreen() {
           <DetailRow label={`Tạm tính (${pairs} đôi)`} value={<Price value={subtotal} />} />
           <DetailRow label="Vận chuyển" value={<T variant="bodyStrong" tone="ok">Miễn phí</T>} />
           {/* Quyết định I: điều khoản công nợ là thuộc tính hợp đồng của đại lý,
-              hiện read-only, không có bộ chọn theo từng đơn. */}
+              hiện read-only, không có bộ chọn theo từng đơn.
+
+              Chuỗi lấy qua `paymentLabel` chứ KHÔNG ghi cứng "Công nợ 30 ngày":
+              đơn gửi đi xong backend trả về đúng chữ "Công nợ", nên giỏ hàng
+              hứa 30 ngày rồi chi tiết đơn tự rút lời. */}
           <DetailRow
             label="Thanh toán"
-            value={<T variant="bodyStrong" weight="semibold">Công nợ 30 ngày</T>}
+            value={
+              <T variant="bodyStrong" weight="semibold">
+                {paymentLabel(dealer.payment_term)}
+              </T>
+            }
           />
           <View style={styles.rule}><CardDivider /></View>
           {over > 0 ? (

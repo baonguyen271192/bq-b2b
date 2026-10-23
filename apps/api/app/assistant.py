@@ -32,9 +32,10 @@ POLICIES = {
         "Kim Cương 8%. Chiết khấu tính tự động trên từng sản phẩm khi đặt hàng."
     ),
     "cong_no": (
-        "Công nợ 30 ngày (hạn mức công nợ): đại lý được ghi nợ trong hạn mức, thanh "
-        "toán trong 30 ngày kể từ ngày đặt. Đơn vượt hạn mức sẽ chuyển trạng thái "
-        "'Chờ duyệt' để quản lý BQ phê duyệt ngoại lệ."
+        "Hạn mức công nợ: đại lý được ghi nợ trong hạn mức, số ngày thanh toán theo "
+        "điều khoản ghi trên từng đơn (field 'payment'). Đơn nào không ghi số ngày thì "
+        "chưa có hạn thanh toán cụ thể — hỏi Sale phụ trách. Đơn vượt hạn mức chuyển "
+        "trạng thái 'Chờ duyệt' để quản lý BQ phê duyệt ngoại lệ."
     ),
     "van_chuyen": (
         "BQ giao sỉ miễn phí tới địa chỉ kho/chi nhánh đã chọn của đại lý. Vòng đời "
@@ -43,7 +44,7 @@ POLICIES = {
     ),
     "thanh_toan": (
         "Hình thức thanh toán sỉ: Chuyển khoản ngân hàng, Tiền mặt khi nhận (COD sỉ), "
-        "hoặc Công nợ 30 ngày. Thanh toán công nợ chuyển khoản về TK công ty, kế toán "
+        "hoặc công nợ theo hạn mức. Thanh toán công nợ chuyển khoản về TK công ty, kế toán "
         "đối soát theo nội dung 'BQ <mã ĐL> thanh toan cong no'."
     ),
 }
@@ -108,11 +109,26 @@ def _answer_credit(ctx: dict) -> dict:
     return {"answer": "\n".join(lines), "chips": ["Hoá đơn nào chưa trả?", "Cách thanh toán công nợ"]}
 
 
-def _due_date(created_at: str) -> datetime | None:
-    """created_at dạng '15/09/2026 22:05' → ngày tới hạn = +30 ngày."""
+def _term_days(payment: str | None) -> int | None:
+    """'Công nợ 30 ngày' → 30. Không có số ngày → None."""
+    m = re.search(r"(\d+)\s*ng\u00e0y", payment or "")
+    return int(m.group(1)) if m else None
+
+
+def _due_date(created_at: str, payment: str | None = None) -> datetime | None:
+    """Ngày tới hạn = ngày đặt + số ngày ghi trong `payment` của chính đơn đó.
+
+    KHÔNG mặc định 30 ngày nữa. Phần lớn đơn thật trả về đúng chữ 'Công nợ'
+    không kèm số ngày; cộng bừa 30 làm trợ lý nói 'BQ1020 đến hạn 21/11/2026'
+    trong khi tab Công nợ của app cùng lúc ghi 'Chưa có hạn thanh toán'. Thiếu
+    dữ kiện thì trả None để câu trả lời bỏ trống phần hạn, không bịa.
+    """
+    days = _term_days(payment)
+    if days is None:
+        return None
     try:
         d = datetime.strptime(created_at.split(" ")[0], "%d/%m/%Y")
-        return d + timedelta(days=30)
+        return d + timedelta(days=days)
     except Exception:
         return None
 
@@ -125,17 +141,25 @@ def _answer_invoices(ctx: dict) -> dict:
     tot = sum(i["subtotal"] for i in unpaid)
     lines = [f"Có {len(unpaid)} hoá đơn chưa thanh toán (tổng {_fmt(tot)}):"]
     for i in unpaid:
-        due = _due_date(i["created_at"])
-        due_s = f", hạn {due.strftime('%d/%m/%Y')}" if due else ""
+        due = _due_date(i["created_at"], i.get("payment"))
+        due_s = f", hạn {due.strftime('%d/%m/%Y')}" if due else ", chưa có hạn thanh toán"
         lines.append(f"• Đơn {i['id']} — {_fmt(i['subtotal'])} (đặt {i['created_at'].split(' ')[0]}{due_s})")
     return {"answer": "\n".join(lines), "chips": ["Hạn thanh toán gần nhất", "Cách thanh toán công nợ"]}
 
 
 def _answer_due(ctx: dict) -> dict:
     unpaid = ctx["unpaid_invoices"]
-    dues = [(i, _due_date(i["created_at"])) for i in unpaid]
+    dues = [(i, _due_date(i["created_at"], i.get("payment"))) for i in unpaid]
     dues = [(i, d) for i, d in dues if d]
     if not dues:
+        # Có nợ nhưng không đơn nào ghi số ngày công nợ — nói đúng như vậy thay vì
+        # bảo "không có công nợ nào tới hạn", nghe như đã trả hết.
+        if unpaid:
+            tot = _fmt(sum(i["subtotal"] for i in unpaid))
+            return {"answer": f"Đang có {len(unpaid)} hoá đơn chưa thanh toán, tổng {tot}, "
+                              "nhưng chưa đơn nào có hạn thanh toán cụ thể. "
+                              "Anh/chị hỏi Sale phụ trách để biết hạn theo hợp đồng.",
+                    "chips": ["Hoá đơn nào chưa trả?", "Cách thanh toán công nợ"]}
         return {"answer": "Hiện bạn không có công nợ nào tới hạn.", "chips": ["Tổng công nợ hiện tại"]}
     i, d = min(dues, key=lambda x: x[1])
     days = (d - datetime.now()).days
@@ -620,8 +644,9 @@ def _llm_context(ctx: dict, question: str = "") -> dict:
               for o in ctx["orders"][:10]]
     invoices = []
     for i in ctx["unpaid_invoices"]:
-        due = _due_date(i["created_at"])
+        due = _due_date(i["created_at"], i.get("payment"))
         invoices.append({"id": i["id"], "subtotal": i["subtotal"],
+                         "payment": i.get("payment"),
                          "due": due.strftime("%d/%m/%Y") if due else None})
     # Gọn + cap để không vượt giới hạn payload LLM (catalog có ~258 sp). Nếu câu hỏi có
     # tín hiệu danh mục/màu rõ, LỌC TRƯỚC theo đó rồi mới cắt 45 — để AI thấy đúng nhóm
@@ -655,6 +680,11 @@ _SYS_PROMPT = (
     "không tạo action. Nếu đại lý hỏi theo MÀU, chỉ liệt kê đúng sản phẩm có field 'colors' khớp "
     "màu đó, không đoán — mẫu nào field 'colors' rỗng nghĩa là chưa có dữ liệu màu, không tự suy "
     "diễn màu cho mẫu đó. Đưa 2-4 'chips' gợi ý câu hỏi tiếp theo khi hợp lý. "
+    "HẠN THANH TOÁN: chỉ nói hạn khi hoá đơn trong DATA có field 'due' khác null. "
+    "'due' null nghĩa là hợp đồng chưa ghi số ngày công nợ — nói 'chưa có hạn thanh toán', "
+    "TUYỆT ĐỐI không tự cộng 30 ngày hay bất kỳ số ngày nào vào ngày đặt. "
+    "TIỀN TỆ: viết số tiền theo đúng dạng 1.234.000đ — dùng dấu chấm phân nhóm nghìn và "
+    "hậu tố 'đ' thường. Không dùng 'VNĐ', 'VND', '₫' hay 'đồng'. "
     'CHỈ xuất JSON đúng dạng: {"answer": string, "chips"?: string[], '
     '"action"?: {"type":"create_order","lines":[{"code":string,"sizes":{size:qty}}]}}.'
 )
