@@ -198,15 +198,17 @@ export default function OrderDetailScreen() {
               </T>
             </View>
             <T variant="label" weight="regular">
-              {`Muốn huỷ hoặc sửa đơn này, gọi ${support.isSalesRep ? "Sale phụ trách" : "tổng đài BQ"}. Đơn chưa xuất kho nên huỷ không mất phí.`}
+              {`Muốn huỷ hoặc sửa đơn này, gọi ${support?.isSalesRep ? "Sale phụ trách" : "tổng đài BQ"}. Đơn chưa xuất kho nên huỷ không mất phí.`}
             </T>
-            <Pill
-              label={support.label}
-              tone="paper"
-              size={44}
-              leading={<Ionicons name="call-outline" size={20} color={color.ink} />}
-              onPress={() => void Linking.openURL(telUrl(support.phone))}
-            />
+            {support ? (
+              <Pill
+                label={support.label}
+                tone="paper"
+                size={44}
+                leading={<Ionicons name="call-outline" size={20} color={color.ink} />}
+                onPress={() => void Linking.openURL(telUrl(support.phone))}
+              />
+            ) : null}
           </View>
         ) : null}
 
@@ -336,12 +338,14 @@ export default function OrderDetailScreen() {
       <Dock>
         {cancelled ? (
           <>
-            <Pill
-              label={support.isSalesRep ? "Gọi Sale" : "Gọi tổng đài"}
-              tone="outline"
-              leading={<Ionicons name="call-outline" size={20} color={color.ink} />}
-              onPress={() => void Linking.openURL(telUrl(support.phone))}
-            />
+            {support ? (
+              <Pill
+                label={support.isSalesRep ? "Gọi Sale" : "Gọi tổng đài"}
+                tone="outline"
+                leading={<Ionicons name="call-outline" size={20} color={color.ink} />}
+                onPress={() => void Linking.openURL(telUrl(support.phone))}
+              />
+            ) : null}
             <Pill
               label="Sửa và gửi lại"
               loading={busy === "reorder"}

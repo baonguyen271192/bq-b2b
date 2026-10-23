@@ -199,14 +199,16 @@ export default function SearchScreen() {
               style={styles.flex}
               onPress={() => { setSize(null); setQ(""); }}
             />
-            <Pill
-              label={support.isSalesRep ? "Hỏi Sale" : "Gọi tổng đài BQ"}
-              tone="ink"
-              size={48}
-              style={styles.flex}
-              leading={<Ionicons name="call-outline" size={20} color={color.white} />}
-              onPress={() => void Linking.openURL(telUrl(support.phone))}
-            />
+            {support ? (
+              <Pill
+                label={support.isSalesRep ? "Hỏi Sale" : "Gọi tổng đài BQ"}
+                tone="ink"
+                size={48}
+                style={styles.flex}
+                leading={<Ionicons name="call-outline" size={20} color={color.white} />}
+                onPress={() => void Linking.openURL(telUrl(support.phone))}
+              />
+            ) : null}
           </View>
 
           {similar.length > 0 ? (

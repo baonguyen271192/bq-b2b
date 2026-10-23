@@ -5,10 +5,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Constants from "expo-constants";
 import { dealerIdLine, tierLabel } from "@/lib/dealer";
 import { useSession } from "@/lib/session";
-import { supportContact, telUrl } from "@/lib/support";
+import { hotlineContact, prettyPhone, supportContact, telUrl } from "@/lib/support";
 import { color, space } from "@/theme";
 import {
-  Avatar, Card, IconButton, ListRow, ScreenHeader, StatusTag, Switch, T, TAB_BAR_CLEARANCE,
+  Avatar, Card, IconButton, ListRow, Num, ScreenHeader, StatusTag, Switch, T, TAB_BAR_CLEARANCE,
   TextButton,
 } from "@/components/ui";
 
@@ -20,6 +20,7 @@ export default function ProfileScreen() {
   /** TODO(api): bật/tắt thông báo đẩy chưa có nơi lưu. */
   const [push, setPush] = useState(true);
   const support = supportContact(dealer);
+  const hotline = hotlineContact();
 
   if (!dealer) return null;
 
@@ -87,6 +88,28 @@ export default function ProfileScreen() {
           }
           divider
         />
+        {/* LUÔN hiện, kể cả khi đã có Sale phụ trách (SPEC §5-M.3): Sale có thể
+            không nghe máy, lúc đó đại lý cần một số khác ngay trên cùng màn.
+            Chưa cấu hình số thì ẩn hẳn hàng này, không hiện số giả. */}
+        {hotline ? (
+          <ListRow
+            icon="call-outline"
+            title="Gọi tổng đài BQ"
+            subtitle={<Num variant="small" tone="muted">{prettyPhone(hotline.phone)}</Num>}
+            accessibilityLabel={`${hotline.label}, ${prettyPhone(hotline.phone)}`}
+            onPress={() => void Linking.openURL(telUrl(hotline.phone))}
+            trailing={
+              <IconButton
+                icon="call"
+                tone="brand"
+                accessibilityLabel={hotline.label}
+                onPress={() => void Linking.openURL(telUrl(hotline.phone))}
+              />
+            }
+            divider
+          />
+        ) : null}
+
         {/* TODO(api): chưa có URL điều khoản/chính sách của BQ. Mở trang web
             công ty để không phải một dòng chết, và sẽ trỏ đúng khi BQ cấp link. */}
         <ListRow
@@ -100,13 +123,13 @@ export default function ProfileScreen() {
           một card ghi "Tổng đài BQ" ở chỗ thiết kế dành cho tên người phụ trách
           là bịa ra một quan hệ không có. Số tổng đài vẫn gọi được từ mọi nút
           "Gọi tổng đài BQ" trong các luồng cần nó. */}
-      {support.isSalesRep ? (
+      {support?.isSalesRep ? (
         <Card style={styles.sale}>
           <Avatar name={support.name} tone="info" />
           <View style={styles.saleText}>
             <T variant="chip" tone="muted">Sale phụ trách</T>
             <T variant="bodyStrong" weight="semibold">{support.name}</T>
-            <T variant="small" tone="muted">{support.phone}</T>
+            <Num variant="small" tone="muted">{prettyPhone(support.phone)}</Num>
           </View>
           <IconButton
             icon="call"

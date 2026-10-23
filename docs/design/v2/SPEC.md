@@ -356,7 +356,9 @@ Thứ tự từ trên xuống, khoảng cách 16:
   3. **Trường thiếu dữ liệu thì ẨN, không hiện ô trống hay "—".** Áp cho mọi chỗ dùng thông tin đại lý:
      - MST: ẩn khỏi dòng định danh (`dealerIdLine`)
      - Chiết khấu: chip chỉ ghi "Hạng Vàng" khi thiếu % — áp cả chip ở Hồ sơ lẫn thẻ hạn mức Trang chủ (`tierLabel`)
-     - Sale phụ trách: thiếu thì ẩn hẳn card ở Hồ sơ. Mọi nút/câu "Gọi Sale" (3.28 đơn chờ duyệt, 3.18 đơn bị từ chối, 3.16 tìm không ra, 3.14/3.27 sheet vượt hạn mức, 3.13 OTP) rơi về "Gọi tổng đài BQ", số lấy từ `app.json` › `expo.extra.supportPhone`. Câu chữ dùng "Sale phụ trách sẽ xem xét", không gắn tên người
+     - Sale phụ trách: thiếu thì ẩn hẳn **card** "Sale phụ trách" ở Hồ sơ. Mọi nút/câu "Gọi Sale" (3.28 đơn chờ duyệt, 3.18 đơn bị từ chối, 3.16 tìm không ra, 3.14/3.27 sheet vượt hạn mức, 3.13 OTP) rơi về "Gọi tổng đài BQ". Câu chữ dùng "Sale phụ trách sẽ xem xét", không gắn tên người
+     - **Hàng "Gọi tổng đài BQ" trong card danh sách ở Hồ sơ:** icon điện thoại trong tròn 40 nền subtle; tiêu đề "Gọi tổng đài BQ"; phụ đề là số hotline (13 muted, tabular-nums); bên phải nút tròn 44 nền `brand` icon điện thoại trắng THAY chevron, chạm là `tel:`. Vị trí: hàng cuối của card danh sách, ngay trên "Điều khoản và chính sách". **LUÔN hiện, kể cả khi đã có Sale phụ trách** — Sale có thể không nghe máy, lúc đó đại lý cần một số khác ngay trên cùng màn. Khi có `sales_rep` thì card "Sale phụ trách" hiện như thiết kế và hàng tổng đài vẫn giữ
+     - Số hotline lấy từ `app.json` › `expo.extra.supportPhone` (`TODO(api)`: số thật chưa được BQ xác nhận). **Chưa cấu hình số thì ẩn hàng này và ẩn mọi nút gọi, không hiện số giả** — một số điện thoại sai còn tệ hơn không có số, vì đại lý sẽ gọi nó
      - Một chỗ quyết định duy nhất: `src/lib/support.ts` và `src/lib/dealer.ts`
 
 - **Ngoài phạm vi đợt này:** dark mode, onboarding lần đầu

@@ -6,7 +6,11 @@ import { T } from "./T";
 
 export interface ListRowProps {
   title: string;
-  subtitle?: string;
+  /**
+   * Phụ đề 13 muted. Nhận `ReactNode` để chỗ gọi tự chọn kiểu chữ khi cần — vd
+   * số điện thoại dùng `Num` cho chữ số thẳng cột (SPEC §5-M.3).
+   */
+  subtitle?: React.ReactNode;
   icon?: keyof typeof Ionicons.glyphMap;
   /** Nội dung bên phải thay cho chevron, vd `Switch`, `StatusTag`, số tiền. */
   trailing?: React.ReactNode;
@@ -49,7 +53,9 @@ export function ListRow({
       ) : null}
       <View style={styles.body}>
         <T variant="bodyStrong" weight="semibold" tone={tone}>{title}</T>
-        {subtitle ? <T variant="small" tone="muted">{subtitle}</T> : null}
+        {typeof subtitle === "string"
+          ? <T variant="small" tone="muted">{subtitle}</T>
+          : subtitle}
       </View>
       {trailing ?? (onPress
         ? <Ionicons name="chevron-forward" size={18} color={color.muted} />
