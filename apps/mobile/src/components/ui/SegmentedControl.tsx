@@ -11,13 +11,24 @@ export interface SegmentedControlProps<T extends string> {
 }
 
 /**
- * Ngưỡng đổi dạng. Dưới mức này bốn nhãn vẫn vừa khít khổ 390–393; trên mức này
- * thì không, và mục cuối ("Đã nhận") bị mép màn hình cắt cụt.
+ * Ngưỡng đổi dạng: CHỈ cỡ chữ mặc định giữ rãnh liền khối.
  *
- * Đo trên iPhone 17 Pro: cỡ chữ hệ thống `large` (mặc định) là 1.0, `extra-large`
- * khoảng 1.12, `extra-extra-large` khoảng 1.24.
+ * Đo trên iPhone 17 Pro (`xcrun simctl ui <udid> content_size`):
+ *
+ * | Cỡ chữ hệ thống           | fontScale |
+ * | ------------------------- | --------- |
+ * | large (mặc định)          | 1.000     |
+ * | extra-large               | 1.118     |
+ * | extra-extra-large         | 1.235     |
+ * | extra-extra-extra-large   | 1.353     |
+ * | accessibility-medium      | 1.786     |
+ *
+ * SPEC/chỉ thị ban đầu nêu ngưỡng 1.2, nhưng ảnh chụp cho thấy mục cuối ("Đã
+ * nhận") ĐÃ bị cắt ngay ở `extra-large` = 1.118 — tức dưới 1.2. Lấy 1.05 để
+ * ngưỡng thật sự chặn đúng trường hợp đang hỏng, trong khi cỡ mặc định (đúng
+ * 1.0) vẫn không đổi một pixel nào.
  */
-const SCROLL_ABOVE_FONT_SCALE = 1.2;
+const SCROLL_ABOVE_FONT_SCALE = 1.05;
 
 /**
  * Bộ chọn một-trong-nhiều dạng viên thuốc (SPEC §2) — lọc đơn hàng, lọc thông báo.

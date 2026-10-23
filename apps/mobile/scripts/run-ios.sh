@@ -79,11 +79,24 @@ if [ -n "$others" ]; then
   done
 fi
 
-# --- 2. Sinh project native nếu chưa có -------------------------------------
+# --- 2. Sinh project native nếu chưa có, hoặc nếu danh sách gói đã đổi -------
 # ios/ là sản phẩm phụ (Continuous Native Generation), bị gitignore — sinh lại
 # được bất cứ lúc nào từ app.json.
-if [ ! -d ios ]; then
-  log "chưa có ios/ — chạy expo prebuild"
+#
+# Dấu vân tay của `dependencies` được lưu lại trong ios/. Thêm một gói có phần
+# native (vd expo-secure-store) mà không prebuild + pod install lại thì bản build
+# vẫn chạy, nhưng vỡ lúc dùng với "Cannot find native module '...'" — một lỗi
+# runtime không hề nhắc tới nguyên nhân thật. Đã mất một vòng build vì chuyện này.
+deps_now=$(node -e 'const d=require("./package.json").dependencies||{};process.stdout.write(JSON.stringify(Object.keys(d).sort().map(k=>k+"@"+d[k])))' | shasum | cut -d" " -f1)
+stamp=ios/.bq-deps-sha
+deps_changed=0
+if [ -d ios ] && [ "$(cat "$stamp" 2>/dev/null || true)" != "$deps_now" ]; then
+  deps_changed=1
+  log "danh sách gói đã đổi — prebuild + pod install lại"
+fi
+
+if [ ! -d ios ] || [ "$deps_changed" = 1 ]; then
+  [ -d ios ] || log "chưa có ios/ — chạy expo prebuild"
   # prebuild ĐÈ package.json#scripts về mặc định của Expo — trong đó có
   # `"ios": "expo run:ios"`, đúng cái lệnh hỏng trên Xcode 27. Chép ra rồi trả
   # lại để lần chạy sau không âm thầm quay về lệnh hỏng.
@@ -98,11 +111,12 @@ if [ ! -d ios ]; then
 fi
 
 workspace=$(ls -d ios/*.xcworkspace 2>/dev/null | head -1 || true)
-if [ -z "$workspace" ] || [ ! -d ios/Pods ]; then
+if [ -z "$workspace" ] || [ ! -d ios/Pods ] || [ "$deps_changed" = 1 ]; then
   log "cài CocoaPods"
   ( cd ios && pod install )
   workspace=$(ls -d ios/*.xcworkspace 2>/dev/null | head -1 || true)
 fi
+printf '%s' "$deps_now" > "$stamp" 2>/dev/null || true
 [ -n "$workspace" ] || die "Không tạo được .xcworkspace. Chạy tay: cd ios && pod install"
 
 scheme=$(basename "$workspace" .xcworkspace)
