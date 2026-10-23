@@ -4,10 +4,12 @@ import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Clipboard from "expo-clipboard";
 import { Ionicons } from "@expo/vector-icons";
+import QRCode from "react-native-qrcode-svg";
 import type { Order } from "@bq/types";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { BQ_BANK, paymentDeclarations, transferNote } from "@/lib/repo/payments";
+import { buildVietQrPayload } from "@/lib/vietqr";
 import { color, radius, space } from "@/theme";
 import {
   Card, CardDivider, EmptyState, Notice, Pill, Price, ScreenHeader, T, Toast,
@@ -69,6 +71,12 @@ export default function TransferScreen() {
   }
 
   const note = transferNote(dealer.code, order.id);
+  const qr = buildVietQrPayload({
+    bank: BQ_BANK.bank,
+    accountNumber: BQ_BANK.number,
+    amount: order.subtotal,
+    note,
+  });
 
   return (
     <View style={styles.screen}>
@@ -87,16 +95,27 @@ export default function TransferScreen() {
         />
 
         <Card style={styles.qrCard}>
-          {/* TODO(api): mã VietQR phải sinh từ ngân hàng theo STK + số tiền +
-              nội dung. Chưa nối API ngân hàng nên để ô giữ chỗ, đúng như ảnh
-              thiết kế — KHÔNG vẽ một mã QR giả mà quét ra sai tài khoản. */}
-          <View style={styles.qr}>
-            <Ionicons name="qr-code-outline" size={36} color={color.muted} />
-            <T variant="label" weight="semibold" tone="muted">Mã VietQR</T>
-            <T variant="chip" tone="muted" style={styles.center}>
-              Tạo tự động khi nối API ngân hàng
-            </T>
-          </View>
+          {/*
+            Mã VietQR dựng NGAY TRÊN MÁY (`@/lib/vietqr`), không cần API ngân hàng:
+            chuỗi EMVCo xác định hoàn toàn từ mã BIN + số tài khoản + số tiền +
+            nội dung. `buildVietQrPayload` trả `null` khi chưa biết mã BIN của
+            ngân hàng — lúc đó quay về ô giữ chỗ, vì một mã QR sai còn tệ hơn
+            không có mã nào.
+          */}
+          {qr ? (
+            <View style={styles.qrFrame}>
+              <QRCode value={qr} size={168} backgroundColor={color.paper} color={color.ink} />
+            </View>
+          ) : (
+            <View style={styles.qr}>
+              <Ionicons name="qr-code-outline" size={36} color={color.muted} />
+              <T variant="label" weight="semibold" tone="muted">Mã VietQR</T>
+              <T variant="chip" tone="muted" style={styles.center}>
+                Chưa có mã BIN cho {BQ_BANK.bank}
+              </T>
+            </View>
+          )}
+          <T variant="chip" tone="muted">Quét bằng app ngân hàng để chuyển</T>
           <T variant="small" tone="muted">Số tiền</T>
           <Price value={order.subtotal} variant="screenTitle" weight="extrabold" />
         </Card>
@@ -167,6 +186,11 @@ const styles = StyleSheet.create({
   center: { justifyContent: "center", paddingHorizontal: space.screen, textAlign: "center" },
   body: { paddingHorizontal: space.screen, gap: space.x3 },
   qrCard: { alignItems: "center", gap: space.x2, paddingVertical: space.x6 },
+  qrFrame: {
+    padding: space.x3, borderRadius: radius.action,
+    borderWidth: 1, borderColor: color.line, backgroundColor: color.paper,
+    marginBottom: space.x3,
+  },
   qr: {
     width: 188, height: 188, borderRadius: radius.action,
     borderWidth: 1.5, borderStyle: "dashed", borderColor: color.line,
