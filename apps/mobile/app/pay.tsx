@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { dayMonth, nextDueInvoice, unpaidInvoices, vnd, vndShort } from "@bq/core";
@@ -28,6 +28,8 @@ export default function PayScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { dealer } = useSession();
+  /** Mã hoá đơn muốn trả, truyền từ nút "Thanh toán" ở Trang chủ (SPEC §5-N.12). */
+  const { invoice } = useLocalSearchParams<{ invoice?: string }>();
 
   const [detail, setDetail] = useState<CreditDetail | null>(null);
   const [choice, setChoice] = useState<Choice>("nearest");
@@ -48,10 +50,17 @@ export default function PayScreen() {
   const nearest = useMemo(() => nextDueInvoice(detail?.invoices ?? []), [detail]);
   const debt = unpaid.reduce((s, r) => s + r.order.subtotal, 0);
 
+  /**
+   * Hoá đơn được chỉ đích danh qua tham số, nếu có — nút ở Trang chủ đứng cạnh
+   * đúng một khoản nên phải mở ra với đúng khoản đó.
+   */
+  const picked = invoice ? unpaid.find((r) => r.order.id === invoice) ?? null : null;
+  const target = picked ?? nearest;
+
   /** Số tiền sẽ trả, theo lựa chọn đang chọn. */
   const customAmount = Number(custom.replace(/\D/g, "")) || 0;
   const amount = choice === "nearest"
-    ? (nearest?.order.subtotal ?? 0)
+    ? (target?.order.subtotal ?? 0)
     : choice === "all" ? debt : customAmount;
 
   const valid = amount > 0;
@@ -79,20 +88,22 @@ export default function PayScreen() {
           <Skeleton height={96} shape="card" />
         ) : (
           <>
-            {nearest ? (
+            {target ? (
               <RadioCard
                 selected={choice === "nearest"}
                 onPress={() => setChoice("nearest")}
-                accessibilityLabel={`Trả hoá đơn gần hạn nhất, ${vnd(nearest.order.subtotal)}`}
+                accessibilityLabel={`Trả hoá đơn ${target.order.id}, ${vnd(target.order.subtotal)}`}
               >
                 <View style={styles.row}>
                   <View style={styles.rowText}>
-                    <T variant="bodyStrong" weight="semibold">Hoá đơn gần hạn nhất</T>
+                    <T variant="bodyStrong" weight="semibold">
+                      {picked ? "Hoá đơn này" : "Hoá đơn gần hạn nhất"}
+                    </T>
                     <T variant="small" tone="muted">
-                      {`${nearest.order.id}${nearest.due ? `, hạn ${dayMonth(nearest.due)}` : ""}`}
+                      {`${target.order.id}${target.due ? `, hạn ${dayMonth(target.due)}` : ""}`}
                     </T>
                   </View>
-                  <Price value={nearest.order.subtotal} variant="bodyStrong" weight="bold" />
+                  <Price value={target.order.subtotal} variant="bodyStrong" weight="bold" />
                 </View>
               </RadioCard>
             ) : null}
@@ -171,8 +182,8 @@ export default function PayScreen() {
           style={styles.flex}
           onPress={() => router.push({
             // `cong-no` = trả theo SỐ TIỀN, không gắn vào một hoá đơn nào.
-            pathname: choice === "nearest" && nearest
-              ? `/transfer/${nearest.order.id}`
+            pathname: choice === "nearest" && target
+              ? `/transfer/${target.order.id}`
               : "/transfer/cong-no",
             params: { amount: String(amount) },
           })}

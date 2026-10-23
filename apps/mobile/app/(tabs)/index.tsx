@@ -222,7 +222,9 @@ export default function HomeScreen() {
               label="Thanh toán"
               tone="onBrand"
               size={36}
-              onPress={() => router.push("/(tabs)/debt")}
+              // Quy tắc §5-N.12: nút trả tiền đứng cạnh MỘT SỐ TIỀN CỤ THỂ thì
+              // mở thẳng màn trả tiền với đúng số đó, không đẩy sang một danh sách.
+              onPress={() => router.push({ pathname: "/pay", params: { invoice: due.order.id } })}
             />
           </View>
         ) : null}

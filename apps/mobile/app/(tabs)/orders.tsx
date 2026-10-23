@@ -126,7 +126,9 @@ export default function OrdersScreen() {
           options={[
             { value: "all", label: "Tất cả" },
             { value: "pending", label: "Chờ duyệt", count: counts.pending },
-            { value: "shipping", label: "Đang giao", count: counts.shipping },
+            // Gom bước 2 (đóng gói) và 3 (bàn giao): đại lý lọc theo "đơn đang
+            // được xử lý", không theo từng khâu kho (SPEC §5-N.10).
+            { value: "shipping", label: "Đang xử lý", count: counts.shipping },
             { value: "done", label: "Đã nhận" },
           ]}
           value={tab}

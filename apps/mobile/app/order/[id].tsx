@@ -97,6 +97,8 @@ export default function OrderDetailScreen() {
   const shipping = step === 3;
   /** Đơn đã đi hết quy trình — bước cuối cũng là `done`, không còn bước nào đang chạy. */
   const closed = step >= ORDER_STEPS.length - 1;
+  /** Ghi chú chỉ sửa được trước khi đơn rời kho. */
+  const noteEditable = !cancelled && step < 3;
   const pairs = order.items.reduce((s, i) => s + i.qty_total, 0);
   const support = supportContact(dealer);
   const imageOf = (code: string) => products.find((p) => p.code === code)?.image;
@@ -278,13 +280,19 @@ export default function OrderDetailScreen() {
               </View>
             </View>
           ) : null}
-          {/* Ghi chú sửa được khi đơn CHƯA xuất kho; sau đó chỉ còn đọc. */}
-          <ListRow
-            icon="document-text-outline"
-            title={extras?.note ? "Ghi chú cho BQ" : "Thêm ghi chú cho BQ"}
-            subtitle={extras?.note ?? "Dặn dò về giao hàng, hoá đơn…"}
-            onPress={step >= 3 ? undefined : () => setNoteSheet(true)}
-          />
+          {/*
+            Ghi chú sửa được khi đơn CHƯA xuất kho; sau đó chỉ còn đọc, và nếu
+            KHÔNG có ghi chú nào thì ẩn hẳn hàng (SPEC §5-N.13) — mời một hành
+            động đã hết hạn thì thà đừng mời.
+          */}
+          {noteEditable || extras?.note ? (
+            <ListRow
+              icon="document-text-outline"
+              title={extras?.note ? "Ghi chú cho BQ" : "Thêm ghi chú cho BQ"}
+              subtitle={extras?.note ?? "Dặn dò về giao hàng, hoá đơn…"}
+              onPress={noteEditable ? () => setNoteSheet(true) : undefined}
+            />
+          ) : null}
         </Card>
 
         <Card style={styles.items}>

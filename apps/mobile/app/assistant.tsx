@@ -52,6 +52,16 @@ function plain(text: string): string {
     .replace(/(\d)\s*(?:VNĐ|VND|₫|đồng)\b/gi, "$1đ");
 }
 
+/**
+ * Chip dẫn thẳng tới một màn thay vì hỏi tiếp (SPEC §5-N.15).
+ *
+ * Khớp theo nhãn vì đó là tất cả những gì backend trả về — khi API có `action`
+ * cho chip thì đọc từ đó.
+ */
+const ACTION_CHIPS: Record<string, string> = {
+  "Thanh toán công nợ": "/pay",
+};
+
 /** Gợi ý mặc định khi API chưa trả `chips`. */
 const FALLBACK_CHIPS = ["Công nợ của tôi", "Mẫu bán chạy tuần này"];
 
@@ -219,7 +229,15 @@ export default function AssistantScreen() {
           contentContainerStyle={styles.chips}
         >
           {chips.map((c) => (
-            <Chip key={c} label={c} variant="filter" onPress={() => void ask(c)} />
+            <Chip
+              key={c}
+              label={c}
+              variant="filter"
+              // Chip hành động thì ĐIỀU HƯỚNG, không gửi thành câu hỏi (SPEC
+              // §5-N.15): hỏi trợ lý "Thanh toán công nợ" chỉ ra một đoạn văn,
+              // trong khi việc đại lý muốn làm là mở màn trả tiền.
+              onPress={() => (ACTION_CHIPS[c] ? router.push(ACTION_CHIPS[c]) : void ask(c))}
+            />
           ))}
         </ScrollView>
 

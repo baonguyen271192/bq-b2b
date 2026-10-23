@@ -58,7 +58,9 @@ export function Select({
         accessibilityState={{ disabled: !!disabled, expanded: open }}
         style={[styles.field, disabled && styles.disabled]}
       >
-        <T variant="body" tone={selected ? "ink" : "muted"} numberOfLines={1} style={styles.value}>
+        {/* Cho xuống 2 dòng thay vì cắt (SPEC §5-N.11): tên phường/xã tiếng
+            Việt thường dài, cắt đi thì đại lý không biết mình đã chọn đúng chưa. */}
+        <T variant="body" tone={selected ? "ink" : "muted"} numberOfLines={2} style={styles.value}>
           {selected?.label ?? placeholder}
         </T>
         <Ionicons name="chevron-down" size={18} color={color.ink} />
@@ -107,9 +109,10 @@ export function Select({
 const styles = StyleSheet.create({
   label: { marginBottom: space.x2 },
   field: {
-    height: 52, borderRadius: radius.field, borderWidth: 1, borderColor: color.line,
+    // `minHeight` chứ không `height`: nhãn hai dòng phải nở ô ra, không bị bóp.
+    minHeight: 52, borderRadius: radius.field, borderWidth: 1, borderColor: color.line,
     backgroundColor: color.paper, flexDirection: "row", alignItems: "center",
-    paddingHorizontal: space.x4, gap: space.x2,
+    paddingHorizontal: space.x4, paddingVertical: space.x2, gap: space.x2,
   },
   value: { flex: 1 },
   disabled: { opacity: 0.5 },

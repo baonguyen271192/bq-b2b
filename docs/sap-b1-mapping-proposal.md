@@ -449,7 +449,7 @@ hiện ô trống — xem quyết định SPEC §5-M.3.
 |---|---|---|
 | `tax_code` | Hồ sơ, dòng dưới tên: "DL-0215, MST 0401 234 567". Cũng là trường bắt buộc trên hoá đơn VAT | `BusinessPartners.FederalTaxID` |
 | `discount_percent` | Chip hạng: "Hạng Vàng, CK 20%" — hiện chỉ ghi được "Hạng Vàng" | nhóm chiết khấu theo hạng, hoặc `SpecialPrices` |
-| `sales_rep { name, phone }` | Card "Sale phụ trách" ở Hồ sơ, và mọi nút "Gọi Sale" trong app | `BusinessPartners.SalesPersonCode` → `SalesPersons` |
+| `sales_rep { name, phone }` | Card "Sale phụ trách" ở Hồ sơ, và mọi nút "Gọi Sale" trong app | **Đã có sẵn trong dữ liệu BQ** — xem ghi chú dưới |
 
 Thiếu `sales_rep` là thiếu nặng nhất: năm luồng trong app có nút gọi người hỗ
 trợ (đơn chờ duyệt, đơn bị từ chối, tìm không ra, sheet vượt hạn mức, màn OTP),
@@ -458,6 +458,21 @@ máy tới đúng Sale của mình.
 
 **Số tổng đài hiện dùng (`02363745745`) lấy từ ảnh thiết kế `11-Profile.png`,
 BQ chưa xác nhận.** Nó nằm ở `app.json` › `expo.extra.supportPhone`, đổi một chỗ.
+
+### A8.1 Hai trường này RẺ hơn tưởng — phát hiện khi rà soát vòng 2
+
+Cả hai đã nằm sẵn trong dữ liệu BQ, chỉ là `GET /api/dealers/{code}` không trả ra:
+
+- **`sales_rep`** — đơn BQ1021 trả về `approver: "Trần Thu Hà"`, đúng tên Sale
+  trong thiết kế `11-Profile.png`. Nghĩa là tên Sale đã có ở bảng duyệt đơn /
+  phân công Sale. Chỉ cần nối: lấy người duyệt đơn gần nhất, hoặc đọc thẳng bảng
+  phân công nếu có, rồi trả kèm số điện thoại.
+- **`tax_code`** — màn Đăng ký đại lý trong chính app này đã thu "Mã số thuế (10
+  hoặc 13 chữ số)" ở bước 1/2. BQ CÓ thu MST lúc đăng ký; việc còn lại chỉ là trả
+  nó ra ở endpoint hồ sơ.
+
+Tức A8 không phải "thêm ba trường mới" mà là "expose hai trường đã có + tính một
+trường (`discount_percent`) từ hạng".
 
 
 ## Việc sẽ làm sau khi nhận xác nhận

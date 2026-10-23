@@ -685,6 +685,10 @@ _SYS_PROMPT = (
     "không tạo action. Nếu đại lý hỏi theo MÀU, chỉ liệt kê đúng sản phẩm có field 'colors' khớp "
     "màu đó, không đoán — mẫu nào field 'colors' rỗng nghĩa là chưa có dữ liệu màu, không tự suy "
     "diễn màu cho mẫu đó. Đưa 2-4 'chips' gợi ý câu hỏi tiếp theo khi hợp lý. "
+    "CHIPS là LỜI CỦA ĐẠI LÝ nói ra, không phải lời của BQ: viết như câu đại lý "
+    "sẽ bấm để hỏi hoặc để làm tiếp ('Hoá đơn nào chưa trả?', 'Thanh toán công nợ', "
+    "'Đặt lại đơn này'). TUYỆT ĐỐI không viết chip kiểu BQ nói với đại lý "
+    "('Yêu cầu thanh toán', 'Nhắc công nợ', 'Xác nhận đơn'). "
     "HẠN THANH TOÁN: chỉ nói hạn khi hoá đơn trong DATA có field 'due' khác null. "
     "'due' null nghĩa là hợp đồng chưa ghi số ngày công nợ — nói 'chưa có hạn thanh toán', "
     "TUYỆT ĐỐI không tự cộng 30 ngày hay bất kỳ số ngày nào vào ngày đặt. "
@@ -693,6 +697,28 @@ _SYS_PROMPT = (
     'CHỈ xuất JSON đúng dạng: {"answer": string, "chips"?: string[], '
     '"action"?: {"type":"create_order","lines":[{"code":string,"sizes":{size:qty}}]}}.'
 )
+
+
+# Chip nào LLM hay viết sai vai (lời BQ nói với đại lý) -> câu đại lý tự nói.
+# Chỉ dẫn hệ thống là lời khuyên, không phải ràng buộc; chặn ở đây là chặn chắc.
+_CHIP_FIX = {
+    "yêu cầu thanh toán": "Thanh toán công nợ",
+    "nhắc công nợ": "Thanh toán công nợ",
+    "xác nhận đơn": "Đơn nào đang giao?",
+    "duyệt đơn": "Đơn nào chờ duyệt?",
+}
+
+
+def _fix_chips(chips: list) -> list:
+    """Đưa chip về đúng vai NGƯỜI NÓI, bỏ trùng, giữ thứ tự."""
+    out: list[str] = []
+    for c in chips or []:
+        if not isinstance(c, str):
+            continue
+        label = _CHIP_FIX.get(c.strip().lower(), c.strip())
+        if label and label not in out:
+            out.append(label)
+    return out
 
 
 def _groq_raw(system_prompt: str, data_obj: dict, q: str) -> dict | None:
@@ -773,7 +799,7 @@ def _gemini_answer(ctx: dict, q: str) -> dict | None:
     out = _gemini_raw(_SYS_PROMPT, _llm_context(ctx, q), q)
     if not out:
         return None
-    result = {"answer": _norm_nl(out.get("answer", "")), "chips": out.get("chips", []), "engine": "ai"}
+    result = {"answer": _norm_nl(out.get("answer", "")), "chips": _fix_chips(out.get("chips", [])), "engine": "ai"}
     act = _finalize_action(ctx, out.get("action"))
     if act:
         result["action"] = act
@@ -809,7 +835,7 @@ def _rag_answer(ctx: dict, q: str) -> dict | None:
             res = json.loads(r.read().decode("utf-8"))
         # RAI cần trả {"answer": "...", "chips"?: [...]}
         if isinstance(res, dict) and res.get("answer"):
-            return {"answer": res["answer"], "chips": res.get("chips", []), "engine": "rai"}
+            return {"answer": res["answer"], "chips": _fix_chips(res.get("chips", [])), "engine": "rai"}
     except Exception:
         return None  # RAI lỗi → fallback engine local
     return None

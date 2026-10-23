@@ -162,27 +162,25 @@ export function AddressForm({ editing, onCreate, onUpdate, onDelete }: AddressFo
             style={styles.col}
           />
         </View>
-        {/* Tỉnh/TP và Phường/Xã CÙNG MỘT HÀNG hai cột (SPEC §3.32). */}
-        <View style={styles.two}>
-          <Select
-            label="Tỉnh / Thành phố"
-            placeholder="Chọn tỉnh"
-            options={provinces}
-            value={form.province}
-            onChange={(v) => setForm((f) => ({ ...f, province: v, ward: undefined }))}
-            style={styles.col}
-          />
-          <Select
-            label="Phường / Xã"
-            placeholder="Chọn phường, xã"
-            options={wards}
-            value={form.ward}
-            onChange={(v) => set("ward", v)}
-            disabled={!form.province}
-            disabledHint="Chọn tỉnh, thành phố trước"
-            style={styles.col}
-          />
-        </View>
+      {/* MỖI Ô MỘT HÀNG, full width (SPEC §5-N.11): tên phường/xã tiếng Việt
+          thường dài hơn nửa bề ngang màn — "Phường Cẩm Châu" trong hai cột ở khổ
+          390 bị cắt thành "Phường Cẩm ...". */}
+      <Select
+        label="Tỉnh / Thành phố"
+        placeholder="Chọn tỉnh, thành phố"
+        options={provinces}
+        value={form.province}
+        onChange={(v) => setForm((f) => ({ ...f, province: v, ward: undefined }))}
+      />
+      <Select
+        label="Phường / Xã"
+        placeholder="Chọn phường, xã"
+        options={wards}
+        value={form.ward}
+        onChange={(v) => set("ward", v)}
+        disabled={!form.province}
+        disabledHint="Chọn tỉnh, thành phố trước"
+      />
         <TextField
           label="Số nhà, tên đường"
           value={form.street}
