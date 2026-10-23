@@ -318,7 +318,7 @@ Thứ tự từ trên xuống, khoảng cách 16:
 - Dock: "Tạo mã chuyển khoản" → màn Chuyển khoản (10) với số tiền đã chọn; nội dung chuyển khoản không gắn số hoá đơn khi trả số tiền khác (ví dụ "DL0215 TT")
 
 ### 3.32 Sửa và xoá địa chỉ (`32-AddressEdit.png`) — dựng trong SHEET, xem §5-M.1
-- Vào từ nút "Sửa" ở Sổ địa chỉ (23). Form như 3.25, điền sẵn; Tỉnh/TP và Phường/Xã cùng một hàng 2 cột
+- Vào từ nút "Sửa" ở Sổ địa chỉ (23). Form như 3.25, điền sẵn; Tỉnh/TP và Phường/Xã **mỗi ô một hàng, full width** (quyết định §5-N.11 — hai cột cắt mất tên phường/xã ở khổ 390)
 - Nút outline danger "Xoá địa chỉ này" (hỏi xác nhận trước khi xoá). Địa chỉ mặc định: nút vô hiệu + ghi chú "Địa chỉ mặc định không xoá được: hãy đặt địa chỉ khác làm mặc định trước"
 - Nút "Lưu thay đổi" nằm NGOÀI vùng cuộn, dán đáy sheet nên luôn ở trên bàn phím
 - Ảnh vẽ một màn riêng; bản dựng để trong bottom sheet cao ≥ 90% (quyết định §5-M.1). Ảnh vẫn đúng về nội dung và thứ tự trường
@@ -360,5 +360,22 @@ Thứ tự từ trên xuống, khoảng cách 16:
      - **Hàng "Gọi tổng đài BQ" trong card danh sách ở Hồ sơ:** icon điện thoại trong tròn 40 nền subtle; tiêu đề "Gọi tổng đài BQ"; phụ đề là số hotline (13 muted, tabular-nums); bên phải nút tròn 44 nền `brand` icon điện thoại trắng THAY chevron, chạm là `tel:`. Vị trí: hàng cuối của card danh sách, ngay trên "Điều khoản và chính sách". **LUÔN hiện, kể cả khi đã có Sale phụ trách** — Sale có thể không nghe máy, lúc đó đại lý cần một số khác ngay trên cùng màn. Khi có `sales_rep` thì card "Sale phụ trách" hiện như thiết kế và hàng tổng đài vẫn giữ
      - Số hotline lấy từ `app.json` › `expo.extra.supportPhone` (`TODO(api)`: số thật chưa được BQ xác nhận). **Chưa cấu hình số thì ẩn hàng này và ẩn mọi nút gọi, không hiện số giả** — một số điện thoại sai còn tệ hơn không có số, vì đại lý sẽ gọi nó
      - Một chỗ quyết định duy nhất: `src/lib/support.ts` và `src/lib/dealer.ts`
+
+- **N. Rà soát vòng 2, đã quyết (23/10/2026):** 15 điểm, trong đó 4 điểm do chính đợt dựng Đợt 1–2 sinh ra.
+  - **1. Dòng thời gian:** đơn đã nhận (`orderStep` = 4) thì MỌI bước là `done`, không có bước `current`. Có test cho `orderStep` ở cả 5 bậc, đơn huỷ và đơn bị từ chối
+  - **2. "Đặt lại nhanh":** chỉ gợi ý đơn ĐÃ NHẬN (`orderStep === 4`), không gợi ý đơn huỷ/từ chối. Giỏ hàng và `ReorderSheet` dùng CHUNG một hàm (`src/lib/orders.ts`). Ảnh thiếu thì dùng placeholder của `ProductImage`, không để ô rỗng
+  - **3. Dock chọn size:** 0 đôi thì hiện "Hạn mức còn …", KHÔNG báo vượt. Dock của Chi tiết sản phẩm và sheet Đặt nhanh gộp thành MỘT component `OrderDock` — lỗi này đã lặp hai lần vì hai bản mã
+  - **4. Báo đã chuyển khoản không gắn hoá đơn:** `paymentDeclarations` nhận cả khoản trả công nợ (`{ kind: 'debt', amount, content, declaredAt }`), lưu qua repository (mock + AsyncStorage, `TODO(api)`). Tab Công nợ hiện banner `infoTint` ngay dưới thẻ: "Đã báo chuyển X lúc HH:mm dd/MM, chờ BQ ghi nhận" (nhiều khoản: "N khoản, tổng X"). Có thông báo "Đã gửi báo chuyển khoản". **Hạn mức KHÔNG đổi** cho tới khi BQ ghi nhận
+  - **5. Màn không tìm thấy:** `app/+not-found.tsx` theo khuôn empty state — icon tìm kiếm, "Không tìm thấy trang này", "Liên kết có thể đã cũ hoặc nội dung đã bị xoá.", Pill "Về trang chủ". Deep link tới đơn không tồn tại dùng cùng khuôn với câu "Đơn hàng này không còn"
+  - **6. Không có giá trị thay thế:** bỏ mọi `"Chưa có"`, `"—"`, `"N/A"` dùng làm chỗ trống. Thiếu dữ liệu thì ẩn (xem §5-M.3)
+  - **7. Sửa thông tin đại diện:** dòng ở Hồ sơ có chevron → sheet theo khuôn `AddressForm`. Họ tên sửa được; **số điện thoại đăng nhập CHỈ ĐỌC** kèm chú thích 13 muted "Đổi số đăng nhập: gọi tổng đài BQ"; Email nếu có; Pill "Lưu thay đổi". Qua repository mock, `TODO(api)` cần endpoint đại lý tự sửa hồ sơ
+  - **8. Ghi chú đơn:** lưu `AsyncStorage` theo mã đơn, ≤ 254 ký tự, cho tới khi `POST /api/orders` nhận trường này
+  - **9. Đơn nháp:** câu cuối màn đổi thành "Đơn nháp được lưu trên máy này." — không hứa đồng bộ thiết bị khi chưa có API
+  - **10. Tab Đơn hàng:** Tất cả / Chờ duyệt / **Đang xử lý** (bước 2 và 3) / Đã nhận
+  - **11. Form địa chỉ:** Tỉnh/TP và Phường/Xã MỖI Ô MỘT HÀNG, full width. `Select` không cắt chữ, cho xuống 2 dòng nếu cần — tên phường/xã tiếng Việt dài hơn nửa bề ngang màn
+  - **12. Nút trả tiền:** nút trả tiền đứng cạnh MỘT SỐ TIỀN CỤ THỂ thì luôn mở `/pay` với đúng số đó chọn sẵn. Áp cho nút "Thanh toán" cạnh hạn thanh toán ở Trang chủ
+  - **13. Ghi chú ở Chi tiết đơn:** ẩn hàng khi đơn đã qua bước đóng gói VÀ không có ghi chú; có ghi chú thì hiện chỉ đọc
+  - **14. Màn "Đã gửi đơn":** bỏ dòng "Trạng thái: …". Thêm card tóm tắt (mã đơn, số mẫu + số đôi, tổng tiền, Giao đến, Ghi chú nếu có) và một câu "Bước tiếp theo" theo trạng thái. Hai nút giữ nguyên
+  - **15. Chip trợ lý là LỜI CỦA ĐẠI LÝ nói ra**, không phải lời BQ: "Yêu cầu thanh toán" → "Thanh toán công nợ" (dẫn tới `/pay`). Rà toàn bộ chip theo nguyên tắc này
 
 - **Ngoài phạm vi đợt này:** dark mode, onboarding lần đầu
