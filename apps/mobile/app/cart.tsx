@@ -240,6 +240,12 @@ export default function CartScreen() {
               </T>
             }
           />
+          {/* TODO(api): chưa có trường VAT trong phản hồi tạo đơn (SPEC §5-C).
+              Cho tới lúc đó nói rõ giá chưa gồm thuế, thay vì để đại lý chốt đơn
+              rồi mới thấy hoá đơn cộng thêm 8%. Khi API trả số thật thì đổi dòng
+              này thành hai dòng Tạm tính / Thuế GTGT. */}
+          <T variant="small" tone="muted" style={styles.vatNote}>Giá chưa gồm VAT</T>
+
           <View style={styles.rule}><CardDivider /></View>
           {over > 0 ? (
             <Notice kind="warn">
@@ -301,6 +307,7 @@ export default function CartScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.canvas },
   body: { paddingHorizontal: space.screen, gap: space.x3 },
+  vatNote: { marginTop: space.x2 },
   rule: { marginVertical: space.x3 },
   flex: { flex: 1 },
   again: { gap: space.x3, marginTop: space.x5 },

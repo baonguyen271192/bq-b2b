@@ -284,7 +284,10 @@ Thứ tự từ trên xuống, khoảng cách 16:
 ## 5. Sửa đổi sau review (ưu tiên cao hơn phần còn lại của SPEC)
 - **A. Cam làm chữ:** nền cam có chữ trắng = `brand #C24E00`; chữ cam trên nền sáng (canvas, paper, tint) = `brandDeep #9E3F00` (6.09:1 trên canvas, 5.81:1 trên tint). Token ngữ nghĩa `textBrand = brandDeep`
 - **B.** Đầu cột bảng hoá đơn VAT 13px. Chữ mang thông tin ≥ 13px, không ngoại lệ
-- **C. VAT:** dòng "Giá đã gồm VAT" (13 muted) dưới giá ở Chi tiết, Đặt nhanh, card tổng kết Giỏ hàng. Thuế suất, đơn giá chưa thuế, thành tiền, tiền thuế: hiển thị đúng số backend/hệ thống HĐĐT trả về, app không tự tính, không hardcode 8%
+- **C. VAT:** ~~dòng "Giá đã gồm VAT"~~ — SAI, đã bỏ. Bảng giá sỉ CHƯA gồm VAT: `InvoicePreview` cộng thêm "Thuế GTGT 8%" lên trên tạm tính, nên nói "đã gồm" là hứa sai một khoản 8% mà đại lý chỉ phát hiện lúc nhận hoá đơn.
+  - **Tạm thời (chưa có API):** card tổng kết Giỏ hàng hiện dòng "Giá chưa gồm VAT" (13 muted) ngay trên Tổng thanh toán. Chi tiết và Đặt nhanh không ghi gì — một dòng ở nơi chốt đơn là đủ, rắc khắp nơi thành nhiễu
+  - **Khi API trả trường VAT:** card tổng kết hiện ba dòng Tạm tính / Thuế GTGT / Tổng thanh toán, bỏ dòng tạm thời ở trên
+  - Thuế suất, đơn giá chưa thuế, thành tiền, tiền thuế: hiển thị đúng số backend/hệ thống HĐĐT trả về, app không tự tính, không hardcode 8%
 - **D. Gửi đơn:** đang gửi (spinner trong Pill, khoá thao tác, chống gửi trùng) → thiếu hàng: sheet "Tồn kho đã thay đổi" theo khuôn 14-OverLimit (lựa chọn "Đặt theo số còn lại" / "Bỏ size này") → lỗi mạng: giữ giỏ, toast "Thử lại" → thành công: màn xác nhận khuôn empty state (icon check okTint, "Đã gửi đơn DH-…", nút "Xem đơn" / "Về trang chủ")
 - **E.** `flame` vs cam logo: chưa chốt, giữ một token duy nhất
 - **F.** Sau "Tôi đã chuyển khoản": hoá đơn ở Công nợ hiện tag info "Đang chờ BQ ghi nhận" thay nút "Trả ngay"
