@@ -22,6 +22,12 @@ export interface CreditCardProps {
   stats?: { label: string; value: string }[];
   /** Khối phụ nền tối bên trong — hàng "Hạn thanh toán" ở Trang chủ. */
   extra?: React.ReactNode;
+  /**
+   * Nút TRẮNG rộng hết thẻ, đặt dưới hai số thống kê (SPEC §3.9, §3.26) —
+   * "Thanh toán công nợ". Khác `extra`: `extra` là một khối thông tin, cái này
+   * là một hành động.
+   */
+  action?: React.ReactNode;
   style?: ViewStyle;
 }
 
@@ -35,7 +41,7 @@ export interface CreditCardProps {
  * Mọi chữ bên trong là trắng trên `brand` = 4.79:1, đạt AA cả chữ thường.
  */
 export function CreditCard({
-  label, amount, chip, progress, stats, extra, style,
+  label, amount, chip, progress, stats, extra, action, style,
 }: CreditCardProps) {
   return (
     <View style={[styles.card, style]}>
@@ -58,7 +64,15 @@ export function CreditCard({
         ) : null}
       </View>
 
-      <Price value={amount} variant="amountHero" tone="white" />
+      {/*
+        Số trên thẻ KHÔNG BAO GIỜ âm (SPEC §3.26).
+
+        Backend trả thẳng `credit_available: -247414600` khi đại lý đã vượt hạn
+        mức, và bản cũ in nguyên: con số to nhất app là một số âm nằm dưới chữ
+        "khả dụng". Khả dụng dừng ở 0đ; phần vượt nói bằng chip đỏ ở góc, nơi
+        đọc ra là "bạn đang vượt bao nhiêu" chứ không phải "bạn còn âm bao nhiêu".
+      */}
+      <Price value={Math.max(0, amount)} variant="amountHero" tone="white" />
 
       {progress !== undefined ? (
         <View style={styles.track}>
@@ -78,6 +92,7 @@ export function CreditCard({
       ) : null}
 
       {extra ? <View style={styles.extra}>{extra}</View> : null}
+      {action ? <View style={styles.action}>{action}</View> : null}
     </View>
   );
 }
@@ -110,4 +125,5 @@ const styles = StyleSheet.create({
     backgroundColor: color.blackA(0.18), borderRadius: radius.option,
     padding: space.x3, marginTop: space.x1,
   },
+  action: { marginTop: space.x1 },
 });

@@ -121,6 +121,21 @@ export default function HomeScreen() {
    * hạn. Hai màn nói hai số về cùng một khoản nợ.
    */
   const due = nextDueInvoice(credit?.invoices ?? []);
+  /** Phần vượt hạn mức, luôn là số DƯƠNG. 0 nghĩa là chưa vượt. */
+  const overBy = Math.max(0, -dealer.credit_available);
+  /*
+   * Đơn đang chờ duyệt, gộp số lượng và tổng tiền.
+   *
+   * SPEC §3.26: bỏ câu "gồm N đơn chờ duyệt" nếu BQ xác nhận đơn chờ duyệt
+   * KHÔNG tính vào dư nợ (câu hỏi 1 trong báo cáo rà soát). Tới lúc đó thì
+   * `credit_used` của backend ĐANG cộng cả chúng, nên nói ra đúng hơn là im.
+   */
+  const pending = (orders ?? []).reduce(
+    (acc, o) => (o.over_limit && o.status.toLowerCase().includes("chờ")
+      ? { count: acc.count + 1, total: acc.total + o.subtotal }
+      : acc),
+    { count: 0, total: 0 },
+  );
   const usedRatio = dealer.credit_limit ? dealer.credit_used / dealer.credit_limit : 0;
 
   return (
@@ -162,13 +177,38 @@ export default function HomeScreen() {
         amount={dealer.credit_available}
         // TODO(api): % chiết khấu theo hạng chưa có trong `Dealer` (thiết kế ghi
         // "Hạng Vàng, CK 20%"), nên chỉ hiện hạng.
-        chip={{ label: `Hạng ${dealer.tier}` }}
+        chip={
+          overBy > 0
+            ? { label: `Vượt ${vndShort(overBy)}`, alert: true }
+            : { label: `Hạng ${dealer.tier}` }
+        }
         progress={usedRatio}
-        stats={[
-          { label: "Tổng hạn mức", value: vndShort(dealer.credit_limit) },
-          { label: "Đã dùng", value: vndShort(dealer.credit_used) },
-        ]}
-        extra={due ? (
+        stats={
+          overBy > 0
+            ? [
+              { label: "Hạn mức", value: vndShort(dealer.credit_limit) },
+              { label: "Dư nợ", value: vndShort(dealer.credit_used) },
+            ]
+            : [
+              { label: "Tổng hạn mức", value: vndShort(dealer.credit_limit) },
+              { label: "Đã dùng", value: vndShort(dealer.credit_used) },
+            ]
+        }
+        action={overBy > 0 ? (
+          <Pill
+            label="Thanh toán công nợ"
+            tone="onBrand"
+            size={48}
+            onPress={() => router.push("/pay")}
+          />
+        ) : null}
+        extra={overBy > 0 ? (
+          <T variant="small" tone="white">
+            {pending.count > 0
+              ? `Dư nợ gồm ${pending.count} đơn chờ duyệt (${vndShort(pending.total)}). Đơn mới sẽ cần Sale duyệt cho tới khi bạn thanh toán bớt.`
+              : "Đơn mới sẽ cần Sale duyệt cho tới khi bạn thanh toán bớt."}
+          </T>
+        ) : due ? (
           <View style={styles.due}>
             <Ionicons name="calendar-outline" size={18} color={color.white} />
             <View style={styles.dueText}>

@@ -73,8 +73,17 @@ export default function DebtScreen() {
         progress={dealer.credit_limit ? dealer.credit_used / dealer.credit_limit : 0}
         stats={[
           { label: "Hạn mức", value: vndShort(dealer.credit_limit) },
-          { label: "Khả dụng", value: vndShort(dealer.credit_available) },
+          // Khả dụng không bao giờ âm (SPEC §3.26, áp cho CreditCard ở mọi nơi).
+          { label: "Khả dụng", value: vndShort(Math.max(0, dealer.credit_available)) },
         ]}
+        action={
+          <Pill
+            label="Thanh toán công nợ"
+            tone="onBrand"
+            size={48}
+            onPress={() => router.push("/pay")}
+          />
+        }
       />
 
       <Card style={styles.card}>

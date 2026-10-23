@@ -15,6 +15,9 @@ import {
   Card, CardDivider, EmptyState, Notice, Pill, Price, ScreenHeader, T, Toast,
 } from "@/components/ui";
 
+/** `id` đặc biệt: trả theo số tiền thay vì theo một hoá đơn (SPEC §3.31). */
+const TRANSFER_BY_AMOUNT = "cong-no";
+
 /**
  * Chuyển khoản (SPEC §3.10) + quyết định F.
  *
@@ -25,7 +28,12 @@ import {
 export default function TransferScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, amount: amountParam } = useLocalSearchParams<{ id: string; amount?: string }>();
+  /**
+   * `cong-no` = trả theo SỐ TIỀN, không gắn hoá đơn nào (SPEC §3.31). Không đọc
+   * đơn, lấy số tiền từ tham số.
+   */
+  const byAmount = id === TRANSFER_BY_AMOUNT;
   const { dealer } = useSession();
 
   const [order, setOrder] = useState<Order | null>(null);
@@ -33,13 +41,13 @@ export default function TransferScreen() {
   const [toast, setToast] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!id) return;
+    if (!id || byAmount) return;
     try {
       setOrder(await api.order(id));
     } catch {
       setMissing(true);
     }
-  }, [id]);
+  }, [id, byAmount]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
@@ -62,7 +70,7 @@ export default function TransferScreen() {
     );
   }
 
-  if (!order || !dealer) {
+  if ((!order && !byAmount) || !dealer) {
     return (
       <View style={[styles.screen, styles.center]}>
         <ActivityIndicator color={color.brand} />
@@ -70,11 +78,12 @@ export default function TransferScreen() {
     );
   }
 
-  const note = transferNote(dealer.code, order.id);
+  const money = byAmount ? Number(amountParam) || 0 : (order?.subtotal ?? 0);
+  const note = transferNote(dealer.code, byAmount ? null : order?.id);
   const qr = buildVietQrPayload({
     bank: BQ_BANK.bank,
     accountNumber: BQ_BANK.number,
-    amount: order.subtotal,
+    amount: money,
     note,
   });
 
@@ -90,7 +99,7 @@ export default function TransferScreen() {
         <ScreenHeader
           variant="back"
           title="Chuyển khoản"
-          caption={`Thanh toán ${order.id}`}
+          caption={byAmount ? "Trả theo số tiền" : `Thanh toán ${order?.id ?? ""}`}
           onBack={() => router.back()}
         />
 
@@ -117,7 +126,7 @@ export default function TransferScreen() {
           )}
           <T variant="chip" tone="muted">Quét bằng app ngân hàng để chuyển</T>
           <T variant="small" tone="muted">Số tiền</T>
-          <Price value={order.subtotal} variant="screenTitle" weight="extrabold" />
+          <Price value={money} variant="screenTitle" weight="extrabold" />
         </Card>
 
         <Card style={styles.info}>
@@ -148,7 +157,9 @@ export default function TransferScreen() {
         <Pill
           label="Tôi đã chuyển khoản"
           onPress={() => {
-            paymentDeclarations.declare(order.id);
+            // Trả theo số tiền thì chưa gắn được vào hoá đơn nào, nên không
+            // đánh dấu hoá đơn nào là "đã báo chuyển khoản".
+            if (order) paymentDeclarations.declare(order.id);
             router.replace("/(tabs)/debt");
           }}
         />

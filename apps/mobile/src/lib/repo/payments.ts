@@ -27,9 +27,11 @@ export const BQ_BANK: BankAccount = {
  * Nội dung chuyển khoản để BQ tự đối soát: `<mã đại lý> <mã hoá đơn>`, bỏ dấu
  * gạch và khoảng trắng thừa vì nhiều ngân hàng cắt ký tự đặc biệt.
  */
-export function transferNote(dealerCode: string, invoiceId: string): string {
+export function transferNote(dealerCode: string, invoiceId?: string | null): string {
   const clean = (s: string) => s.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
-  return `${clean(dealerCode)} ${clean(invoiceId)}`;
+  // Trả theo SỐ TIỀN (không gắn hoá đơn nào) thì ghi "TT" — SPEC §3.31. Gắn một
+  // mã hoá đơn vào khoản trả một phần sẽ làm kế toán cấn nhầm vào đúng hoá đơn đó.
+  return invoiceId ? `${clean(dealerCode)} ${clean(invoiceId)}` : `${clean(dealerCode)} TT`;
 }
 
 /**

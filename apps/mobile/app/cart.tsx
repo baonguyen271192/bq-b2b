@@ -109,7 +109,7 @@ export default function CartScreen() {
   const onOverLimitChoice = (choice: OverLimitChoice) => {
     setOverLimitSheet(false);
     if (choice === "approve") { void send(); return; }
-    if (choice === "pay") { router.push("/(tabs)/debt"); return; }
+    if (choice === "pay") { router.push("/pay"); return; }
     router.back();
   };
 
