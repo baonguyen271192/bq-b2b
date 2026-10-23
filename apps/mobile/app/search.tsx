@@ -3,13 +3,18 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { Linking, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { totalPairs } from "@bq/core";
 import type { Product } from "@bq/types";
 import { api } from "@/lib/api";
+import { useCart } from "@/lib/cart";
+import { useSearchHistory } from "@/lib/search-history";
 import { useSession } from "@/lib/session";
 import { color, space } from "@/theme";
 import { ProductCard } from "@/components/product/ProductCard";
+import { QuickAddSheet } from "@/components/product/QuickAddSheet";
 import {
   Card, Chip, EmptyState, IconButton, Pill, Price, ProductImage, SearchField, T,
+  TextButton, Toast, type SizeQty,
 } from "@/components/ui";
 
 /** Số mã gợi ý tối đa trong card "Mã gần giống" (SPEC §3.16). */
@@ -54,14 +59,21 @@ export default function SearchScreen() {
   const { dealer } = useSession();
   const { q: initialQ, size: initialSize } = useLocalSearchParams<{ q?: string; size?: string }>();
 
+  const { lines, upsert, subtotal } = useCart();
+  const { recent, remember, clear: clearHistory } = useSearchHistory();
+
   const [all, setAll] = useState<Product[] | null>(null);
   const [q, setQ] = useState(initialQ ?? "");
   const [size, setSize] = useState<string | null>(initialSize ?? null);
+  const [quickAdd, setQuickAdd] = useState<Product | null>(null);
+  const [fetchedAt, setFetchedAt] = useState(new Date());
+  const [toast, setToast] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!dealer) return;
     try {
       setAll(await api.products(dealer.code));
+      setFetchedAt(new Date());
     } catch {
       setAll([]);
     }
@@ -91,6 +103,18 @@ export default function SearchScreen() {
       .map((x) => x.p);
   }, [all, needle, hits.length]);
 
+  const cartSizesOf = (code: string): SizeQty =>
+    lines.find((l) => l.code === code)?.sizes ?? {};
+  const cartMoneyOf = (code: string): number => {
+    const line = lines.find((l) => l.code === code);
+    return line ? totalPairs(line.sizes) * line.unitPrice : 0;
+  };
+
+  const openProduct = (code: string) => {
+    remember(q);
+    router.push(`/product/${code}`);
+  };
+
   return (
     <ScrollView
       style={styles.screen}
@@ -106,6 +130,7 @@ export default function SearchScreen() {
           placeholder="Tìm tên hoặc mã mẫu"
           focused
           autoFocus
+          onSubmitEditing={() => remember(q)}
           style={styles.search}
         />
       </View>
@@ -122,14 +147,39 @@ export default function SearchScreen() {
         </View>
       ) : null}
 
-      {hits.length > 0 ? (
-        <View style={styles.grid}>
-          {hits.map((p) => (
-            <View key={p.code} style={styles.cell}>
-              <ProductCard product={p} onPress={() => router.push(`/product/${p.code}`)} />
-            </View>
-          ))}
+      {/* Lịch sử: chỉ hiện khi CHƯA gõ gì. Đang gõ mà vẫn chèn một khối ở trên
+          kết quả thì đẩy kết quả xuống dưới màn. */}
+      {!needle && recent.length > 0 ? (
+        <View style={styles.history}>
+          <View style={styles.historyHead}>
+            <T variant="small" weight="semibold" tone="muted">Tìm gần đây</T>
+            <TextButton label="Xoá" onPress={clearHistory} />
+          </View>
+          <View style={styles.historyChips}>
+            {recent.map((term) => (
+              <Chip key={term} label={term} variant="filter" onPress={() => setQ(term)} />
+            ))}
+          </View>
         </View>
+      ) : null}
+
+      {hits.length > 0 ? (
+        <>
+          <T variant="small" tone="muted">
+            {`${hits.length} kết quả${needle ? ` cho “${q.trim()}”` : ""}`}
+          </T>
+          <View style={styles.grid}>
+            {hits.map((p) => (
+              <View key={p.code} style={styles.cell}>
+                <ProductCard
+                  product={p}
+                  onPress={() => openProduct(p.code)}
+                  onQuickAdd={() => { remember(q); setQuickAdd(p); }}
+                />
+              </View>
+            ))}
+          </View>
+        </>
       ) : needle ? (
         <>
           <EmptyState
@@ -179,6 +229,24 @@ export default function SearchScreen() {
           ) : null}
         </>
       ) : null}
+
+      <QuickAddSheet
+        product={quickAdd}
+        onClose={() => setQuickAdd(null)}
+        onAdd={(product, sizes) => {
+          upsert(product, sizes);
+          setQuickAdd(null);
+          setToast(`Đã thêm ${totalPairs(sizes)} đôi`);
+        }}
+        creditAvailable={dealer?.credit_available ?? 0}
+        cartSubtotalWithout={subtotal - cartMoneyOf(quickAdd?.code ?? "")}
+        existing={cartSizesOf(quickAdd?.code ?? "")}
+        stockFetchedAt={fetchedAt}
+        onRefreshStock={load}
+        onExceedStock={(sz, stock) => setToast(`Size ${sz} chỉ còn ${stock} đôi`)}
+      />
+
+      {toast ? <Toast message={toast} onHide={() => setToast(null)} /> : null}
     </ScrollView>
   );
 }
@@ -189,6 +257,9 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   search: { flex: 1 },
   filters: { flexDirection: "row", alignItems: "center", gap: space.x2 },
+  history: { gap: space.x2 },
+  historyHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  historyChips: { flexDirection: "row", flexWrap: "wrap", gap: space.x2 },
   grid: { flexDirection: "row", flexWrap: "wrap", columnGap: space.x3, rowGap: space.x5 },
   cell: { width: "48%", gap: space.x2 },
   actions: { flexDirection: "row", gap: space.x3 },

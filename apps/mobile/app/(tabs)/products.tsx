@@ -185,13 +185,9 @@ export default function ProductsScreen() {
               accessibilityLabel="Bộ lọc nâng cao"
               onPress={() => setSheet("filter")}
             />
-            {/* TODO(api): quét mã vạch cần module máy quét và API tra theo mã
-                vạch — chưa có cái nào, nên để vô hiệu thay vì mở một màn rỗng. */}
-            <IconButton
-              icon="barcode-outline"
-              disabled
-              accessibilityLabel="Quét mã vạch — chưa khả dụng"
-            />
+            {/* TODO(api): nút quét mã vạch ĐÃ GỠ. Nó cần module máy quét và API
+                tra theo mã vạch, chưa có cái nào — một nút mờ thường trực ở
+                header chỉ là rác chiếm chỗ. Dựng lại khi có đủ hai thứ đó. */}
           </View>
 
           <View style={styles.chipsWrap}>

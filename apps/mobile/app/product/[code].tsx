@@ -95,6 +95,13 @@ export default function ProductDetailScreen() {
   const margin = product.retail - product.price;
   const cartWithout = subtotal - (inCart ? totalPairs(inCart.sizes) * inCart.unitPrice : 0);
   const left = (dealer?.credit_available ?? 0) - (cartWithout + money);
+  /** Hạn mức còn khi CHƯA chọn gì ở màn này — số hiện lúc `pairs === 0`. */
+  const available = (dealer?.credit_available ?? 0) - cartWithout;
+  /**
+   * Chỉ báo vượt khi đã chọn đôi nào đó. Ở "0 đôi · 0đ" thì khoản vượt là nợ cũ,
+   * không phải việc đang làm — bật cảnh báo đỏ ở đó là doạ nhầm chỗ.
+   */
+  const over = pairs > 0 && left < 0;
 
   const addAll = () => {
     setSizes((prev) => {
@@ -167,10 +174,15 @@ export default function ProductDetailScreen() {
               variant="pill"
               style={styles.colourList}
             />
-            <TextButton label="+1 mỗi size" underline onPress={addAll} />
           </View>
 
-          <T variant="cardTitle" weight="bold">Chọn size và số lượng</T>
+          {/* Nhãn đầy đủ và đặt NGAY TRÊN danh sách size, không nằm cạnh giá:
+              "+1 mỗi size" đứng cạnh "425.600đ/đôi" đọc như một phần của giá,
+              và cách xa thứ nó tác động tới. */}
+          <View style={styles.sizeHead}>
+            <T variant="cardTitle" weight="bold">Chọn size và số lượng</T>
+            <TextButton label="Thêm 1 đôi mỗi size" underline onPress={addAll} />
+          </View>
           <StockStamp fetchedAt={fetchedAt} onRefresh={retry} />
           <SizeList
             stock={product.sizes}
@@ -187,10 +199,12 @@ export default function ProductDetailScreen() {
           value: <Price value={money} variant="amountSm" weight="extrabold" />,
         }}
         right={{
-          label: left < 0 ? "Vượt hạn mức" : "Hạn mức còn",
+          // Chưa chọn đôi nào thì chưa có gì để vượt: cảnh báo đỏ ở "0 đôi · 0đ"
+          // là nói về khoản nợ cũ, không phải về việc đang làm.
+          label: over ? "Vượt hạn mức" : "Hạn mức còn",
           value: (
-            <Num variant="label" weight="semibold" tone={left < 0 ? "danger" : "ink"}>
-              {vnd(Math.abs(left))}
+            <Num variant="label" weight="semibold" tone={over ? "danger" : "ink"}>
+              {vnd(over ? -left : Math.max(0, pairs > 0 ? left : available))}
             </Num>
           ),
         }}
@@ -231,6 +245,10 @@ const styles = StyleSheet.create({
   codeRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.x3 },
   priceRow: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: space.x3 },
   priceRight: { alignItems: "flex-end", gap: 1 },
+  sizeHead: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    gap: space.x3,
+  },
   colourRow: { flexDirection: "row", alignItems: "center", gap: space.x3 },
   colourList: { flex: 1 },
   flex: { flex: 1 },
