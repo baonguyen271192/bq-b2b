@@ -23,19 +23,33 @@ interface Bubble {
   action?: AssistantCreateOrderAction;
 }
 
-const GREETING: Bubble = {
+/**
+ * Lời chào gọi THẲNG TÊN đại lý.
+ *
+ * Bản cũ chốt cứng "Chào anh" — đại lý nào không phải nam thì câu đầu tiên của
+ * app đã gọi sai. Tên đại lý vừa đúng với mọi người vừa nói rõ app biết đang nói
+ * chuyện với ai.
+ */
+const greetingFor = (name: string): Bubble => ({
   id: "greeting",
   from: "bot",
-  text: "Chào anh, em có thể tra tồn kho, công nợ hoặc lên đơn nhanh cho anh.",
-};
+  text: `Chào ${name}, em có thể tra tồn kho, công nợ hoặc lên đơn nhanh.`,
+});
 
 /**
  * Backend trả câu in đậm kiểu markdown (`**25.536.000đ**`). `ChatBubble` là chữ
  * thuần nên dấu sao sẽ hiện nguyên — bỏ đi thay vì kéo cả bộ render markdown
  * vào cho đúng hai dấu sao.
+ *
+ * Đồng thời chuẩn hoá ký hiệu tiền về "đ" như cả app. Chỉ dẫn hệ thống đã yêu
+ * cầu LLM viết "đ", nhưng chỉ dẫn là lời khuyên chứ không phải ràng buộc — đã
+ * thấy cùng một hội thoại trả "297.414.600₫" ở câu này và "297.414.600 VNĐ" ở
+ * câu kế. Chặn ở đây là chặn chắc.
  */
 function plain(text: string): string {
-  return text.replace(/\*\*/g, "");
+  return text
+    .replace(/\*\*/g, "")
+    .replace(/(\d)\s*(?:VNĐ|VND|₫|đồng)\b/gi, "$1đ");
 }
 
 /** Gợi ý mặc định khi API chưa trả `chips`. */
@@ -48,8 +62,10 @@ export default function AssistantScreen() {
   const { dealer } = useSession();
   const { upsert } = useCart();
   const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
+  /** Đang chờ trả lời — xem `ask`. */
+  const asking = useRef(false);
 
-  const [bubbles, setBubbles] = useState<Bubble[]>([GREETING]);
+  const [bubbles, setBubbles] = useState<Bubble[]>([]);
   const [chips, setChips] = useState<string[]>(FALLBACK_CHIPS);
   const [draft, setDraft] = useState("");
   const [thinking, setThinking] = useState(false);
@@ -95,7 +111,12 @@ export default function AssistantScreen() {
   };
 
   const ask = useCallback(async (question: string) => {
-    if (!dealer || !question.trim() || thinking) return;
+    // Chặn bằng ref chứ KHÔNG bằng state `thinking`: `setThinking(true)` chỉ có
+    // hiệu lực ở lần render sau, nên hai lần chạm trong cùng một nhịp đều đọc ra
+    // `false` và gửi hai lần — đã thấy một câu hỏi ra hai bong bóng với hai câu
+    // trả lời khác nhau. `otp.tsx` dùng đúng cách này.
+    if (!dealer || !question.trim() || asking.current) return;
+    asking.current = true;
     const mine: Bubble = { id: `me-${Date.now()}`, from: "me", text: question.trim() };
     setBubbles((prev) => [...prev, mine]);
     setDraft("");
@@ -112,10 +133,11 @@ export default function AssistantScreen() {
         text: "Em chưa kết nối được. Anh kiểm tra mạng rồi hỏi lại giúp em nhé.",
       }]);
     } finally {
+      asking.current = false;
       setThinking(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dealer, thinking]);
+  }, [dealer]);
 
   const addToCart = async (action: AssistantCreateOrderAction) => {
     if (!dealer || adding) return;
@@ -143,6 +165,11 @@ export default function AssistantScreen() {
 
   if (!dealer) return null;
 
+  // Lời chào là giá trị DẪN XUẤT từ tên đại lý, không phải phần tử đầu của
+  // `bubbles`: seed vào state thì nó chốt ở lần render đầu, lúc phiên có thể
+  // chưa khôi phục xong và `dealer` còn null.
+  const thread = [greetingFor(dealer.name), ...bubbles];
+
   return (
     <KeyboardAvoidingView
       style={styles.screen}
@@ -167,7 +194,7 @@ export default function AssistantScreen() {
         showsVerticalScrollIndicator={false}
         onContentSizeChange={() => scroller.current?.scrollToEnd({ animated: true })}
       >
-        {bubbles.map((b) => (
+        {thread.map((b) => (
           <View key={b.id} style={styles.turn}>
             <ChatBubble from={b.from}>{plain(b.text)}</ChatBubble>
             {b.action ? (

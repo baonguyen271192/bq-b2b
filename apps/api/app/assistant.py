@@ -84,7 +84,12 @@ def build_context(dealer_code: str) -> dict:
 # ---------- Engine local (chạy sẵn cho demo) ----------
 
 def _fmt(n: int) -> str:
-    return f"{n:,.0f}".replace(",", ".") + "₫"
+    """Số tiền theo ĐÚNG một dạng: 1.234.000đ.
+
+    App dùng 'đ' thường ở mọi màn. Trợ lý trước đây trả '₫' ở câu này và 'VNĐ' ở
+    câu kế (do LLM tự chọn), nên cùng một hội thoại có ba kiểu ký hiệu tiền.
+    """
+    return f"{n:,.0f}".replace(",", ".") + "đ"
 
 
 def _norm_nl(text: str) -> str:
@@ -158,7 +163,7 @@ def _answer_due(ctx: dict) -> dict:
             tot = _fmt(sum(i["subtotal"] for i in unpaid))
             return {"answer": f"Đang có {len(unpaid)} hoá đơn chưa thanh toán, tổng {tot}, "
                               "nhưng chưa đơn nào có hạn thanh toán cụ thể. "
-                              "Anh/chị hỏi Sale phụ trách để biết hạn theo hợp đồng.",
+                              "Hỏi Sale phụ trách để biết hạn theo hợp đồng.",
                     "chips": ["Hoá đơn nào chưa trả?", "Cách thanh toán công nợ"]}
         return {"answer": "Hiện bạn không có công nợ nào tới hạn.", "chips": ["Tổng công nợ hiện tại"]}
     i, d = min(dues, key=lambda x: x[1])
@@ -902,7 +907,7 @@ _SALE_SYS = (
     "xếp hạng đại lý theo doanh số/công nợ; và SOẠN tin nhắn "
     "(nhắc công nợ, chăm sóc, thông báo khuyến mãi) khi được yêu cầu — xưng hô lịch sự, chuyên nghiệp. "
     "Trả lời tiếng Việt, ngắn gọn, có thể dùng **in đậm**, xuống dòng bằng \\n. "
-    "Số tiền định dạng có dấu chấm ngăn cách (vd 1.500.000₫). "
+    "Số tiền định dạng có dấu chấm ngăn cách và hậu tố đ thường (vd 1.500.000đ); không dùng VNĐ, VND hay ₫. "
     'CHỈ xuất JSON: {"answer": string, "chips"?: string[]}.'
 )
 
