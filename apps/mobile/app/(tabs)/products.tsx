@@ -7,6 +7,7 @@ import type { Product } from "@bq/types";
 import { totalPairs } from "@bq/core";
 import { api } from "@/lib/api";
 import { useCart } from "@/lib/cart";
+import { useFavourites } from "@/lib/favourites";
 import { useSession } from "@/lib/session";
 import { color, space } from "@/theme";
 import { ProductCard } from "@/components/product/ProductCard";
@@ -54,12 +55,9 @@ export default function ProductsScreen() {
   const [sheet, setSheet] = useState<"sort" | "size" | "filter" | null>(null);
   const [quickAdd, setQuickAdd] = useState<Product | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  /**
-   * TODO(api): chưa có API danh sách yêu thích. Giữ trong phiên để nút ♡ của
-   * thiết kế không phải là nút chết, nhưng nó KHÔNG lưu lại sau khi tắt app —
-   * đã ghi vào báo cáo Phase 3.
-   */
-  const [favourites, setFavourites] = useState<Set<string>>(() => new Set());
+  const { codes: favourites, toggle: toggleFavourite } = useFavourites();
+  /** Chip "Đã lưu" — lọc tại chỗ thay vì mở một màn riêng. */
+  const [savedOnly, setSavedOnly] = useState(false);
 
   const load = useCallback(async () => {
     if (!dealer) return;
@@ -103,6 +101,7 @@ export default function ProductsScreen() {
     if (category !== ALL) rows = rows.filter((p) => p.category === category);
     if (size) rows = rows.filter((p) => (p.sizes[size] ?? 0) > 0);
     if (inStockOnly) rows = rows.filter((p) => Object.values(p.sizes).some((n) => n > 0));
+    if (savedOnly) rows = rows.filter((p) => favourites.has(p.code));
     const needle = q.trim().toLowerCase();
     if (needle) {
       rows = rows.filter(
@@ -116,7 +115,7 @@ export default function ProductsScreen() {
       marginDesc: (a, b) => b.retail - b.price - (a.retail - a.price),
     };
     return sort === "default" ? rows : [...rows].sort(by[sort]);
-  }, [all, category, size, inStockOnly, q, sort]);
+  }, [all, category, size, inStockOnly, savedOnly, favourites, q, sort]);
 
   const cartSizesOf = (code: string): SizeQty =>
     lines.find((l) => l.code === code)?.sizes ?? {};
@@ -134,6 +133,7 @@ export default function ProductsScreen() {
   const clearFilters = () => {
     setSize(null);
     setInStockOnly(true);
+    setSavedOnly(false);
     setCategory(ALL);
     setSort("default");
   };
@@ -219,7 +219,15 @@ export default function ProductsScreen() {
             />
           </View>
 
-          <View style={[styles.pad, styles.filterRow]}>
+          {/* Cuộn ngang như hàng danh mục ngay trên: ba chip + công tắc "Còn
+              hàng" rộng hơn bề ngang máy ở khổ 393. Hàng đứng yên thì chip cuối
+              bị mép màn cắt mất. */}
+          <View style={styles.chipsWrap}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={[styles.pad, styles.filterRow]}
+            >
             <Chip
               label={SORTS.find((s) => s.value === sort)?.label ?? "Bán chạy"}
               variant="filter"
@@ -244,6 +252,20 @@ export default function ProductsScreen() {
                 accessibilityLabel="Chỉ hiện mẫu còn hàng"
               />
             </View>
+            <Chip
+              label={favourites.size > 0 ? `Đã lưu (${favourites.size})` : "Đã lưu"}
+              variant={savedOnly ? "applied" : "filter"}
+              onPress={() => setSavedOnly((v) => !v)}
+              {...(savedOnly ? { onRemove: () => setSavedOnly(false) } : null)}
+            />
+            </ScrollView>
+            <LinearGradient
+              colors={[color.whiteA(0), color.canvas]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.fade}
+              pointerEvents="none"
+            />
           </View>
         </View>
 
@@ -297,12 +319,7 @@ export default function ProductsScreen() {
                     // mốc thời gian, vì tình trạng đó đã không còn đáng tin.
                     stockNote={offline ? `Tồn kho lúc ${hhmm(fetchedAt)}` : undefined}
                     favourite={favourites.has(p.code)}
-                    onToggleFavourite={() => setFavourites((prev) => {
-                      const next = new Set(prev);
-                      if (next.has(p.code)) next.delete(p.code);
-                      else next.add(p.code);
-                      return next;
-                    })}
+                    onToggleFavourite={() => toggleFavourite(p.code)}
                     onPress={() => router.push(`/product/${p.code}`)}
                     onQuickAdd={() => setQuickAdd(p)}
                   />
@@ -415,7 +432,7 @@ const styles = StyleSheet.create({
   chips: { gap: space.x2, paddingHorizontal: space.screen },
   fade: { position: "absolute", right: 0, top: 0, bottom: 0, width: 40 },
   filterRow: { flexDirection: "row", alignItems: "center", gap: space.x2 },
-  stock: { flexDirection: "row", alignItems: "center", gap: space.x2, marginLeft: "auto" },
+  stock: { flexDirection: "row", alignItems: "center", gap: space.x2 },
   banner: { marginBottom: space.x4 },
   grid: { flexDirection: "row", flexWrap: "wrap", columnGap: space.x3, rowGap: space.x5 },
   gridStale: { opacity: 0.85 },

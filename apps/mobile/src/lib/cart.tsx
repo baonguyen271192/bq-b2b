@@ -1,5 +1,10 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext, useCallback, useContext, useEffect, useMemo, useRef, useState,
+  type ReactNode,
+} from "react";
 import type { Product } from "@bq/types";
+import { useSession } from "./session";
+import { loadJson, removeKey, saveJson, STORE_KEYS } from "./storage";
 
 export interface CartLine {
   code: string;
@@ -22,13 +27,49 @@ interface CartValue {
 const CartContext = createContext<CartValue | null>(null);
 
 /**
- * Giỏ hàng, giữ trong bộ nhớ.
+ * Giỏ hàng, lưu trên MÁY.
  *
- * Backend chưa có API đơn nháp, nên giỏ mất khi tắt app. Khi có API nháp, thay phần
- * `useState` dưới đây bằng lời gọi mạng — giao diện không phải đổi.
+ * Trước đây chỉ nằm trong `useState`: đang chọn size cho một đơn vài trăm đôi,
+ * có cuộc gọi xen vào, quay lại thì giỏ trống. Giờ ghi xuống `AsyncStorage` sau
+ * mỗi thay đổi và đọc lại lúc mở app.
+ *
+ * Vẫn là giỏ cục bộ, KHÔNG đồng bộ giữa các máy — việc đó chờ API đơn nháp.
  */
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { dealer } = useSession();
   const [lines, setLines] = useState<CartLine[]>([]);
+  /**
+   * Chưa đọc xong giỏ cũ thì CHƯA được ghi đè lên nó.
+   *
+   * Thiếu cờ này thì lần render đầu (`lines` rỗng) sẽ ghi một mảng rỗng xuống ổ
+   * đĩa trước khi bản đọc kịp trả về — tức là tự xoá giỏ mỗi lần mở app, đúng
+   * cái lỗi đang chữa.
+   */
+  const hydrated = useRef(false);
+
+  useEffect(() => {
+    let alive = true;
+    void loadJson<CartLine[]>(STORE_KEYS.cart).then((saved) => {
+      if (!alive) return;
+      if (saved?.length) setLines(saved);
+      hydrated.current = true;
+    });
+    return () => { alive = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated.current) return;
+    void saveJson(STORE_KEYS.cart, lines);
+  }, [lines]);
+
+  // Đăng xuất = xoá giỏ, cả trong bộ nhớ lẫn trên ổ đĩa. Máy dùng chung giữa hai
+  // đại lý thì người sau không được thấy giỏ của người trước.
+  const signedIn = !!dealer;
+  useEffect(() => {
+    if (signedIn || !hydrated.current) return;
+    setLines([]);
+    void removeKey(STORE_KEYS.cart);
+  }, [signedIn]);
 
   const upsert = useCallback((product: Product, sizes: Record<string, number>) => {
     const cleaned = Object.fromEntries(Object.entries(sizes).filter(([, n]) => n > 0));

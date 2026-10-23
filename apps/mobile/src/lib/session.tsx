@@ -1,9 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Dealer } from "@bq/types";
 import { api } from "./api";
+import { clearSession, loadSession, saveSession } from "./secure";
 
 interface SessionValue {
   dealer: Dealer | null;
+  /** Đang đọc phiên đã lưu lúc mở app — chưa biết là có đăng nhập hay không. */
+  restoring: boolean;
   loading: boolean;
   error: string | null;
   signIn: (code: string) => Promise<void>;
@@ -24,6 +27,7 @@ const DEMO_DEALER = "DL001";
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [dealer, setDealer] = useState<Dealer | null>(null);
+  const [restoring, setRestoring] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,12 +36,41 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       setDealer(await api.dealer(code));
+      await saveSession({ dealerCode: code });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       throw e;
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  /*
+   * Tự đăng nhập lại bằng phiên đã lưu.
+   *
+   * Trước đây phiên chỉ nằm trong `useState`: đóng app là phải nhập lại OTP,
+   * mỗi ngày vài lần, cho một app đại lý mở hàng chục lần một ngày.
+   *
+   * Hồ sơ vẫn đọc LẠI từ API chứ không lưu cache: hạn mức và công nợ đổi sau
+   * mỗi đơn, hiện số cũ còn tệ hơn bắt đăng nhập. Mã đại lý còn thì giữ phiên —
+   * backend lỗi mạng lúc mở app không được đá người dùng ra ngoài.
+   */
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      const saved = await loadSession();
+      if (!alive) return;
+      if (saved) {
+        try {
+          const row = await api.dealer(saved.dealerCode);
+          if (alive) setDealer(row);
+        } catch {
+          // Giữ phiên, để màn sau tự thử lại khi có mạng.
+        }
+      }
+      if (alive) setRestoring(false);
+    })();
+    return () => { alive = false; };
   }, []);
 
   const refresh = useCallback(async () => {
@@ -50,11 +83,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, [dealer]);
 
-  const signOut = useCallback(() => setDealer(null), []);
+  const signOut = useCallback(() => {
+    setDealer(null);
+    void clearSession();
+  }, []);
 
   const value = useMemo<SessionValue>(
-    () => ({ dealer, loading, error, signIn, signOut, refresh }),
-    [dealer, loading, error, signIn, signOut, refresh],
+    () => ({ dealer, restoring, loading, error, signIn, signOut, refresh }),
+    [dealer, restoring, loading, error, signIn, signOut, refresh],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

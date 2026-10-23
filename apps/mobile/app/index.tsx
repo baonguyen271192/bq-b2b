@@ -18,9 +18,12 @@ import { Pill, T, TextButton, TextField } from "@/components/ui";
 export default function LoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { dealer } = useSession();
+  const { dealer, restoring } = useSession();
   const [phone, setPhone] = useState("912 345 468");
 
+  // Chưa đọc xong phiên đã lưu thì chưa vẽ gì: hiện màn đăng nhập rồi nhảy sang
+  // Trang chủ ngay sau đó là một cú nháy vô cớ.
+  if (restoring) return null;
   if (dealer) return <Redirect href="/(tabs)" />;
 
   const digits = phone.replace(/\D/g, "");

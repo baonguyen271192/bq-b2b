@@ -37,7 +37,8 @@
           "resizeMode": "contain"
         }
       ],
-      "expo-status-bar"
+      "expo-status-bar",
+      "expo-secure-store"
     ],
     "extra": {
       "comment": "API base đọc từ EXPO_PUBLIC_API_BASE (xem .env.example) — app native KHÔNG có lớp proxy như Next nên bắt buộc URL tuyệt đối."
