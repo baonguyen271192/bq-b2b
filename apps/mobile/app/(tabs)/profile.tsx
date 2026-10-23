@@ -90,6 +90,14 @@ export default function ProfileScreen() {
           trailing={
             <Switch value={push} onValueChange={setPush} accessibilityLabel="Thông báo đẩy" />
           }
+          divider
+        />
+        {/* TODO(api): chưa có URL điều khoản/chính sách của BQ. Mở trang web
+            công ty để không phải một dòng chết, và sẽ trỏ đúng khi BQ cấp link. */}
+        <ListRow
+          icon="shield-checkmark-outline"
+          title="Điều khoản và chính sách"
+          onPress={() => void Linking.openURL("https://giaybq.vn")}
         />
       </Card>
 
@@ -112,8 +120,15 @@ export default function ProfileScreen() {
         />
       </Card>
 
-      <View style={styles.signOut}>
+      {/* Xoá tài khoản nằm CÙNG HÀNG với Đăng xuất (SPEC §3.33): App Store bắt
+          buộc app có đăng nhập phải có đường xoá tài khoản ngay trong app. */}
+      <View style={styles.accountRow}>
         <TextButton label="Đăng xuất" tone="danger" onPress={confirmSignOut} />
+        <TextButton
+          label="Xoá tài khoản"
+          tone="danger"
+          onPress={() => router.push("/delete-account")}
+        />
       </View>
 
       <T variant="chip" tone="muted" style={styles.version}>
@@ -135,6 +150,9 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
   },
   saleText: { flex: 1, gap: 1 },
-  signOut: { alignItems: "center", paddingVertical: space.x4 },
+  accountRow: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    gap: space.x3, paddingHorizontal: space.x2, paddingTop: space.x4,
+  },
   version: { textAlign: "center" },
 });

@@ -22,7 +22,7 @@ export interface ReorderSheetProps {
 
 /** Đơn đã nhận, mới nhất trước. */
 export function reorderable(orders: Order[]): Order[] {
-  return orders.filter((o) => orderStep(o.status) === 3).slice(0, REORDER_LIMIT);
+  return orders.filter((o) => orderStep(o.status) === 4).slice(0, REORDER_LIMIT);
 }
 
 /**

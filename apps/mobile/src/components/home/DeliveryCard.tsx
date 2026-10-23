@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, View, type ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { ORDER_STEPS, orderStep, statusLabel } from "@bq/core";
+import { ORDER_STEPS_SHORT, orderStep, statusLabel } from "@bq/core";
 import type { Order } from "@bq/types";
 import { color, radius, space } from "@/theme";
 import { Num, Price, statusColorsFor, statusIconFor, T } from "../ui";
@@ -50,7 +50,7 @@ export function DeliveryCard({ order, eta, onPress, style }: DeliveryCardProps) 
         </View>
         <Price value={order.subtotal} variant="bodyStrong" weight="bold" />
       </View>
-      <StepTrack steps={ORDER_STEPS} current={orderStep(order.status)} />
+      <StepTrack steps={ORDER_STEPS_SHORT} current={orderStep(order.status)} />
     </Pressable>
   );
 }

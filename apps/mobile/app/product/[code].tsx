@@ -7,6 +7,7 @@ import { totalPairs, vnd } from "@bq/core";
 import type { Product } from "@bq/types";
 import { api } from "@/lib/api";
 import { useCart } from "@/lib/cart";
+import { useFavourites } from "@/lib/favourites";
 import { useSession } from "@/lib/session";
 import { color, space } from "@/theme";
 import { ColorPicker } from "@/components/product/ColorPicker";
@@ -23,6 +24,7 @@ export default function ProductDetailScreen() {
   const { dealer } = useSession();
   const { lines, upsert, subtotal } = useCart();
 
+
   const [product, setProduct] = useState<Product | null>(null);
   const [missing, setMissing] = useState(false);
   const [offline, setOffline] = useState(false);
@@ -30,7 +32,7 @@ export default function ProductDetailScreen() {
   const [fetchedAt, setFetchedAt] = useState(new Date());
   const [sizes, setSizes] = useState<SizeQty>({});
   const [colour, setColour] = useState("");
-  const [favourite, setFavourite] = useState(false);
+  const { codes: favourites, toggle: toggleFavourite } = useFavourites();
   const [toast, setToast] = useState<string | null>(null);
 
   const inCart = lines.find((l) => l.code === code);
@@ -90,6 +92,7 @@ export default function ProductDetailScreen() {
     );
   }
 
+  const favourite = favourites.has(product.code);
   const pairs = totalPairs(sizes);
   const money = pairs * product.price;
   const margin = product.retail - product.price;
@@ -134,10 +137,18 @@ export default function ProductDetailScreen() {
                 icon={favourite ? "heart" : "heart-outline"}
                 tone="glass"
                 accessibilityLabel={favourite ? "Bỏ yêu thích" : "Yêu thích"}
-                onPress={() => setFavourite((v) => !v)}
+                onPress={() => toggleFavourite(product.code)}
               />
-              {/* TODO(api): chưa có link chia sẻ công khai cho mẫu. */}
-              <IconButton icon="share-outline" tone="glass" disabled accessibilityLabel="Chia sẻ — chưa khả dụng" />
+              {/* Giỏ hàng THAY nút chia sẻ (SPEC §3.29): thêm xong mà không có
+                  lối vào giỏ thì phải back ra Trang chủ mới thấy icon giỏ.
+                  Nút chia sẻ thì chưa có link công khai nào để chia sẻ. */}
+              <IconButton
+                icon="bag-outline"
+                tone="glass"
+                badge={lines.length}
+                accessibilityLabel="Giỏ hàng"
+                onPress={() => router.push("/cart")}
+              />
             </View>
           </View>
         </View>
@@ -216,7 +227,7 @@ export default function ProductDetailScreen() {
           style={styles.flex}
           onPress={() => {
             upsert(product, sizes);
-            setToast(inCart ? `Đã cập nhật ${pairs} đôi` : `Đã thêm ${pairs} đôi`);
+            setToast(inCart ? `Đã cập nhật ${pairs} đôi trong giỏ` : `Đã thêm ${pairs} đôi vào giỏ`);
           }}
         />
       </Dock>

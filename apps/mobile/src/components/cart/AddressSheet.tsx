@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { color, radius, space } from "@/theme";
 import { geoRepository } from "@/lib/repo/geo";
 import {
@@ -20,6 +21,8 @@ export interface AddressSheetProps {
   /** Địa chỉ đang sửa. Có giá trị thì form điền sẵn và lưu bằng `onUpdate`. */
   editing?: Address | null;
   onUpdate?: (address: Address) => Promise<void>;
+  /** Xoá địa chỉ đang sửa (SPEC §3.32). Bỏ trống thì không hiện nút xoá. */
+  onDelete?: (address: Address) => Promise<void>;
 }
 
 interface FormState {
@@ -56,7 +59,7 @@ export function AddressSheet(props: AddressSheetProps) {
 
 function AddressSheetBody({
   onClose, addresses, selectedId, onSelect, onCreate, startOnForm,
-  editing, onUpdate,
+  editing, onUpdate, onDelete,
 }: AddressSheetProps) {
   const [step, setStep] = useState<"list" | "form">(
     startOnForm || editing ? "form" : "list",
@@ -218,6 +221,45 @@ function AddressSheetBody({
                 accessibilityLabel="Đặt làm địa chỉ mặc định"
               />
             </View>
+
+            {/* Xoá chỉ có khi ĐANG SỬA một địa chỉ đã lưu. Địa chỉ mặc định
+                không xoá được: xoá nó xong thì đơn kế tiếp không biết giao đi
+                đâu, nên bắt chọn địa chỉ khác làm mặc định trước. */}
+            {editing && onDelete ? (
+              <View style={styles.deleteBox}>
+                <Pill
+                  label="Xoá địa chỉ này"
+                  tone="dangerOutline"
+                  disabled={!!editing.isDefault}
+                  leading={
+                    <Ionicons
+                      name="close"
+                      size={20}
+                      color={editing.isDefault ? color.muted : color.danger}
+                    />
+                  }
+                  onPress={() => {
+                    Alert.alert(
+                      "Xoá địa chỉ này?",
+                      `"${editing.label}" sẽ bị xoá khỏi sổ địa chỉ. Đơn cũ đã giao tới địa chỉ này vẫn giữ nguyên thông tin.`,
+                      [
+                        { text: "Giữ lại", style: "cancel" },
+                        {
+                          text: "Xoá",
+                          style: "destructive",
+                          onPress: () => { void onDelete(editing); },
+                        },
+                      ],
+                    );
+                  }}
+                />
+                <T variant="small" tone="muted">
+                  {editing.isDefault
+                    ? "Địa chỉ mặc định không xoá được: hãy đặt địa chỉ khác làm mặc định trước."
+                    : "Đơn cũ đã giao tới địa chỉ này vẫn giữ nguyên thông tin."}
+                </T>
+              </View>
+            ) : null}
           </View>
         </ScrollView>
       </BottomSheet>
@@ -256,6 +298,7 @@ const styles = StyleSheet.create({
   formBody: { gap: space.x4, paddingBottom: space.x4 },
   two: { flexDirection: "row", gap: space.x3 },
   col: { flex: 1 },
+  deleteBox: { gap: space.x2, marginTop: space.x2 },
   defaultRow: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     gap: space.x3, backgroundColor: color.paper, borderRadius: radius.field, padding: space.x4,

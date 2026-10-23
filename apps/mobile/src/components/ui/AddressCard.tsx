@@ -49,6 +49,12 @@ export interface AddressCardProps {
    * `select` — trong sheet chọn: chỉ nội dung, phần chọn do `RadioCard` bọc ngoài.
    */
   variant?: "manage" | "select";
+  /**
+   * Ẩn tag "Mặc định". Dùng ở Chi tiết đơn: đơn đã gửi rồi thì việc địa chỉ này
+   * có phải mặc định của sổ hay không không còn liên quan — nó chỉ là nơi hàng
+   * sẽ tới.
+   */
+  hideDefaultTag?: boolean;
   onEdit?: () => void;
   onSetDefault?: () => void;
   style?: ViewStyle;
@@ -61,7 +67,7 @@ export interface AddressCardProps {
  * viền nữa sẽ thành hai khung lồng nhau.
  */
 export function AddressCard({
-  address, variant = "manage", onEdit, onSetDefault, style,
+  address, variant = "manage", hideDefaultTag, onEdit, onSetDefault, style,
 }: AddressCardProps) {
   const manage = variant === "manage";
   const body = (
@@ -70,7 +76,7 @@ export function AddressCard({
         <T variant={manage ? "cardTitle" : "bodyStrong"} weight="bold" style={styles.name}>
           {address.label}
         </T>
-        {address.isDefault ? <StatusTag label="Mặc định" kind="brand" /> : null}
+        {address.isDefault && !hideDefaultTag ? <StatusTag label="Mặc định" kind="brand" /> : null}
       </View>
       <T variant="label" weight="regular">{`${address.recipient}, ${address.phone}`}</T>
       <T variant="small" tone="muted">{formatAddress(address)}</T>

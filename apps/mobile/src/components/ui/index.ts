@@ -19,6 +19,7 @@ export { DashedButton, type DashedButtonProps } from "./DashedButton";
 
 // --- Nhãn, chip, trạng thái -----------------------------------------------
 export { Badge, type BadgeProps } from "./Badge";
+export { Checkbox, type CheckboxProps } from "./Checkbox";
 export { Chip, type ChipProps } from "./Chip";
 export { SizeChip, type SizeChipProps } from "./SizeChip";
 export { StatusTag, statusKindFor, type StatusTagProps, type StatusKind } from "./StatusTag";

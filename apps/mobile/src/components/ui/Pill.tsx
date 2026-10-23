@@ -3,7 +3,8 @@ import { ActivityIndicator, Pressable, StyleSheet, type ViewStyle } from "react-
 import { color, hitSlopFor, radius, space } from "@/theme";
 import { T } from "./T";
 
-export type PillTone = "brand" | "ink" | "outline" | "paper" | "onBrand";
+export type PillTone =
+  | "brand" | "ink" | "outline" | "paper" | "onBrand" | "danger" | "dangerOutline";
 
 export interface PillProps {
   label: string;
@@ -11,7 +12,10 @@ export interface PillProps {
   /**
    * `brand` hành động chính · `ink` phụ quan trọng · `outline` phụ thường ·
    * `paper` khi nút nằm trên nền TỐI (splash) · `onBrand` nút TRẮNG đặt trên
-   * nền cam (nút "Thanh toán" trong thẻ hạn mức) — chữ dùng `textBrand`.
+   * nền cam (nút "Thanh toán" trong thẻ hạn mức) — chữ dùng `textBrand` ·
+   * `danger` hành động KHÔNG HOÀN TÁC được (xoá tài khoản) · `dangerOutline`
+   * hành động xoá cấp thấp hơn, nằm trong một màn đang làm việc khác (xoá một
+   * địa chỉ).
    */
   tone?: PillTone;
   /**
@@ -54,12 +58,14 @@ export function Pill({
   const bg =
     tone === "brand" ? (down ? color.brandDeep : color.brand)
     : tone === "ink" ? color.ink
+    : tone === "danger" ? color.danger
     : tone === "paper" || tone === "onBrand" ? color.paper
     : "transparent";
 
   const textTone =
-    tone === "brand" || tone === "ink" ? "white"
+    tone === "brand" || tone === "ink" || tone === "danger" ? "white"
     : tone === "onBrand" ? "brand"
+    : tone === "dangerOutline" ? "danger"
     : "ink";
 
   return (
@@ -77,6 +83,7 @@ export function Pill({
         { height: size, paddingHorizontal: size <= 40 ? space.x4 : 22 },
         { backgroundColor: bg },
         tone === "outline" && styles.outline,
+        tone === "dangerOutline" && styles.dangerOutline,
         tone === "paper" && styles.paperBorder,
         disabled && styles.disabled,
         down && styles.down,
@@ -118,6 +125,7 @@ const styles = StyleSheet.create({
   },
   /** SPEC: viền 1.5 INK (không phải `line`) — đây là nút, không phải ô nhập. */
   outline: { borderWidth: 1.5, borderColor: color.ink },
+  dangerOutline: { borderWidth: 1.5, borderColor: color.danger },
   paperBorder: { borderWidth: 1, borderColor: color.line },
   disabled: { opacity: 0.4 },
   /** SPEC §4: Pill và card nhấn xuống scale 0.98. */

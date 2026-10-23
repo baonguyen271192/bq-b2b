@@ -1,4 +1,5 @@
 import { api } from "../api";
+import { orderExtrasRepository } from "./order-extras";
 import type { CartLine } from "../cart";
 import type { Order } from "@bq/types";
 
@@ -27,6 +28,15 @@ export interface SubmitOrderInput {
   addressId: string;
   /** Khoá chống gửi trùng (mục D-1). */
   idempotencyKey: string;
+  /**
+   * Ghi chú cho BQ (SPEC §3.30), tối đa 254 ký tự theo trường `Comments` của
+   * SAP B1.
+   *
+   * TODO(api): `POST /api/orders` chưa nhận trường này — xem A7 trong
+   * `docs/sap-b1-mapping-proposal.md`. Hiện lưu qua `orderExtrasRepository` để
+   * đơn vừa gửi vẫn hiện lại đúng ghi chú.
+   */
+  note?: string;
   channel?: string;
 }
 
@@ -113,6 +123,7 @@ export async function submitOrder(input: SubmitOrderInput): Promise<Order> {
     delivery: input.addressId,
     channel: input.channel ?? "app",
   });
+  if (input.note) await orderExtrasRepository.setNote(order.id, input.note);
   sent.set(input.idempotencyKey, order);
   return order;
 }

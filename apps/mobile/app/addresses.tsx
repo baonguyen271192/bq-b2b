@@ -8,7 +8,7 @@ import { addressRepository } from "@/lib/repo/addresses";
 import { color, space } from "@/theme";
 import { AddressSheet } from "@/components/cart/AddressSheet";
 import {
-  AddressCard, Dock, DOCK_CLEARANCE_ACTIONS, EmptyState, Pill, ScreenHeader, type Address,
+  AddressCard, Dock, DOCK_CLEARANCE_ACTIONS, EmptyState, Pill, ScreenHeader, Toast, type Address,
 } from "@/components/ui";
 
 /**
@@ -25,6 +25,7 @@ export default function AddressesScreen() {
   const [addresses, setAddresses] = useState<Address[] | null>(null);
   const [sheet, setSheet] = useState(false);
   const [editing, setEditing] = useState<Address | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!dealer) return;
@@ -103,7 +104,15 @@ export default function AddressesScreen() {
           setSheet(false);
           setEditing(null);
         }}
+        onDelete={async (address) => {
+          setAddresses(await addressRepository.remove(dealer.code, address.id));
+          setSheet(false);
+          setEditing(null);
+          setToast(`Đã xoá "${address.label}"`);
+        }}
       />
+
+      {toast ? <Toast message={toast} onHide={() => setToast(null)} /> : null}
     </View>
   );
 }

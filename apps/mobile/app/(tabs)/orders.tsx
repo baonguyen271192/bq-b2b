@@ -58,7 +58,9 @@ export default function OrdersScreen() {
     const rows = orders ?? [];
     return {
       pending: rows.filter((o) => orderStep(o.status) === 1).length,
-      shipping: rows.filter((o) => orderStep(o.status) === 2).length,
+      // "Đang giao" gom cả đóng gói và bàn giao: đại lý lọc theo "hàng đang trên
+      // đường tới" chứ không theo từng khâu kho.
+      shipping: rows.filter((o) => [2, 3].includes(orderStep(o.status))).length,
     };
   }, [orders]);
 
@@ -66,8 +68,8 @@ export default function OrdersScreen() {
     const rows = orders ?? [];
     if (tab === "all") return rows;
     if (tab === "pending") return rows.filter((o) => orderStep(o.status) === 1);
-    if (tab === "shipping") return rows.filter((o) => orderStep(o.status) === 2);
-    return rows.filter((o) => orderStep(o.status) === 3);
+    if (tab === "shipping") return rows.filter((o) => [2, 3].includes(orderStep(o.status)));
+    return rows.filter((o) => orderStep(o.status) === 4);
   }, [orders, tab]);
 
   /**
@@ -158,7 +160,7 @@ export default function OrdersScreen() {
               order={o}
               imageOf={imageOf}
               onPress={() => router.push(`/order/${o.id}`)}
-              onReorder={orderStep(o.status) === 3 ? () => void reorder(o) : undefined}
+              onReorder={orderStep(o.status) === 4 ? () => void reorder(o) : undefined}
               reordering={reordering === o.id}
             />
           ))

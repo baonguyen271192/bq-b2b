@@ -32,28 +32,46 @@ export const retailNextActionLabel = (status: string): string | null =>
   RETAIL_NEXT_ACTION[status] ?? null;
 
 /**
- * Bốn bước hiển thị trên thẻ "đơn đang giao" ở Trang chủ (SPEC §3.2 mục 4).
+ * NĂM bước của dòng thời gian đơn, khớp 1-1 với trạng thái backend (SPEC §3.8).
  *
- * KHÔNG phải nguồn sự thật: backend có 5 trạng thái, thiết kế chỉ vẽ 4 chấm, nên
- * ba trạng thái giữa ("Đã xác nhận", "Đang đóng gói", "Đang bàn giao vận chuyển")
- * gộp chung vào một chấm. Chữ trạng thái đầy đủ vẫn hiện ở `StatusTag` của màn
- * Đơn hàng — chấm chỉ để liếc qua là biết đang ở khúc nào.
+ * Bản cũ chỉ có bốn chấm và gộp ba trạng thái giữa ("Đã xác nhận", "Đang đóng
+ * gói", "Đang bàn giao vận chuyển") vào một chấm "Đang giao" — đơn còn trong
+ * kho đóng gói vẫn sáng chấm "Đang giao", tức app nói SAI chứ không chỉ nói gọn.
  */
-export const ORDER_STEPS = ["Đặt", "Duyệt", "Đang giao", "Nhận"] as const;
+export const ORDER_STEPS = [
+  "Gửi đơn",
+  "BQ xác nhận",
+  "Đang đóng gói",
+  "Bàn giao vận chuyển",
+  "Đã nhận hàng",
+] as const;
 
-/** Chỉ số bước HIỆN TẠI trong {@link ORDER_STEPS}; -1 nếu đơn đã huỷ/bị từ chối. */
+/** Nhãn ngắn cho thẻ đơn ở Trang chủ, nơi năm chấm phải vừa một hàng. */
+export const ORDER_STEPS_SHORT = ["Đặt", "Duyệt", "Đóng gói", "Bàn giao", "Nhận"] as const;
+
+/** Đơn đang chờ Sale duyệt hạn mức — bước 2 đổi nhãn và dùng màu warn. */
+export const orderAwaitingApproval = (status: string): boolean =>
+  status.toLowerCase().includes("chờ duyệt");
+
+/**
+ * Chỉ số bước HIỆN TẠI trong {@link ORDER_STEPS}; -1 nếu đơn đã huỷ/bị từ chối.
+ *
+ * "Đã xác nhận" trả 2: bước "BQ xác nhận" đã xong, việc đang tới là đóng gói.
+ */
 export const orderStep = (status: string): number => {
   const s = status.toLowerCase();
   if (s.includes("huỷ") || s.includes("hủy") || s.includes("từ chối")) return -1;
-  if (s.includes("đã nhận")) return 3;
-  if (s.includes("chờ xác nhận") || s.includes("chờ duyệt")) return 1;
-  return 2;
+  if (s.includes("đã nhận") || s.includes("hoàn tất")) return 4;
+  if (s.includes("bàn giao") || s.includes("đang giao")) return 3;
+  if (s.includes("đóng gói") || s.includes("đã xác nhận")) return 2;
+  // Còn lại là khúc đầu: "Chờ xác nhận", "Chờ duyệt (vượt hạn mức)".
+  return 1;
 };
 
 /** Đơn đã khép lại thì không cần hiện trên Trang chủ nữa. */
 export const orderIsOpen = (status: string): boolean => {
   const step = orderStep(status);
-  return step >= 0 && step < 3;
+  return step >= 0 && step < 4;
 };
 
 /**

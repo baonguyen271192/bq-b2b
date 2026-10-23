@@ -24,7 +24,7 @@ export interface ToastProps {
  * làm; con số thật nằm ở badge giỏ hàng và trong màn giỏ.
  */
 export function Toast({
-  message, onHide, actionLabel, onActionPress, durationMs = 3200,
+  message, onHide, actionLabel, onActionPress, durationMs = 4000,
 }: ToastProps) {
   const insets = useSafeAreaInsets();
   const v = useMemo(() => ({ y: new Animated.Value(40), o: new Animated.Value(0) }), []);

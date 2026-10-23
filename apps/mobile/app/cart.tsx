@@ -15,6 +15,7 @@ import {
 } from "@/lib/repo/orders";
 import { color, space } from "@/theme";
 import { AddressSheet } from "@/components/cart/AddressSheet";
+import { NoteSheet } from "@/components/order/NoteSheet";
 import { DeliveryAddressCard } from "@/components/cart/DeliveryAddressCard";
 import { OverLimitSheet, type OverLimitChoice } from "@/components/cart/OverLimitSheet";
 import { StockChangedSheet, type StockFix } from "@/components/cart/StockChangedSheet";
@@ -40,6 +41,9 @@ export default function CartScreen() {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [addressId, setAddressId] = useState<string | undefined>();
   const [addressSheet, setAddressSheet] = useState(false);
+  const [noteSheet, setNoteSheet] = useState(false);
+  /** Ghi chú cho BQ (SPEC §3.30). TODO(api): chưa có trường nào trong `createOrder`. */
+  const [note, setNote] = useState("");
   const [overLimitSheet, setOverLimitSheet] = useState(false);
   const [shortages, setShortages] = useState<StockShortage[] | null>(null);
   const [sending, setSending] = useState(false);
@@ -88,6 +92,7 @@ export default function CartScreen() {
         lines: toSend,
         addressId,
         idempotencyKey: newIdempotencyKey(),
+        note,
       });
       clear();
       await refresh();
@@ -98,7 +103,7 @@ export default function CartScreen() {
     } finally {
       setSending(false);
     }
-  }, [dealer, addressId, lines, clear, refresh, router]);
+  }, [dealer, addressId, lines, note, clear, refresh, router]);
 
   const onOrder = () => {
     if (!canOrder) return;
@@ -223,6 +228,17 @@ export default function CartScreen() {
           />
         ))}
 
+        {/* Ghi chú đặt SAU danh sách sản phẩm (SPEC §3.30): nó nói về đơn này,
+            đọc sau khi đã xem mình đặt gì. */}
+        <Card>
+          <ListRow
+            icon="document-text-outline"
+            title="Ghi chú cho BQ"
+            subtitle={note || "Thêm ghi chú"}
+            onPress={() => setNoteSheet(true)}
+          />
+        </Card>
+
         <Card>
           <DetailRow label={`Tạm tính (${pairs} đôi)`} value={<Price value={subtotal} />} />
           <DetailRow label="Vận chuyển" value={<T variant="bodyStrong" tone="ok">Miễn phí</T>} />
@@ -257,7 +273,10 @@ export default function CartScreen() {
         </Card>
       </ScrollView>
 
-      <Dock left={{ label: "Tổng thanh toán", value: <Price value={subtotal} variant="amountMd" weight="extrabold" /> }}>
+      {/* TODO(api): chưa có trường VAT nên tổng ở dock vẫn là tạm tính và nhãn
+          nói "chưa gồm VAT". Khi API trả số thật: nhãn đổi thành "Tổng thanh
+          toán, đã gồm VAT" và giá trị cộng thêm tiền thuế (SPEC §5-C). */}
+      <Dock left={{ label: "Tổng, chưa gồm VAT", value: <Price value={subtotal} variant="amountMd" weight="extrabold" /> }}>
         <Pill label="Lưu nháp" tone="outline" onPress={saveDraft} />
         <Pill
           label={over > 0 ? "Gửi đơn chờ duyệt" : "Đặt hàng"}
@@ -268,6 +287,17 @@ export default function CartScreen() {
           onPress={onOrder}
         />
       </Dock>
+
+      <NoteSheet
+        visible={noteSheet}
+        value={note}
+        onClose={() => setNoteSheet(false)}
+        onSave={(v) => {
+          setNote(v);
+          setNoteSheet(false);
+          setToast(v ? "Đã lưu ghi chú" : "Đã xoá ghi chú");
+        }}
+      />
 
       <AddressSheet
         visible={addressSheet}
