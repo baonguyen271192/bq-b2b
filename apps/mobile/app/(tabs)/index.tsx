@@ -10,9 +10,10 @@ import { useCart } from "@/lib/cart";
 import { useSession } from "@/lib/session";
 import { color, space } from "@/theme";
 import { DeliveryCard } from "@/components/home/DeliveryCard";
+import { ReorderSheet } from "@/components/home/ReorderSheet";
 import {
   Avatar, CreditCard, IconButton, Pill, Price, ProductMini, QuickAction, SectionHead,
-  OfflineBanner, Skeleton, T, TAB_BAR_CLEARANCE, hhmm,
+  OfflineBanner, Skeleton, T, TAB_BAR_CLEARANCE, Toast, hhmm,
 } from "@/components/ui";
 
 /** Số mẫu trong băng "Bán chạy tuần này". */
@@ -34,10 +35,13 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { dealer, refresh } = useSession();
-  const { lines } = useCart();
+  const { lines, upsert } = useCart();
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [spotlight, setSpotlight] = useState<Product[] | null>(null);
   const [credit, setCredit] = useState<CreditDetail | null>(null);
+  const [reorderSheet, setReorderSheet] = useState(false);
+  const [reordering, setReordering] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [fetchedAt, setFetchedAt] = useState(new Date());
   const [offline, setOffline] = useState(false);
@@ -69,6 +73,39 @@ export default function HomeScreen() {
     setRefreshing(true);
     await Promise.all([load(), refresh()]);
     setRefreshing(false);
+  };
+
+  /**
+   * Chép một đơn cũ vào giỏ.
+   *
+   * Đọc LẠI danh mục thay vì tin giá trong đơn cũ: giá theo bậc và tồn kho đã
+   * đổi từ lúc đặt. Mẫu nào ngừng bán thì bỏ qua và nói rõ, không âm thầm tạo
+   * một giỏ thiếu hàng.
+   */
+  const reorder = async (order: Order) => {
+    if (!dealer || reordering) return;
+    setReordering(order.id);
+    try {
+      const rows = await api.products(dealer.code);
+      const byCode = new Map(rows.map((p) => [p.code, p]));
+      let added = 0;
+      for (const item of order.items) {
+        const product = byCode.get(item.code);
+        if (!product) continue;
+        upsert(product, item.sizes);
+        added += 1;
+      }
+      if (added === 0) {
+        setToast("Các mẫu trong đơn này đã ngừng bán.");
+        return;
+      }
+      setReorderSheet(false);
+      router.push("/cart");
+    } catch {
+      setToast("Không đọc được danh mục. Kiểm tra kết nối rồi thử lại.");
+    } finally {
+      setReordering(null);
+    }
   };
 
   if (!dealer) return null;
@@ -159,7 +196,9 @@ export default function HomeScreen() {
           tone="ink"
           onPress={() => router.push("/(tabs)/products")}
         />
-        <QuickAction icon="refresh" label="Đặt lại" onPress={() => router.push("/(tabs)/orders")} />
+        {/* Mở sheet 5 đơn đã nhận gần nhất, không phải đẩy sang tab Đơn hàng:
+            nhãn "Đặt lại" hứa một hành động, không phải một màn danh sách. */}
+        <QuickAction icon="refresh" label="Đặt lại" onPress={() => setReorderSheet(true)} />
         <QuickAction
           icon="document-text-outline"
           label="Đơn nháp"
@@ -219,6 +258,16 @@ export default function HomeScreen() {
           </ScrollView>
         )}
       </View>
+      <ReorderSheet
+        visible={reorderSheet}
+        onClose={() => setReorderSheet(false)}
+        orders={orders ?? []}
+        busyId={reordering}
+        onOpenOrder={(o) => { setReorderSheet(false); router.push(`/order/${o.id}`); }}
+        onReorder={(o) => void reorder(o)}
+      />
+
+      {toast ? <Toast message={toast} onHide={() => setToast(null)} /> : null}
     </ScrollView>
   );
 }

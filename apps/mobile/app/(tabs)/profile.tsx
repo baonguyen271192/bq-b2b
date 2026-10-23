@@ -3,8 +3,9 @@ import { useRouter } from "expo-router";
 import { Alert, Linking, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Constants from "expo-constants";
+import { Ionicons } from "@expo/vector-icons";
 import { useSession } from "@/lib/session";
-import { color, space } from "@/theme";
+import { color, radius, space } from "@/theme";
 import {
   Avatar, Card, IconButton, ListRow, ScreenHeader, StatusTag, Switch, T, TAB_BAR_CLEARANCE,
   TextButton,
@@ -93,7 +94,11 @@ export default function ProfileScreen() {
       </Card>
 
       <Card style={styles.sale}>
-        <Avatar name={SUPPORT.name} tone="info" />
+        {/* Icon điện thoại, KHÔNG phải chữ viết tắt: `Avatar` rút "Tổng đài BQ"
+            thành "ĐB" — hai chữ cái không nói lên gì và trông như tên một người. */}
+        <View style={styles.saleIcon}>
+          <Ionicons name="headset-outline" size={20} color={color.muted} />
+        </View>
         <View style={styles.saleText}>
           <T variant="chip" tone="muted">Hỗ trợ đại lý</T>
           <T variant="bodyStrong" weight="semibold">{SUPPORT.name}</T>
@@ -125,6 +130,10 @@ const styles = StyleSheet.create({
   dealerText: { flex: 1, gap: space.x1 },
   tier: { marginTop: space.x1 },
   sale: { flexDirection: "row", alignItems: "center", gap: space.x3 },
+  saleIcon: {
+    width: 44, height: 44, borderRadius: radius.pill, backgroundColor: color.subtle,
+    alignItems: "center", justifyContent: "center",
+  },
   saleText: { flex: 1, gap: 1 },
   signOut: { alignItems: "center", paddingVertical: space.x4 },
   version: { textAlign: "center" },
