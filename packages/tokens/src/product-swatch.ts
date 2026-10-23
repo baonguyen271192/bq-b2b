@@ -19,7 +19,9 @@ const SWATCH: Record<string, string> = {
   "xám": "#8E8E8E",
   "be": "#D9C7A7",
   "đỏ": "#B42318",
-  "cam": "#E65C00",
+  // Cam của GIÀY, không dính gì tới cam thương hiệu. Đổi khỏi #E65C00 (giá trị
+  // `flame` cũ) để không ai tưởng đây là một token màu thương hiệu còn sót.
+  "cam": "#E8731A",
   "hồng": "#E8A0A8",
   "vàng": "#E0B24A",
   "xanh dương": "#2350B8",

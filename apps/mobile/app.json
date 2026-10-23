@@ -31,7 +31,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#E65C00",
+          "backgroundColor": "#F04F23",
           "image": "./assets/brand/logo-mark-white.png",
           "imageWidth": 126,
           "resizeMode": "contain"
@@ -43,6 +43,6 @@
     "extra": {
       "comment": "API base đọc từ EXPO_PUBLIC_API_BASE (xem .env.example) — app native KHÔNG có lớp proxy như Next nên bắt buộc URL tuyệt đối."
     },
-    "backgroundColor": "#E65C00"
+    "backgroundColor": "#F04F23"
   }
 }

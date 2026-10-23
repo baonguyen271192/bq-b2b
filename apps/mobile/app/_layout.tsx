@@ -32,8 +32,13 @@ const FONT_TIMEOUT_MS = 2500;
 /**
  * Màu nền dùng chung cho native splash, root view và Stack khi splash còn hiện.
  * PHẢI trùng `backgroundColor` trong app.json — lệch một chút là thấy ranh giới.
+ *
+ * Là `flame`, KHÔNG phải `brand`: `app.json` và lớp phẳng dưới cùng của
+ * `BrandSplash` (`styles.flat`) đều dùng `flame`. Trước đây chỗ này để `brand`
+ * nên ba nơi lẽ ra phải bằng nhau lại có hai màu — chỉ lộ ra ở một hai khung
+ * lúc splash bàn giao nền.
  */
-const SPLASH_BG = color.brand;
+const SPLASH_BG = color.flame;
 
 /**
  * Thời gian tối đa chờ backend trả lời lúc khởi động.

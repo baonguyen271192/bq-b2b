@@ -605,14 +605,14 @@ export function BrandSplash({
           Vì sao phải gộp thành một nhóm thay vì cho mỗi lớp một `opacity`:
           ảnh tròn là hình VUÔNG cạnh width*1.7 (683pt trên iPhone 17 Pro) nên
           trên màn cao 874pt nó hở 95pt ở trên và dưới. Lớp cam sẫm mang đúng
-          màu mép PNG (#B84A00) nên ở độ đục 0 và 1 thì không thấy ranh. Nhưng
+          màu mép PNG (`flameDeep`) nên ở độ đục 0 và 1 thì không thấy ranh. Nhưng
           nếu HAI lớp cùng mờ riêng thì GIỮA CHỪNG, phần bên trong ô vuông bị
           hoà màu HAI LẦN còn bên ngoài chỉ một lần — đo trên video bản Release
           ở mốc 400ms: bậc 10–11 đơn vị tại đúng y=95.3pt và y=778.7pt. Gộp lại
           thì nhóm tự hoà bên trong ở độ đục đầy (không ranh vì hai màu bằng
           nhau), rồi cả nhóm hoà MỘT lần lên nền phẳng.
 
-          Nền phẳng bên dưới giữ nguyên #E65C00: nó PHẢI bằng native splash
+          Nền phẳng bên dưới là `flame`: nó PHẢI bằng native splash
           tại t=0. */}
       <Animated.View style={[styles.fill, { zIndex: 0, opacity: v.bg }]}>
         <View style={styles.deep} />

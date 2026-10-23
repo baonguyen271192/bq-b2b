@@ -5,7 +5,7 @@
  * đặt chữ lên bất kỳ nền màu nào: đây là lý do tồn tại của phần lớn comment
  * trong file này.
  *
- * Quy tắc một dòng (SPEC mục 5.A): **cam làm NỀN là `brand`, cam làm CHỮ trên
+ * Quy tắc một dòng (SPEC mục 5.A và 5.L): **cam làm NỀN là `brand`, cam làm CHỮ trên
  * nền sáng là `textBrand`.** Nhầm hai cái này là lỗi tương phản, không phải lỗi
  * thẩm mỹ.
  */
@@ -45,41 +45,47 @@ export const color = {
   // --- Thương hiệu ---------------------------------------------------------
   /**
    * MỌI nền cam có chữ trắng: CTA chính, tab đang chọn, thẻ hạn mức/công nợ,
-   * badge, nút gọi. Chữ trắng đạt 4.79:1 — đủ cho cả chữ thường.
+   * badge, nút gọi. Chữ trắng đạt 4.73:1 — đủ cho cả chữ thường.
    *
-   * KHÔNG dùng làm màu chữ: `brand` trên `canvas` chỉ 4.40:1 và trên `tint`
-   * 4.19:1, cả hai đều trượt AA. Dùng `textBrand`.
+   * KHÔNG dùng làm màu chữ: `brand` trên `canvas` chỉ 4.34:1 và trên `tint`
+   * 4.10:1, cả hai đều trượt AA. Dùng `textBrand`.
    */
-  brand: "#C24E00",
-  /** Trạng thái nhấn của `brand`. Chữ trắng 6.64:1. */
-  brandDeep: "#9E3F00",
+  brand: "#D23E14",
+  /** Trạng thái nhấn của `brand`. Chữ trắng 5.97:1. */
+  brandDeep: "#B8330D",
   /**
    * Cam làm CHỮ trên nền sáng (SPEC mục 5.A): link "Đăng ký ngay", chip
    * "Size 41 ×", tag "Giá hạng Vàng", tag "Mặc định", chữ "Thanh toán" trên nút
-   * trắng. 6.09:1 trên `canvas`, 5.81:1 trên `tint`, 6.64:1 trên `paper`.
+   * trắng. 5.48:1 trên `canvas`, 5.17:1 trên `tint`, 5.97:1 trên `paper`.
    *
    * Cùng giá trị với `brandDeep` nhưng là token NGỮ NGHĨA riêng: đổi màu nhấn
    * sau này không được kéo theo màu chữ, và ngược lại.
    */
-  textBrand: "#9E3F00",
+  textBrand: "#B8330D",
   /**
-   * Cam SÁNG, chỉ cho chỗ KHÔNG có chữ nhỏ: splash, mảng cam header màn Đăng
-   * nhập (chỉ chứa logo 72px), chấm tiến trình đang chạy. Chữ trắng chỉ đạt
-   * 3.56:1 — hợp lệ cho chữ lớn, không hợp lệ cho chữ thường.
+   * Cam SÁNG = ĐÚNG màu logo, chỉ cho chỗ KHÔNG có chữ nhỏ: splash, mảng cam
+   * header màn Đăng nhập (chỉ chứa logo 72px), chấm tiến trình đang chạy. Chữ
+   * trắng chỉ đạt 3.59:1 — hợp lệ cho chữ lớn, không hợp lệ cho chữ thường.
    *
-   * SPEC mục 5.E: cam logo chính thức (#F04F23?) CHƯA chốt. Giữ đúng MỘT token
-   * này để khi có brand guideline thì đổi một chỗ là xong.
+   * SPEC mục 5.L: mã đo từ file logo trong repo, CHƯA đối chiếu brand guideline
+   * chính thức của BQ. Khi có mã chính thức: đổi `flame` ở đây, rồi tính lại
+   * `brand` và `textBrand` CÙNG SẮC, chỉ hạ độ sáng cho tới khi đạt 4.5:1.
    */
-  flame: "#E65C00",
+  flame: "#F04F23",
   /**
    * Cặp tối của `flame`, chỉ dùng trong splash (lớp nền tràn dưới ảnh radial và
    * chấm nhịp). KHÔNG phải `brandDeep`: splash đã chốt hình, đổi màu nền của nó
    * là đổi thứ đã duyệt. Đổi `flame` thì phải đổi cả đây.
+   *
+   * Giữ ĐÚNG tỉ lệ RGB của cặp cũ (`#E65C00` → `#B84A00`, tức ×0.80) áp lên
+   * `flame` mới, nên bước đậm nhạt giữa hai lớp splash không đổi — chỉ sắc đổi
+   * từ 24° sang 13° theo logo. SPEC §5-L không liệt kê token này, nhưng để
+   * nguyên `#B84A00` dưới một `flame` 13° thì lớp nền ngả nâu, lệch hẳn sắc.
    */
-  flameDeep: "#B84A00",
+  flameDeep: "#C0401C",
   /** Nền chip/tag cam nhạt, vòng sáng quanh chấm tiến trình. `textBrand` trên
-   *  nền này đạt 5.81:1; `ink` đạt 15.10:1. */
-  tint: "#FDEDE2",
+   *  nền này đạt 5.17:1. */
+  tint: "#FDEBE5",
   /**
    * Dải sáng lướt qua logo trắng ở splash. KHÔNG dùng làm nền hay màu chữ: đây
    * là màu PHỦ LÊN mặt trắng nên nó cố tình gần trắng (chữ trắng trên nó chỉ
