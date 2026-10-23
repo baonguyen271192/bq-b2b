@@ -133,7 +133,7 @@ export default function OtpScreen() {
         />
 
         <Notice kind="plain">
-          Không nhận được mã? Gọi Sale phụ trách hoặc tổng đài BQ để được hỗ trợ kích hoạt.
+          Không nhận được mã? Gọi tổng đài BQ để được hỗ trợ kích hoạt.
         </Notice>
       </View>
     </KeyboardAvoidingView>

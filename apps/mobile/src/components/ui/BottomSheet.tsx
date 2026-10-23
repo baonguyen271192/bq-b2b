@@ -1,4 +1,6 @@
-import { Modal, Pressable, StyleSheet, View, type ViewStyle } from "react-native";
+import {
+  KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, View, type ViewStyle,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { color, radius, space } from "@/theme";
 import { IconButton } from "./IconButton";
@@ -18,6 +20,14 @@ export interface BottomSheetProps {
   children: React.ReactNode;
   /** Thanh hành động dán đáy sheet, vd nút "Thêm vào giỏ". */
   footer?: React.ReactNode;
+  /**
+   * Sheet cao gần hết màn (≥ 90%) và thân sheet chiếm hết chỗ còn lại — dùng
+   * khi bên trong là một biểu mẫu dài (SPEC §5-M).
+   *
+   * Mặc định sheet chỉ cao bằng nội dung, tối đa 86%: một sheet chọn ba địa chỉ
+   * mà cao 90% thì phần lớn là khoảng trống.
+   */
+  tall?: boolean;
   style?: ViewStyle;
 }
 
@@ -33,13 +43,22 @@ export interface BottomSheetProps {
  * nút là lối đi cho mọi người còn lại.
  */
 export function BottomSheet({
-  visible, onClose, title, header, children, footer, style,
+  visible, onClose, title, header, children, footer, tall, style,
 }: BottomSheetProps) {
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      {/*
+        `KeyboardAvoidingView` bọc CẢ nền mờ lẫn sheet: bàn phím mở ra thì nó
+        đệm thêm ở đáy, đẩy nguyên sheet lên, nên nút lưu ở đáy sheet không bị
+        che (SPEC §5-M). Nền mờ `flex: 1` tự co lại nhường chỗ.
+      */}
+      <KeyboardAvoidingView
+        style={styles.fill}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
       <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel="Đóng" />
-      <View style={[styles.sheet, { paddingBottom: insets.bottom }, style]}>
+      <View style={[styles.sheet, tall && styles.sheetTall, { paddingBottom: insets.bottom }, style]}>
         <View style={styles.grabber} />
         <View style={[styles.head, header ? styles.headCustom : null]}>
           {/* Không tiêu đề và không header tự dựng (sheet Vượt hạn mức) thì chỉ
@@ -50,14 +69,16 @@ export function BottomSheet({
             : <View style={styles.title} />)}
           <IconButton icon="close" tone="subtle" accessibilityLabel="Đóng" onPress={onClose} />
         </View>
-        <View style={styles.body}>{children}</View>
+        <View style={[styles.body, tall && styles.fill]}>{children}</View>
         {footer ? <View style={styles.footer}>{footer}</View> : null}
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  fill: { flex: 1 },
   /** SPEC §1: lớp mờ sau sheet là rgba(28,25,21,0.5), không phải đen thuần. */
   scrim: { flex: 1, backgroundColor: color.inkA(0.5) },
   sheet: {
@@ -65,6 +86,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radius.sheet, borderTopRightRadius: radius.sheet,
     maxHeight: "86%",
   },
+  /** SPEC §5-M: biểu mẫu địa chỉ cần ít nhất 90% chiều cao. */
+  sheetTall: { minHeight: "90%", maxHeight: "94%" },
   grabber: {
     width: 40, height: 4, borderRadius: radius.pill, backgroundColor: color.line,
     alignSelf: "center", marginTop: space.x2,

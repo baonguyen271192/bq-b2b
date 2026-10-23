@@ -12,6 +12,7 @@ import { api } from "@/lib/api";
 import { useCart } from "@/lib/cart";
 import { useSession } from "@/lib/session";
 import { orderExtrasRepository, type OrderExtras } from "@/lib/repo/order-extras";
+import { supportContact, telUrl } from "@/lib/support";
 import { color, radius, space } from "@/theme";
 import { NoteSheet } from "@/components/order/NoteSheet";
 import {
@@ -19,10 +20,6 @@ import {
   IconButton, ListRow, Pill, Price, ProductImage, ScreenHeader, SizeChip, T, Timeline,
   Toast, hhmm, statusColorsFor, statusIconFor, type TimelineStep,
 } from "@/components/ui";
-
-/** Tổng đài BQ — TODO(api): chưa có số Sale phụ trách theo từng đại lý. */
-const SUPPORT_PHONE = "02363745745";
-const SUPPORT_NAME = "Tổng đài BQ";
 
 /** Thứ trong tuần, để câu "Thứ Năm, 22/10/2026" đọc như người nói. */
 const WEEKDAYS = ["Chủ nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
@@ -96,6 +93,7 @@ export default function OrderDetailScreen() {
   const pending = orderAwaitingApproval(order.status);
   const shipping = step === 3;
   const pairs = order.items.reduce((s, i) => s + i.qty_total, 0);
+  const support = supportContact(dealer);
   const imageOf = (code: string) => products.find((p) => p.code === code)?.image;
 
   /**
@@ -200,14 +198,14 @@ export default function OrderDetailScreen() {
               </T>
             </View>
             <T variant="label" weight="regular">
-              Muốn huỷ hoặc sửa đơn này, gọi Sale phụ trách. Đơn chưa xuất kho nên huỷ không mất phí.
+              {`Muốn huỷ hoặc sửa đơn này, gọi ${support.isSalesRep ? "Sale phụ trách" : "tổng đài BQ"}. Đơn chưa xuất kho nên huỷ không mất phí.`}
             </T>
             <Pill
-              label={`Gọi ${SUPPORT_NAME}`}
+              label={support.label}
               tone="paper"
               size={44}
               leading={<Ionicons name="call-outline" size={20} color={color.ink} />}
-              onPress={() => void Linking.openURL(`tel:${SUPPORT_PHONE}`)}
+              onPress={() => void Linking.openURL(telUrl(support.phone))}
             />
           </View>
         ) : null}
@@ -281,6 +279,13 @@ export default function OrderDetailScreen() {
 
         <Card style={styles.items}>
           <T variant="cardTitle" weight="bold">Sản phẩm</T>
+          {/*
+            TODO(api) A7.2 — ƯU TIÊN CAO: `OrderItem` không có màu, nên một đơn
+            đặt nhiều màu của CÙNG một mẫu hiện ra không phân biệt được màu nào
+            bao nhiêu đôi. Khi backend trả màu: mỗi màu MỘT HÀNG, tên màu (12
+            muted) đứng trước chip size — thiết kế `08-OrderDetail.png` vẽ "Đen
+            24 đôi, Nâu 12 đôi". Tới lúc đó chip size ở đây là cộng dồn các màu.
+          */}
           {order.items.map((item) => (
             <View key={item.code} style={styles.item}>
               <ProductImage uri={imageOf(item.code)} style={styles.thumb} />
@@ -332,10 +337,10 @@ export default function OrderDetailScreen() {
         {cancelled ? (
           <>
             <Pill
-              label="Gọi Sale"
+              label={support.isSalesRep ? "Gọi Sale" : "Gọi tổng đài"}
               tone="outline"
               leading={<Ionicons name="call-outline" size={20} color={color.ink} />}
-              onPress={() => void Linking.openURL(`tel:${SUPPORT_PHONE}`)}
+              onPress={() => void Linking.openURL(telUrl(support.phone))}
             />
             <Pill
               label="Sửa và gửi lại"

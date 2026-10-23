@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { useCart } from "@/lib/cart";
 import { useSearchHistory } from "@/lib/search-history";
 import { useSession } from "@/lib/session";
+import { supportContact, telUrl } from "@/lib/support";
 import { color, space } from "@/theme";
 import { ProductCard } from "@/components/product/ProductCard";
 import { QuickAddSheet } from "@/components/product/QuickAddSheet";
@@ -19,8 +20,6 @@ import {
 
 /** Số mã gợi ý tối đa trong card "Mã gần giống" (SPEC §3.16). */
 const SIMILAR_LIMIT = 3;
-/** Tổng đài BQ — TODO(api): chưa có số Sale phụ trách theo từng đại lý. */
-const SUPPORT_PHONE = "02363745745";
 
 /**
  * Khoảng cách Levenshtein, dùng để gợi ý "mã gần giống".
@@ -51,7 +50,7 @@ function editDistance(a: string, b: string): number {
  *
  * Tách khỏi tab Sản phẩm vì nó có header riêng (back + ô tìm kiếm chiếm cả hàng)
  * và vì khi không ra kết quả, màn này phải đưa lối thoát — gợi ý mã gần giống và
- * gọi Sale — chứ không chỉ báo "không có gì".
+ * gọi người hỗ trợ — chứ không chỉ báo "không có gì".
  */
 export default function SearchScreen() {
   const router = useRouter();
@@ -81,6 +80,7 @@ export default function SearchScreen() {
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
+  const support = supportContact(dealer);
   const needle = q.trim().toLowerCase();
 
   const hits = useMemo(() => {
@@ -200,12 +200,12 @@ export default function SearchScreen() {
               onPress={() => { setSize(null); setQ(""); }}
             />
             <Pill
-              label="Hỏi Sale"
+              label={support.isSalesRep ? "Hỏi Sale" : "Gọi tổng đài BQ"}
               tone="ink"
               size={48}
               style={styles.flex}
               leading={<Ionicons name="call-outline" size={20} color={color.white} />}
-              onPress={() => void Linking.openURL(`tel:${SUPPORT_PHONE}`)}
+              onPress={() => void Linking.openURL(telUrl(support.phone))}
             />
           </View>
 

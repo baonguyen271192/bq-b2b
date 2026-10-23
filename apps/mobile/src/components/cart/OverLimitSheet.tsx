@@ -96,7 +96,7 @@ export function OverLimitSheet({
           description={
             alreadyOver
               ? "Bạn nhận thông báo khi có kết quả. Hàng chưa được giữ trong lúc chờ."
-              : "Sale sẽ xem xét nâng hạn mức cho đơn này. Bạn nhận thông báo khi có kết quả."
+              : "Sale phụ trách sẽ xem xét nâng hạn mức cho đơn này. Bạn nhận thông báo khi có kết quả."
           }
         />
         <RadioCard

@@ -158,6 +158,8 @@ Thứ tự từ trên xuống, khoảng cách 16:
 - Card 1: Dự kiến nhận + đơn vị vận chuyển + mã vận đơn rút gọn có nút sao chép, rồi dòng thời gian
 - Card 2: Giao đến (tên, người nhận, SĐT, địa chỉ) + Ghi chú cho BQ
 - Card 3: sản phẩm (gộp theo mẫu, ghi số đôi từng màu) + Tạm tính / VAT / Tổng / Thanh toán (số từ backend)
+- Mã vận đơn: bản dựng để trên HAI dòng và hiện ĐỦ mã kèm nút sao chép, không rút gọn như ảnh (quyết định §5-M.2)
+- Dòng sản phẩm: hiện chip size khi `OrderItem` chưa có màu; khi backend trả màu (A7.2) thì mỗi màu một hàng, tên màu đứng trước chip size
 - Phần mô tả cũ dưới đây chỉ còn giá trị tham khảo
 - ScreenHeader back: "Chi tiết đơn", phụ mã đơn, slot phải StatusTag
 - Card vận chuyển: icon xe tải tròn 44 nền infoTint; "Dự kiến nhận" 13 muted + "Thứ Năm, 22/10/2026" 18/700; khối subtle bo 14: "BQ Express, mã vận đơn" 12 muted + mã 14/600 + nút sao chép 44; timeline dọc: chấm 22 (xong: nền ink + dấu ✓ trắng; hiện tại: nền tint + chấm flame 10; chưa tới: viền 2 line), đường nối 2px, tên bước 14/600 (hiện tại 700) + thời gian 12 muted
@@ -315,10 +317,11 @@ Thứ tự từ trên xuống, khoảng cách 16:
 - Ghi chú quy tắc cấn trừ (chờ BQ xác nhận)
 - Dock: "Tạo mã chuyển khoản" → màn Chuyển khoản (10) với số tiền đã chọn; nội dung chuyển khoản không gắn số hoá đơn khi trả số tiền khác (ví dụ "DL0215 TT")
 
-### 3.32 Sửa và xoá địa chỉ (`32-AddressEdit.png`)
+### 3.32 Sửa và xoá địa chỉ (`32-AddressEdit.png`) — dựng trong SHEET, xem §5-M.1
 - Vào từ nút "Sửa" ở Sổ địa chỉ (23). Form như 3.25, điền sẵn; Tỉnh/TP và Phường/Xã cùng một hàng 2 cột
 - Nút outline danger "Xoá địa chỉ này" (hỏi xác nhận trước khi xoá). Địa chỉ mặc định: nút vô hiệu + ghi chú "Địa chỉ mặc định không xoá được: hãy đặt địa chỉ khác làm mặc định trước"
-- Dock: "Lưu thay đổi"
+- Nút "Lưu thay đổi" nằm NGOÀI vùng cuộn, dán đáy sheet nên luôn ở trên bàn phím
+- Ảnh vẽ một màn riêng; bản dựng để trong bottom sheet cao ≥ 90% (quyết định §5-M.1). Ảnh vẫn đúng về nội dung và thứ tự trường
 
 ### 3.33 Xoá tài khoản (`33-DeleteAccount.png`)
 - Vào từ Hồ sơ (link chữ danger "Xoá tài khoản" cùng hàng với "Đăng xuất"). Bắt buộc theo quy định App Store với app có đăng nhập
@@ -347,4 +350,13 @@ Thứ tự từ trên xuống, khoảng cách 16:
 - **I. Hình thức thanh toán:** hiển thị read-only theo điều khoản hợp đồng của đại lý (ví dụ "Công nợ 30 ngày"), KHÔNG có bộ chọn theo từng đơn, chờ BQ xác nhận. Danh sách 3 lựa chọn trong code cũ bị bỏ
 - **K. Rà soát với dữ liệu thật (23/10/2026):** thêm 3.26–3.33; 3.8 dùng 5 bước theo backend; Hồ sơ thêm "Điều khoản và chính sách" và "Xoá tài khoản"; nhãn trạng thái ngắn ("Chờ duyệt", không "Chờ duyệt (vượt hạn mức)"); icon trạng thái đơn theo bước (đồng hồ / hộp / xe tải / check / ×); số tiền mọi nơi dùng "đ"
 - **L. Bộ màu theo logo (thay A, E):** `flame #F04F23` (đúng màu logo, cho splash, header Đăng nhập, chấm tiến trình), `brand #D23E14` (nền cam có chữ), `textBrand #B8330D` (chữ cam trên nền sáng, trạng thái nhấn), `tint #FDEBE5`. Cả ba cùng sắc ≈13° với logo. Thay toàn bộ giá trị cũ #C24E00 / #9E3F00 / #E65C00 / #FDEDE2 trong `packages/tokens`, splash và native splash
+- **M. Ba chỗ bản dựng lệch ảnh, đã quyết (23/10/2026):**
+  1. **Sửa địa chỉ (3.32) GIỮ trong sheet**, không tách màn riêng. Điều kiện: sheet cao ≥ 90% khi sửa; `KeyboardAvoidingView` + vùng cuộn; nút "Lưu thay đổi" luôn nằm trên bàn phím; xoá phải hỏi xác nhận; địa chỉ mặc định không xoá được. Thân biểu mẫu tách thành component `AddressForm` dùng chung cho Thêm và Sửa
+  2. **Chi tiết đơn (3.8) GIỮ mã vận đơn hai dòng, hiện đủ mã** kèm nút sao chép — mã rút gọn như ảnh thì phải mở chỗ khác mới đọc được đủ. Dòng sản phẩm hiện chip size cho tới khi backend trả màu (A7.2); khi có thì thêm tên màu trước chip size, mỗi màu một hàng
+  3. **Trường thiếu dữ liệu thì ẨN, không hiện ô trống hay "—".** Áp cho mọi chỗ dùng thông tin đại lý:
+     - MST: ẩn khỏi dòng định danh (`dealerIdLine`)
+     - Chiết khấu: chip chỉ ghi "Hạng Vàng" khi thiếu % — áp cả chip ở Hồ sơ lẫn thẻ hạn mức Trang chủ (`tierLabel`)
+     - Sale phụ trách: thiếu thì ẩn hẳn card ở Hồ sơ. Mọi nút/câu "Gọi Sale" (3.28 đơn chờ duyệt, 3.18 đơn bị từ chối, 3.16 tìm không ra, 3.14/3.27 sheet vượt hạn mức, 3.13 OTP) rơi về "Gọi tổng đài BQ", số lấy từ `app.json` › `expo.extra.supportPhone`. Câu chữ dùng "Sale phụ trách sẽ xem xét", không gắn tên người
+     - Một chỗ quyết định duy nhất: `src/lib/support.ts` và `src/lib/dealer.ts`
+
 - **Ngoài phạm vi đợt này:** dark mode, onboarding lần đầu

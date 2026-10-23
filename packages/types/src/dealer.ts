@@ -19,6 +19,17 @@ export interface Dealer {
    * đoán một kiểu.
    */
   payment_term?: string;
+  /**
+   * Ba trường dưới đây backend CHƯA trả về — xem A8 trong
+   * `docs/sap-b1-mapping-proposal.md`. Khai `optional` để giao diện ẩn đúng
+   * phần thiếu thay vì hiện ô trống hoặc "—" (SPEC §5-M).
+   */
+  /** Mã số thuế, in trên hoá đơn VAT. */
+  tax_code?: string;
+  /** Phần trăm chiết khấu theo hạng, vd 20. */
+  discount_percent?: number;
+  /** Sale phụ trách đại lý này. */
+  sales_rep?: { name: string; phone: string };
 }
 
 /** Trường đại lý mà admin được phép sửa. */

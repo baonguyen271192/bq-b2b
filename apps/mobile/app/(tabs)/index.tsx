@@ -7,6 +7,7 @@ import { dayMonth, nextDueInvoice, orderIsOpen, vndShort } from "@bq/core";
 import type { CreditDetail, Order, Product } from "@bq/types";
 import { api } from "@/lib/api";
 import { useCart } from "@/lib/cart";
+import { tierLabel } from "@/lib/dealer";
 import { useSession } from "@/lib/session";
 import { color, space } from "@/theme";
 import { DeliveryCard } from "@/components/home/DeliveryCard";
@@ -175,12 +176,10 @@ export default function HomeScreen() {
       <CreditCard
         label="Hạn mức khả dụng"
         amount={dealer.credit_available}
-        // TODO(api): % chiết khấu theo hạng chưa có trong `Dealer` (thiết kế ghi
-        // "Hạng Vàng, CK 20%"), nên chỉ hiện hạng.
         chip={
           overBy > 0
             ? { label: `Vượt ${vndShort(overBy)}`, alert: true }
-            : { label: `Hạng ${dealer.tier}` }
+            : { label: tierLabel(dealer) }
         }
         progress={usedRatio}
         stats={

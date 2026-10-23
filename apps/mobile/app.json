@@ -41,7 +41,9 @@
       "expo-secure-store"
     ],
     "extra": {
-      "comment": "API base đọc từ EXPO_PUBLIC_API_BASE (xem .env.example) — app native KHÔNG có lớp proxy như Next nên bắt buộc URL tuyệt đối."
+      "comment": "API base đọc từ EXPO_PUBLIC_API_BASE (xem .env.example) — app native KHÔNG có lớp proxy như Next nên bắt buộc URL tuyệt đối.",
+      "supportPhone": "02363745745",
+      "supportPhoneComment": "TODO(api): số tổng đài chăm sóc đại lý THẬT của BQ. Số hiện tại lấy từ ảnh thiết kế 11-Profile, chưa được BQ xác nhận."
     },
     "backgroundColor": "#F04F23"
   }

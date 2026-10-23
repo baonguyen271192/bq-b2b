@@ -309,7 +309,7 @@ lần gọi.
 | Đề xuất: trả **lỗi có cấu trúc** (mã lỗi + danh sách `{code, size, wanted, left}`) thay vì lọc im lặng. ✅ / ❌ | |
 | Nếu giữ hành vi cũ, ai chịu trách nhiệm báo cho đại lý? | |
 
-#### A7.2 Màu sản phẩm không đi được vào đơn
+#### A7.2 Màu sản phẩm không đi được vào đơn — **ƯU TIÊN CAO**
 
 `Product.colors` đã có và app đã cho đại lý chọn màu (SPEC §3.4, §3.5). Nhưng
 `OrderItem` và giỏ hàng chỉ có `code` + `sizes` — **không có trường màu**. Đại lý
@@ -323,6 +323,11 @@ mã, chứ không âm thầm bỏ đi.
 | Thêm `color` vào `OrderItem` và payload tạo đơn? ✅ / ❌ | |
 | Một mã + nhiều màu là **một dòng nhiều màu** hay **nhiều dòng**? | |
 | Trong B1, màu là `ItemCode` riêng hay thuộc tính của dòng? | |
+
+**Hệ quả đo được khi rà soát 23/10:** một đơn đặt nhiều màu của CÙNG một mẫu
+hiện ra không phân biệt được màu nào bao nhiêu đôi — màn Chi tiết đơn chỉ hiện
+chip size cộng dồn. Thiết kế `08-OrderDetail.png` vẽ "Đen 24 đôi, Nâu 12 đôi",
+app không dựng được dòng đó. Đây là lý do nâng mức ưu tiên.
 
 #### A7.3 Thiếu endpoint "đại lý báo đã chuyển khoản"
 
@@ -434,6 +439,27 @@ Khi đại lý trả tiền, SAP đối trừ vào đâu?
 
 ---
 
+### A8. Trường còn thiếu trong `GET /api/dealers/{code}` ⚠️
+
+Phát hiện khi dựng Hồ sơ và thẻ hạn mức theo bộ ảnh v2 (SPEC §3.11, §3.26). Ba
+trường thiết kế có mà API không trả, nên app đang **ẩn** đúng phần đó thay vì
+hiện ô trống — xem quyết định SPEC §5-M.3.
+
+| Trường | Thiết kế dùng ở đâu | Nguồn trong SAP B1 |
+|---|---|---|
+| `tax_code` | Hồ sơ, dòng dưới tên: "DL-0215, MST 0401 234 567". Cũng là trường bắt buộc trên hoá đơn VAT | `BusinessPartners.FederalTaxID` |
+| `discount_percent` | Chip hạng: "Hạng Vàng, CK 20%" — hiện chỉ ghi được "Hạng Vàng" | nhóm chiết khấu theo hạng, hoặc `SpecialPrices` |
+| `sales_rep { name, phone }` | Card "Sale phụ trách" ở Hồ sơ, và mọi nút "Gọi Sale" trong app | `BusinessPartners.SalesPersonCode` → `SalesPersons` |
+
+Thiếu `sales_rep` là thiếu nặng nhất: năm luồng trong app có nút gọi người hỗ
+trợ (đơn chờ duyệt, đơn bị từ chối, tìm không ra, sheet vượt hạn mức, màn OTP),
+cả năm đang phải rơi về tổng đài chung. Đại lý gọi tổng đài rồi mới được chuyển
+máy tới đúng Sale của mình.
+
+**Số tổng đài hiện dùng (`02363745745`) lấy từ ảnh thiết kế `11-Profile.png`,
+BQ chưa xác nhận.** Nó nằm ở `app.json` › `expo.extra.supportPhone`, đổi một chỗ.
+
+
 ## Việc sẽ làm sau khi nhận xác nhận
 
 | Phần | Nếu đúng như đề xuất | Nếu khác |
@@ -448,7 +474,8 @@ Khi đại lý trả tiền, SAP đối trừ vào đâu?
 | A5 làm tròn VAT | app không sửa gì — chỉ hiển thị | backend chỉnh nguồn số |
 | A6 hợp đồng API | thêm `address_id`, bỏ `payment`, `delivery` deprecated | — |
 | A7.1 lọc tồn kho | app bỏ được vòng gọi `checkStock` phụ | giữ nguyên, app tiếp tục tự so sánh |
-| A7.2 màu vào đơn | thêm một trường, app đã sẵn sàng gửi | bỏ hẳn chức năng chọn màu khỏi giao diện |
+| **A7.2 màu vào đơn — ƯU TIÊN CAO** | thêm một trường, app đã sẵn sàng gửi | bỏ hẳn chức năng chọn màu khỏi giao diện |
+| A8 trường hồ sơ đại lý | thêm 3 trường, app tự hiện phần đang ẩn | giữ nguyên, app tiếp tục ẩn và dùng tổng đài chung |
 | A7.3 báo đã chuyển khoản | nối một endpoint | giữ nguyên, BQ đối soát thủ công như hiện nay |
 
 Phần đã xong và **không phụ thuộc** các câu trên: đăng nhập, giữ phiên, phân trang,

@@ -3,16 +3,14 @@ import { useRouter } from "expo-router";
 import { Alert, Linking, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Constants from "expo-constants";
-import { Ionicons } from "@expo/vector-icons";
+import { dealerIdLine, tierLabel } from "@/lib/dealer";
 import { useSession } from "@/lib/session";
-import { color, radius, space } from "@/theme";
+import { supportContact, telUrl } from "@/lib/support";
+import { color, space } from "@/theme";
 import {
   Avatar, Card, IconButton, ListRow, ScreenHeader, StatusTag, Switch, T, TAB_BAR_CLEARANCE,
   TextButton,
 } from "@/components/ui";
-
-/** TODO(api): chưa có Sale phụ trách theo từng đại lý — tổng đài chung. */
-const SUPPORT = { name: "Tổng đài BQ", phone: "0236 374 5745" };
 
 /** Màn Hồ sơ (SPEC §3.11, ảnh `11-Profile.png`). */
 export default function ProfileScreen() {
@@ -21,6 +19,7 @@ export default function ProfileScreen() {
   const { dealer, signOut } = useSession();
   /** TODO(api): bật/tắt thông báo đẩy chưa có nơi lưu. */
   const [push, setPush] = useState(true);
+  const support = supportContact(dealer);
 
   if (!dealer) return null;
 
@@ -46,12 +45,8 @@ export default function ProfileScreen() {
         <Avatar name={dealer.name} size={60} />
         <View style={styles.dealerText}>
           <T variant="section">{dealer.name}</T>
-          {/* TODO(api): `Dealer` KHÔNG có mã số thuế (thiết kế ghi "MST 0401 234
-              567"). Hiện mã đại lý thôi — gắn nhãn MST cho một trường khác là
-              dựng thông tin sai trên chứng từ. */}
-          <T variant="small" tone="muted">{dealer.code}</T>
-          {/* TODO(api): % chiết khấu theo hạng chưa có trong `Dealer`. */}
-          <StatusTag label={`Hạng ${dealer.tier}`} kind="brand" style={styles.tier} />
+          <T variant="small" tone="muted">{dealerIdLine(dealer)}</T>
+          <StatusTag label={tierLabel(dealer)} kind="brand" style={styles.tier} />
         </View>
       </Card>
 
@@ -101,24 +96,26 @@ export default function ProfileScreen() {
         />
       </Card>
 
-      <Card style={styles.sale}>
-        {/* Icon điện thoại, KHÔNG phải chữ viết tắt: `Avatar` rút "Tổng đài BQ"
-            thành "ĐB" — hai chữ cái không nói lên gì và trông như tên một người. */}
-        <View style={styles.saleIcon}>
-          <Ionicons name="headset-outline" size={20} color={color.muted} />
-        </View>
-        <View style={styles.saleText}>
-          <T variant="chip" tone="muted">Hỗ trợ đại lý</T>
-          <T variant="bodyStrong" weight="semibold">{SUPPORT.name}</T>
-          <T variant="small" tone="muted">{SUPPORT.phone}</T>
-        </View>
-        <IconButton
-          icon="call"
-          tone="brand"
-          accessibilityLabel={`Gọi ${SUPPORT.name}`}
-          onPress={() => void Linking.openURL(`tel:${SUPPORT.phone.replace(/\s/g, "")}`)}
-        />
-      </Card>
+      {/* Card Sale phụ trách ẨN HẲN khi backend chưa trả `sales_rep` (SPEC §5-M):
+          một card ghi "Tổng đài BQ" ở chỗ thiết kế dành cho tên người phụ trách
+          là bịa ra một quan hệ không có. Số tổng đài vẫn gọi được từ mọi nút
+          "Gọi tổng đài BQ" trong các luồng cần nó. */}
+      {support.isSalesRep ? (
+        <Card style={styles.sale}>
+          <Avatar name={support.name} tone="info" />
+          <View style={styles.saleText}>
+            <T variant="chip" tone="muted">Sale phụ trách</T>
+            <T variant="bodyStrong" weight="semibold">{support.name}</T>
+            <T variant="small" tone="muted">{support.phone}</T>
+          </View>
+          <IconButton
+            icon="call"
+            tone="brand"
+            accessibilityLabel={support.label}
+            onPress={() => void Linking.openURL(telUrl(support.phone))}
+          />
+        </Card>
+      ) : null}
 
       {/* Xoá tài khoản nằm CÙNG HÀNG với Đăng xuất (SPEC §3.33): App Store bắt
           buộc app có đăng nhập phải có đường xoá tài khoản ngay trong app. */}
@@ -145,10 +142,6 @@ const styles = StyleSheet.create({
   dealerText: { flex: 1, gap: space.x1 },
   tier: { marginTop: space.x1 },
   sale: { flexDirection: "row", alignItems: "center", gap: space.x3 },
-  saleIcon: {
-    width: 44, height: 44, borderRadius: radius.pill, backgroundColor: color.subtle,
-    alignItems: "center", justifyContent: "center",
-  },
   saleText: { flex: 1, gap: 1 },
   accountRow: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
